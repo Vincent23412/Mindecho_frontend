@@ -6,7 +6,7 @@ struct AuthConstants {
     // MARK: - API 端點
     struct API {
         // 基礎 URL - 請替換為你的實際 API URL
-        static let baseURL = "http://140.119.164.16:3000"
+        static let baseURL = "https://mindechoserver.com"
         
         // 認證端點
         static let register = "/api/auth/register"

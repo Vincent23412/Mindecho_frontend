@@ -7,10 +7,20 @@ struct User: Codable, Identifiable {
     let email: String
     let firstName: String
     let lastName: String
-    let dateOfBirth: String
+    let dateOfBirth: String?     // 改為可選，因為後端可能不回傳
     let createdAt: Date?
     let updatedAt: Date?
     
+    enum CodingKeys: String, CodingKey {
+            case id = "userId"
+            case email
+            case firstName
+            case lastName
+            case dateOfBirth
+            case createdAt
+            case updatedAt
+        }
+
     var fullName: String {
         return "\(firstName) \(lastName)"
     }
@@ -56,13 +66,13 @@ struct LoginRequest: Codable {
 
 // MARK: - 認證回應數據模型
 struct AuthResponse: Codable {
-    let success: Bool?           // 改為可選，因為後端沒有這個字段
+    let success: Bool?
     let message: String?
     let user: User?
     let token: String?
     let refreshToken: String?
     
-    // 自訂初始化方法，如果沒有 success 字段就判斷是否有 token
+    // 自訂初始化方法，處理後端回應格式
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
@@ -71,12 +81,18 @@ struct AuthResponse: Codable {
         self.token = try container.decodeIfPresent(String.self, forKey: .token)
         self.refreshToken = try container.decodeIfPresent(String.self, forKey: .refreshToken)
         
-        // 如果後端沒有 success 字段，就根據是否有 token 來判斷成功與否
+        // 如果後端沒有 success 字段，根據其他條件判斷
         if let success = try container.decodeIfPresent(Bool.self, forKey: .success) {
             self.success = success
         } else {
-            // 有 token 就表示成功
-            self.success = self.token != nil
+            // 如果有 user 或 token 就認為成功，否則根據 message 判斷
+            if self.user != nil || self.token != nil {
+                self.success = true
+            } else if let message = self.message, message.lowercased().contains("success") {
+                self.success = true
+            } else {
+                self.success = false
+            }
         }
     }
     
@@ -87,6 +103,10 @@ struct AuthResponse: Codable {
         self.user = user
         self.token = token
         self.refreshToken = refreshToken
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case success, message, user, token, refreshToken
     }
 }
 

@@ -14,10 +14,10 @@ struct ContentView: View {
     var body: some View {
         Group {
             if authService.isAuthenticated {
-                // 已登錄 - 顯示你原本的 TabView
+                // 已登錄
                 mainTabView
             } else {
-                // 未登錄 - 顯示歡迎頁面
+                // 未登錄 
                 WelcomePage()
             }
         }
@@ -26,14 +26,18 @@ struct ContentView: View {
     // MARK: - TabView
     private var mainTabView: some View {
         TabView(selection: $selectedTab) {
-            // 首頁
-            DevelopingView(pageName: "首頁")
+            // 首頁 - 改用 HomeView
+            HomeView()
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("首頁")
                 }
                 .tag(0)
             
+            //.onAppear {
+                    // 清除所有認證資料（僅用於測試）
+                   //AuthService.shared.logout()
+            // }
             // 聊天
             ChatListPage()
                 .tabItem {

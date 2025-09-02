@@ -14,16 +14,16 @@
 		956E29D92E2D2A9B00DEC7A6 /* mindechoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29D82E2D2A9B00DEC7A6 /* mindechoTests.swift */; };
 		956E29E32E2D2A9B00DEC7A6 /* mindechoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29E22E2D2A9B00DEC7A6 /* mindechoUITests.swift */; };
 		956E29E52E2D2A9B00DEC7A6 /* mindechoUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29E42E2D2A9B00DEC7A6 /* mindechoUITestsLaunchTests.swift */; };
-		956E29F32E2D352F00DEC7A6 /* chatmodel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29F22E2D352F00DEC7A6 /* chatmodel.swift */; };
-		956E29FD2E2D3CB400DEC7A6 /* chatapi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29FC2E2D3CB400DEC7A6 /* chatapi.swift */; };
-		956E29FF2E2D3CBE00DEC7A6 /* chathook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29FE2E2D3CBE00DEC7A6 /* chathook.swift */; };
+		956E29F32E2D352F00DEC7A6 /* Chatmodel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29F22E2D352F00DEC7A6 /* Chatmodel.swift */; };
+		956E29FD2E2D3CB400DEC7A6 /* ChatAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29FC2E2D3CB400DEC7A6 /* ChatAPI.swift */; };
+		956E29FF2E2D3CBE00DEC7A6 /* Chathook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E29FE2E2D3CBE00DEC7A6 /* Chathook.swift */; };
 		956E2A012E2D3CCA00DEC7A6 /* chatlistpage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A002E2D3CCA00DEC7A6 /* chatlistpage.swift */; };
 		956E2A042E2D3CE200DEC7A6 /* chatdetailpage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A032E2D3CE200DEC7A6 /* chatdetailpage.swift */; };
-		956E2A062E2D3CF500DEC7A6 /* chatbubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A052E2D3CF500DEC7A6 /* chatbubble.swift */; };
-		956E2A082E2D3D0000DEC7A6 /* messageinput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A072E2D3D0000DEC7A6 /* messageinput.swift */; };
-		956E2A0A2E2D3D0D00DEC7A6 /* typingindicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A092E2D3D0D00DEC7A6 /* typingindicator.swift */; };
-		956E2A0C2E2D3D1F00DEC7A6 /* therapymodecomponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A0B2E2D3D1F00DEC7A6 /* therapymodecomponents.swift */; };
-		956E2A0E2E2D3D2900DEC7A6 /* colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A0D2E2D3D2900DEC7A6 /* colors.swift */; };
+		956E2A062E2D3CF500DEC7A6 /* Chatbubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A052E2D3CF500DEC7A6 /* Chatbubble.swift */; };
+		956E2A082E2D3D0000DEC7A6 /* Messageinput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A072E2D3D0000DEC7A6 /* Messageinput.swift */; };
+		956E2A0A2E2D3D0D00DEC7A6 /* Typingindicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A092E2D3D0D00DEC7A6 /* Typingindicator.swift */; };
+		956E2A0C2E2D3D1F00DEC7A6 /* Therapymodecomponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A0B2E2D3D1F00DEC7A6 /* Therapymodecomponents.swift */; };
+		956E2A0E2E2D3D2900DEC7A6 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A0D2E2D3D2900DEC7A6 /* Colors.swift */; };
 		956E2A102E2D421C00DEC7A6 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A0F2E2D421C00DEC7A6 /* Extensions.swift */; };
 		956E2A122E2F5E2C00DEC7A6 /* WelcomePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A112E2F5E2C00DEC7A6 /* WelcomePage.swift */; };
 		956E2A142E2F602600DEC7A6 /* LoginPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A132E2F602600DEC7A6 /* LoginPage.swift */; };
@@ -37,8 +37,36 @@
 		956E2A282E2F625A00DEC7A6 /* AuthButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A272E2F625A00DEC7A6 /* AuthButton.swift */; };
 		956E2A2A2E2F626A00DEC7A6 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A292E2F626A00DEC7A6 /* LoadingView.swift */; };
 		956E2A2C2E2F627800DEC7A6 /* ValidationMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A2B2E2F627800DEC7A6 /* ValidationMessage.swift */; };
-		956E2A322E2F635E00DEC7A6 /* AuthAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A312E2F635E00DEC7A6 /* AuthAPI.swift */; };
 		956E2A352E2FB04500DEC7A6 /* auth_development.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A342E2FB04500DEC7A6 /* auth_development.swift */; };
+		957684DD2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684DC2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift */; };
+		957684E32E544A8C00A13BD8 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684E22E544A8C00A13BD8 /* APIService.swift */; };
+		957684E52E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684E42E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift */; };
+		957684E72E5B9CAB00A13BD8 /* PersonalRhythmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684E62E5B9CAB00A13BD8 /* PersonalRhythmManager.swift */; };
+		957793F22E421B1C003DB25B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793F12E421B1C003DB25B /* HomeView.swift */; };
+		957793F42E421B29003DB25B /* DailyCheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793F32E421B29003DB25B /* DailyCheckInView.swift */; };
+		957793F62E421B42003DB25B /* DailyCheckInResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793F52E421B42003DB25B /* DailyCheckInResultView.swift */; };
+		957793F82E421B4D003DB25B /* BiorhythmSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793F72E421B4D003DB25B /* BiorhythmSettingsView.swift */; };
+		957793FB2E421B64003DB25B /* PHQ9TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793FA2E421B64003DB25B /* PHQ9TestView.swift */; };
+		957793FD2E421B6E003DB25B /* GAD7TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793FC2E421B6E003DB25B /* GAD7TestView.swift */; };
+		957793FF2E421B77003DB25B /* BSRS5TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957793FE2E421B77003DB25B /* BSRS5TestView.swift */; };
+		957794012E421B80003DB25B /* RFQ8TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794002E421B80003DB25B /* RFQ8TestView.swift */; };
+		957794042E421B93003DB25B /* PHQ9ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794032E421B93003DB25B /* PHQ9ResultView.swift */; };
+		957794062E421B9C003DB25B /* GAD7ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794052E421B9C003DB25B /* GAD7ResultView.swift */; };
+		957794082E421BA5003DB25B /* BSRS5ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794072E421BA4003DB25B /* BSRS5ResultView.swift */; };
+		9577940A2E421BAE003DB25B /* RFQ8ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794092E421BAE003DB25B /* RFQ8ResultView.swift */; };
+		9577940E2E421BDF003DB25B /* DailyCheckInReminderCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577940D2E421BDF003DB25B /* DailyCheckInReminderCard.swift */; };
+		957794102E421BEA003DB25B /* FiveIndicatorsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577940F2E421BEA003DB25B /* FiveIndicatorsCard.swift */; };
+		957794122E421BF3003DB25B /* BiorhythmCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794112E421BF3003DB25B /* BiorhythmCard.swift */; };
+		957794142E421BFD003DB25B /* MentalHealthResourceCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794132E421BFD003DB25B /* MentalHealthResourceCard.swift */; };
+		957794192E421C1B003DB25B /* HomeSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794182E421C1B003DB25B /* HomeSection.swift */; };
+		9577941E2E421C4E003DB25B /* HotlineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577941D2E421C4E003DB25B /* HotlineDetailView.swift */; };
+		957794202E421C5E003DB25B /* GuideDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577941F2E421C5E003DB25B /* GuideDetailView.swift */; };
+		957794222E421C6F003DB25B /* TechniquesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794212E421C6F003DB25B /* TechniquesDetailView.swift */; };
+		957794242E421C78003DB25B /* MapDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794232E421C78003DB25B /* MapDetailView.swift */; };
+		957794262E421C88003DB25B /* DailyCheckInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794252E421C88003DB25B /* DailyCheckInManager.swift */; };
+		957794282E421C9B003DB25B /* HomeModels  .swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794272E421C9B003DB25B /* HomeModels  .swift */; };
+		9577942A2E421D33003DB25B /* HomeConstants .swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794292E421D33003DB25B /* HomeConstants .swift */; };
+		9577942C2E421D51003DB25B /* BiorhythmCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,16 +97,16 @@
 		956E29DE2E2D2A9B00DEC7A6 /* mindechoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = mindechoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		956E29E22E2D2A9B00DEC7A6 /* mindechoUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mindechoUITests.swift; sourceTree = "<group>"; };
 		956E29E42E2D2A9B00DEC7A6 /* mindechoUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mindechoUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		956E29F22E2D352F00DEC7A6 /* chatmodel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatmodel.swift; sourceTree = "<group>"; };
-		956E29FC2E2D3CB400DEC7A6 /* chatapi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatapi.swift; sourceTree = "<group>"; };
-		956E29FE2E2D3CBE00DEC7A6 /* chathook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chathook.swift; sourceTree = "<group>"; };
+		956E29F22E2D352F00DEC7A6 /* Chatmodel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chatmodel.swift; sourceTree = "<group>"; };
+		956E29FC2E2D3CB400DEC7A6 /* ChatAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAPI.swift; sourceTree = "<group>"; };
+		956E29FE2E2D3CBE00DEC7A6 /* Chathook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chathook.swift; sourceTree = "<group>"; };
 		956E2A002E2D3CCA00DEC7A6 /* chatlistpage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatlistpage.swift; sourceTree = "<group>"; };
 		956E2A032E2D3CE200DEC7A6 /* chatdetailpage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatdetailpage.swift; sourceTree = "<group>"; };
-		956E2A052E2D3CF500DEC7A6 /* chatbubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatbubble.swift; sourceTree = "<group>"; };
-		956E2A072E2D3D0000DEC7A6 /* messageinput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messageinput.swift; sourceTree = "<group>"; };
-		956E2A092E2D3D0D00DEC7A6 /* typingindicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = typingindicator.swift; sourceTree = "<group>"; };
-		956E2A0B2E2D3D1F00DEC7A6 /* therapymodecomponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = therapymodecomponents.swift; sourceTree = "<group>"; };
-		956E2A0D2E2D3D2900DEC7A6 /* colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = colors.swift; sourceTree = "<group>"; };
+		956E2A052E2D3CF500DEC7A6 /* Chatbubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chatbubble.swift; sourceTree = "<group>"; };
+		956E2A072E2D3D0000DEC7A6 /* Messageinput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Messageinput.swift; sourceTree = "<group>"; };
+		956E2A092E2D3D0D00DEC7A6 /* Typingindicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typingindicator.swift; sourceTree = "<group>"; };
+		956E2A0B2E2D3D1F00DEC7A6 /* Therapymodecomponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Therapymodecomponents.swift; sourceTree = "<group>"; };
+		956E2A0D2E2D3D2900DEC7A6 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		956E2A0F2E2D421C00DEC7A6 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		956E2A112E2F5E2C00DEC7A6 /* WelcomePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomePage.swift; sourceTree = "<group>"; };
 		956E2A132E2F602600DEC7A6 /* LoginPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginPage.swift; sourceTree = "<group>"; };
@@ -92,9 +120,37 @@
 		956E2A272E2F625A00DEC7A6 /* AuthButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthButton.swift; sourceTree = "<group>"; };
 		956E2A292E2F626A00DEC7A6 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		956E2A2B2E2F627800DEC7A6 /* ValidationMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationMessage.swift; sourceTree = "<group>"; };
-		956E2A312E2F635E00DEC7A6 /* AuthAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthAPI.swift; sourceTree = "<group>"; };
 		956E2A332E2F85FA00DEC7A6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		956E2A342E2FB04500DEC7A6 /* auth_development.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth_development.swift; sourceTree = "<group>"; };
+		957684DC2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalBiorhythmCard.swift; sourceTree = "<group>"; };
+		957684E22E544A8C00A13BD8 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		957684E42E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRhythmCalculator.swift; sourceTree = "<group>"; };
+		957684E62E5B9CAB00A13BD8 /* PersonalRhythmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRhythmManager.swift; sourceTree = "<group>"; };
+		957793F12E421B1C003DB25B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		957793F32E421B29003DB25B /* DailyCheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckInView.swift; sourceTree = "<group>"; };
+		957793F52E421B42003DB25B /* DailyCheckInResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckInResultView.swift; sourceTree = "<group>"; };
+		957793F72E421B4D003DB25B /* BiorhythmSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiorhythmSettingsView.swift; sourceTree = "<group>"; };
+		957793FA2E421B64003DB25B /* PHQ9TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PHQ9TestView.swift; sourceTree = "<group>"; };
+		957793FC2E421B6E003DB25B /* GAD7TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GAD7TestView.swift; sourceTree = "<group>"; };
+		957793FE2E421B77003DB25B /* BSRS5TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BSRS5TestView.swift; sourceTree = "<group>"; };
+		957794002E421B80003DB25B /* RFQ8TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RFQ8TestView.swift; sourceTree = "<group>"; };
+		957794032E421B93003DB25B /* PHQ9ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PHQ9ResultView.swift; sourceTree = "<group>"; };
+		957794052E421B9C003DB25B /* GAD7ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GAD7ResultView.swift; sourceTree = "<group>"; };
+		957794072E421BA4003DB25B /* BSRS5ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BSRS5ResultView.swift; sourceTree = "<group>"; };
+		957794092E421BAE003DB25B /* RFQ8ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RFQ8ResultView.swift; sourceTree = "<group>"; };
+		9577940D2E421BDF003DB25B /* DailyCheckInReminderCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckInReminderCard.swift; sourceTree = "<group>"; };
+		9577940F2E421BEA003DB25B /* FiveIndicatorsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiveIndicatorsCard.swift; sourceTree = "<group>"; };
+		957794112E421BF3003DB25B /* BiorhythmCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiorhythmCard.swift; sourceTree = "<group>"; };
+		957794132E421BFD003DB25B /* MentalHealthResourceCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentalHealthResourceCard.swift; sourceTree = "<group>"; };
+		957794182E421C1B003DB25B /* HomeSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSection.swift; sourceTree = "<group>"; };
+		9577941D2E421C4E003DB25B /* HotlineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotlineDetailView.swift; sourceTree = "<group>"; };
+		9577941F2E421C5E003DB25B /* GuideDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideDetailView.swift; sourceTree = "<group>"; };
+		957794212E421C6F003DB25B /* TechniquesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechniquesDetailView.swift; sourceTree = "<group>"; };
+		957794232E421C78003DB25B /* MapDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapDetailView.swift; sourceTree = "<group>"; };
+		957794252E421C88003DB25B /* DailyCheckInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckInManager.swift; sourceTree = "<group>"; };
+		957794272E421C9B003DB25B /* HomeModels  .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeModels  .swift"; sourceTree = "<group>"; };
+		957794292E421D33003DB25B /* HomeConstants .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeConstants .swift"; sourceTree = "<group>"; };
+		9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiorhythmCalculator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -191,7 +247,8 @@
 			isa = PBXGroup;
 			children = (
 				956E2A1B2E2F61CF00DEC7A6 /* AuthModels.swift */,
-				956E29F22E2D352F00DEC7A6 /* chatmodel.swift */,
+				956E29F22E2D352F00DEC7A6 /* Chatmodel.swift */,
+				957794272E421C9B003DB25B /* HomeModels  .swift */,
 			);
 			path = models;
 			sourceTree = "<group>";
@@ -199,7 +256,7 @@
 		956E29F42E2D3BF400DEC7A6 /* styles */ = {
 			isa = PBXGroup;
 			children = (
-				956E2A0D2E2D3D2900DEC7A6 /* colors.swift */,
+				956E2A0D2E2D3D2900DEC7A6 /* Colors.swift */,
 			);
 			path = styles;
 			sourceTree = "<group>";
@@ -207,8 +264,8 @@
 		956E29F52E2D3C2600DEC7A6 /* API */ = {
 			isa = PBXGroup;
 			children = (
-				956E29FC2E2D3CB400DEC7A6 /* chatapi.swift */,
-				956E2A312E2F635E00DEC7A6 /* AuthAPI.swift */,
+				956E29FC2E2D3CB400DEC7A6 /* ChatAPI.swift */,
+				957684E22E544A8C00A13BD8 /* APIService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -219,6 +276,9 @@
 				956E2A0F2E2D421C00DEC7A6 /* Extensions.swift */,
 				956E2A172E2F618B00DEC7A6 /* Validation.swift */,
 				956E2A192E2F61AD00DEC7A6 /* AuthConstants.swift */,
+				957794292E421D33003DB25B /* HomeConstants .swift */,
+				9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */,
+				957684E42E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -228,6 +288,7 @@
 			children = (
 				956E2A2E2E2F62F700DEC7A6 /* Chat */,
 				956E2A2D2E2F628000DEC7A6 /* Auth */,
+				9577940B2E421BC8003DB25B /* Home */,
 			);
 			path = components;
 			sourceTree = "<group>";
@@ -243,9 +304,11 @@
 		956E29FA2E2D3C6300DEC7A6 /* hooks */ = {
 			isa = PBXGroup;
 			children = (
-				956E29FE2E2D3CBE00DEC7A6 /* chathook.swift */,
+				956E29FE2E2D3CBE00DEC7A6 /* Chathook.swift */,
 				956E2A1F2E2F61E900DEC7A6 /* useAuth.swift */,
 				956E2A342E2FB04500DEC7A6 /* auth_development.swift */,
+				957794252E421C88003DB25B /* DailyCheckInManager.swift */,
+				957684E62E5B9CAB00A13BD8 /* PersonalRhythmManager.swift */,
 			);
 			path = hooks;
 			sourceTree = "<group>";
@@ -254,6 +317,7 @@
 			isa = PBXGroup;
 			children = (
 				956E2A302E2F631900DEC7A6 /* Auth */,
+				957793F02E421AE5003DB25B /* Home */,
 				956E2A2F2E2F631200DEC7A6 /* Chat */,
 			);
 			path = pages;
@@ -273,10 +337,10 @@
 		956E2A2E2E2F62F700DEC7A6 /* Chat */ = {
 			isa = PBXGroup;
 			children = (
-				956E2A052E2D3CF500DEC7A6 /* chatbubble.swift */,
-				956E2A072E2D3D0000DEC7A6 /* messageinput.swift */,
-				956E2A092E2D3D0D00DEC7A6 /* typingindicator.swift */,
-				956E2A0B2E2D3D1F00DEC7A6 /* therapymodecomponents.swift */,
+				956E2A052E2D3CF500DEC7A6 /* Chatbubble.swift */,
+				956E2A072E2D3D0000DEC7A6 /* Messageinput.swift */,
+				956E2A092E2D3D0D00DEC7A6 /* Typingindicator.swift */,
+				956E2A0B2E2D3D1F00DEC7A6 /* Therapymodecomponents.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -298,6 +362,82 @@
 				956E2A152E2F605A00DEC7A6 /* RegisterPage.swift */,
 			);
 			path = Auth;
+			sourceTree = "<group>";
+		};
+		957793F02E421AE5003DB25B /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				957793F12E421B1C003DB25B /* HomeView.swift */,
+				957793F32E421B29003DB25B /* DailyCheckInView.swift */,
+				957793F52E421B42003DB25B /* DailyCheckInResultView.swift */,
+				957793F72E421B4D003DB25B /* BiorhythmSettingsView.swift */,
+				957793F92E421B55003DB25B /* Tests */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		957793F92E421B55003DB25B /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				957793FA2E421B64003DB25B /* PHQ9TestView.swift */,
+				957793FC2E421B6E003DB25B /* GAD7TestView.swift */,
+				957793FE2E421B77003DB25B /* BSRS5TestView.swift */,
+				957794002E421B80003DB25B /* RFQ8TestView.swift */,
+				957794022E421B85003DB25B /* Results */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		957794022E421B85003DB25B /* Results */ = {
+			isa = PBXGroup;
+			children = (
+				957794032E421B93003DB25B /* PHQ9ResultView.swift */,
+				957794052E421B9C003DB25B /* GAD7ResultView.swift */,
+				957794072E421BA4003DB25B /* BSRS5ResultView.swift */,
+				957794092E421BAE003DB25B /* RFQ8ResultView.swift */,
+			);
+			path = Results;
+			sourceTree = "<group>";
+		};
+		9577940B2E421BC8003DB25B /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				9577941C2E421C3A003DB25B /* DetailViews */,
+				957794172E421C12003DB25B /* Sections */,
+				9577940C2E421BD2003DB25B /* Cards */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		9577940C2E421BD2003DB25B /* Cards */ = {
+			isa = PBXGroup;
+			children = (
+				9577940D2E421BDF003DB25B /* DailyCheckInReminderCard.swift */,
+				9577940F2E421BEA003DB25B /* FiveIndicatorsCard.swift */,
+				957794112E421BF3003DB25B /* BiorhythmCard.swift */,
+				957794132E421BFD003DB25B /* MentalHealthResourceCard.swift */,
+				957684DC2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift */,
+			);
+			path = Cards;
+			sourceTree = "<group>";
+		};
+		957794172E421C12003DB25B /* Sections */ = {
+			isa = PBXGroup;
+			children = (
+				957794182E421C1B003DB25B /* HomeSection.swift */,
+			);
+			path = Sections;
+			sourceTree = "<group>";
+		};
+		9577941C2E421C3A003DB25B /* DetailViews */ = {
+			isa = PBXGroup;
+			children = (
+				9577941D2E421C4E003DB25B /* HotlineDetailView.swift */,
+				9577941F2E421C5E003DB25B /* GuideDetailView.swift */,
+				957794212E421C6F003DB25B /* TechniquesDetailView.swift */,
+				957794232E421C78003DB25B /* MapDetailView.swift */,
+			);
+			path = DetailViews;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -430,32 +570,60 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				956E2A0C2E2D3D1F00DEC7A6 /* therapymodecomponents.swift in Sources */,
+				957794192E421C1B003DB25B /* HomeSection.swift in Sources */,
+				9577942A2E421D33003DB25B /* HomeConstants .swift in Sources */,
+				957793F22E421B1C003DB25B /* HomeView.swift in Sources */,
+				9577942C2E421D51003DB25B /* BiorhythmCalculator.swift in Sources */,
+				956E2A0C2E2D3D1F00DEC7A6 /* Therapymodecomponents.swift in Sources */,
 				956E2A282E2F625A00DEC7A6 /* AuthButton.swift in Sources */,
-				956E2A0E2E2D3D2900DEC7A6 /* colors.swift in Sources */,
+				956E2A0E2E2D3D2900DEC7A6 /* Colors.swift in Sources */,
 				956E2A012E2D3CCA00DEC7A6 /* chatlistpage.swift in Sources */,
+				957793FB2E421B64003DB25B /* PHQ9TestView.swift in Sources */,
+				957793FF2E421B77003DB25B /* BSRS5TestView.swift in Sources */,
 				956E2A042E2D3CE200DEC7A6 /* chatdetailpage.swift in Sources */,
 				956E29CA2E2D2A9700DEC7A6 /* ContentView.swift in Sources */,
 				956E2A2C2E2F627800DEC7A6 /* ValidationMessage.swift in Sources */,
+				957684E52E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift in Sources */,
 				956E29C82E2D2A9700DEC7A6 /* mindechoApp.swift in Sources */,
-				956E2A0A2E2D3D0D00DEC7A6 /* typingindicator.swift in Sources */,
+				957794222E421C6F003DB25B /* TechniquesDetailView.swift in Sources */,
+				956E2A0A2E2D3D0D00DEC7A6 /* Typingindicator.swift in Sources */,
+				957794062E421B9C003DB25B /* GAD7ResultView.swift in Sources */,
+				957793FD2E421B6E003DB25B /* GAD7TestView.swift in Sources */,
 				956E2A1E2E2F61DB00DEC7A6 /* AuthService.swift in Sources */,
-				956E2A082E2D3D0000DEC7A6 /* messageinput.swift in Sources */,
+				957794202E421C5E003DB25B /* GuideDetailView.swift in Sources */,
+				9577940E2E421BDF003DB25B /* DailyCheckInReminderCard.swift in Sources */,
+				956E2A082E2D3D0000DEC7A6 /* Messageinput.swift in Sources */,
 				956E2A102E2D421C00DEC7A6 /* Extensions.swift in Sources */,
+				957794282E421C9B003DB25B /* HomeModels  .swift in Sources */,
 				956E2A1A2E2F61AD00DEC7A6 /* AuthConstants.swift in Sources */,
+				9577940A2E421BAE003DB25B /* RFQ8ResultView.swift in Sources */,
+				957794012E421B80003DB25B /* RFQ8TestView.swift in Sources */,
+				957794082E421BA5003DB25B /* BSRS5ResultView.swift in Sources */,
 				956E2A182E2F618B00DEC7A6 /* Validation.swift in Sources */,
-				956E29FD2E2D3CB400DEC7A6 /* chatapi.swift in Sources */,
-				956E2A322E2F635E00DEC7A6 /* AuthAPI.swift in Sources */,
+				957794242E421C78003DB25B /* MapDetailView.swift in Sources */,
+				956E29FD2E2D3CB400DEC7A6 /* ChatAPI.swift in Sources */,
 				956E2A352E2FB04500DEC7A6 /* auth_development.swift in Sources */,
-				956E29FF2E2D3CBE00DEC7A6 /* chathook.swift in Sources */,
+				957794042E421B93003DB25B /* PHQ9ResultView.swift in Sources */,
+				957684E32E544A8C00A13BD8 /* APIService.swift in Sources */,
+				957793F62E421B42003DB25B /* DailyCheckInResultView.swift in Sources */,
+				957684DD2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift in Sources */,
+				956E29FF2E2D3CBE00DEC7A6 /* Chathook.swift in Sources */,
 				956E2A262E2F624E00DEC7A6 /* AuthTextField.swift in Sources */,
 				956E2A122E2F5E2C00DEC7A6 /* WelcomePage.swift in Sources */,
+				957793F42E421B29003DB25B /* DailyCheckInView.swift in Sources */,
+				957794102E421BEA003DB25B /* FiveIndicatorsCard.swift in Sources */,
+				957793F82E421B4D003DB25B /* BiorhythmSettingsView.swift in Sources */,
+				9577941E2E421C4E003DB25B /* HotlineDetailView.swift in Sources */,
+				957794122E421BF3003DB25B /* BiorhythmCard.swift in Sources */,
 				956E2A2A2E2F626A00DEC7A6 /* LoadingView.swift in Sources */,
-				956E29F32E2D352F00DEC7A6 /* chatmodel.swift in Sources */,
+				956E29F32E2D352F00DEC7A6 /* Chatmodel.swift in Sources */,
 				956E2A142E2F602600DEC7A6 /* LoginPage.swift in Sources */,
 				956E2A202E2F61E900DEC7A6 /* useAuth.swift in Sources */,
-				956E2A062E2D3CF500DEC7A6 /* chatbubble.swift in Sources */,
+				957794262E421C88003DB25B /* DailyCheckInManager.swift in Sources */,
+				956E2A062E2D3CF500DEC7A6 /* Chatbubble.swift in Sources */,
+				957684E72E5B9CAB00A13BD8 /* PersonalRhythmManager.swift in Sources */,
 				956E2A1C2E2F61CF00DEC7A6 /* AuthModels.swift in Sources */,
+				957794142E421BFD003DB25B /* MentalHealthResourceCard.swift in Sources */,
 				956E2A162E2F605A00DEC7A6 /* RegisterPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

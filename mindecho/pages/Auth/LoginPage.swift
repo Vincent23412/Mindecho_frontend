@@ -340,10 +340,10 @@ private extension LoginPage {
         focusedField = nil
         
         // 🎯 使用開發模式登錄
-        viewModel.loginDevelopmentMode(email: email, password: password)
+        // viewModel.loginDevelopmentMode(email: email, password: password)
         
         // 🚫 真實 API 登錄（暫時不用）
-        // viewModel.login(email: email, password: password)
+        viewModel.login(email: email, password: password)
     }
 }
 

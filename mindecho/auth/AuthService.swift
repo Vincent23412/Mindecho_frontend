@@ -13,7 +13,7 @@ class AuthService: ObservableObject {
     @Published var authToken: String?
     
     // MARK: - 私有屬性
-    private let baseURL = AppEnvironment.current.apiBaseURL
+    private let baseURL = "https://mindechoserver.com"
     private let session: URLSession
     private var cancellables = Set<AnyCancellable>()
     
@@ -80,6 +80,7 @@ class AuthService: ObservableObject {
     
     // MARK: - 註冊功能
     func register(request: RegisterRequest) -> AnyPublisher<AuthResponse, Error> {
+     
         guard let url = URL(string: "\(baseURL)\(AuthConstants.API.register)") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
@@ -172,28 +173,90 @@ class AuthService: ObservableObject {
     
     // MARK: - 登錄功能
     func login(request: LoginRequest) -> AnyPublisher<AuthResponse, Error> {
+
+        
         guard let url = URL(string: "\(baseURL)\(AuthConstants.API.login)") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
+        
+        print("🚀 發送登錄請求到: \(url)")
+        print("📦 登錄請求數據: \(request)")
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
-            urlRequest.httpBody = try JSONEncoder().encode(request)
+            let jsonData = try JSONEncoder().encode(request)
+            urlRequest.httpBody = jsonData
+            
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("📤 登錄 JSON: \(jsonString)")
+            }
         } catch {
+            print("❌ 登錄 JSON 編碼錯誤: \(error)")
             return Fail(error: error)
                 .eraseToAnyPublisher()
         }
         
         return session.dataTaskPublisher(for: urlRequest)
-            .map(\.data)
+            .handleEvents(receiveOutput: { data, response in
+                print("📥 登錄回應: \(response)")
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("📊 登錄狀態碼: \(httpResponse.statusCode)")
+                }
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📄 登錄回應內容: \(jsonString)")
+                } else {
+                    print("❌ 無法解析登錄回應數據")
+                }
+            })
+            .tryMap { data, response -> Data in
+                // 處理 HTTP 狀態碼
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 400 || httpResponse.statusCode == 401 {
+                        // 登錄錯誤時，先嘗試解析錯誤訊息
+                        if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           let message = errorData["message"] as? String {
+                            print("⚠️ 登錄錯誤訊息: \(message)")
+                            
+                            // 建立自訂錯誤回應
+                            let errorResponse = AuthResponse(
+                                success: false,
+                                message: message,
+                                user: nil,
+                                token: nil,
+                                refreshToken: nil
+                            )
+                            
+                            if let encodedData = try? JSONEncoder().encode(errorResponse) {
+                                return encodedData
+                            }
+                        }
+                    }
+                }
+                return data
+            }
             .decode(type: AuthResponse.self, decoder: JSONDecoder())
+            .catch { error -> AnyPublisher<AuthResponse, Error> in
+                print("❌ 登錄解析錯誤: \(error)")
+                
+                // 如果是解析錯誤，返回自訂錯誤訊息
+                let customResponse = AuthResponse(
+                    success: false,
+                    message: "伺服器連線正常，但回應格式異常。請聯繫技術支援。",
+                    user: nil,
+                    token: nil,
+                    refreshToken: nil
+                )
+                return Just(customResponse)
+                    .setFailureType(to: Error.self)
+                    .eraseToAnyPublisher()
+            }
             .receive(on: DispatchQueue.main)
             .handleEvents(receiveOutput: { [weak self] response in
-                if response.success!,
+                if response.success == true,
                    let user = response.user,
                    let token = response.token {
                     self?.saveAuth(user: user, token: token, refreshToken: response.refreshToken)

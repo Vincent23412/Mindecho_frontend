@@ -8,6 +8,12 @@ struct AppColors {
     static let mediumBrown = Color(red: 0.55, green: 0.35, blue: 0.20) // #8C5932
     static let lightBrown = Color(red: 0.70, green: 0.55, blue: 0.40) // #B38C66
     
+    // MARK: - 心理健康資源和測驗專用色彩
+    static let resourceCardOrange = Color(red: 0.95, green: 0.65, blue: 0.35) // 心理健康資源卡片橘色
+    static let resourceCardYellow = Color(red: 0.98, green: 0.90, blue: 0.70) // 心理健康資源卡片黃色
+    static let testCardYellow = Color(red: 0.95, green: 0.88, blue: 0.55) // 心理測驗卡片黃色
+    static let testCardLightYellow = Color(red: 0.98, green: 0.94, blue: 0.80) // 心理測驗卡片淺黃色
+    
     // MARK: - 聊天功能專用色彩
     // 治療模式顏色
     static let chatModeColor = Color(red: 0.8, green: 0.4, blue: 0.1)     // 聊天模式橘色
@@ -44,7 +50,3 @@ struct AppColors {
         }
     }
 }
-
-// 注意：TherapyMode 的 color 屬性已在 ChatModels.swift 中定義
-// 如果需要使用 AppColors 的顏色，請在 ChatModels.swift 中修改為：
-// case .chatMode: return AppColors.chatModeColor

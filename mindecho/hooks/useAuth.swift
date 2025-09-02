@@ -78,7 +78,7 @@ class AuthViewModel: ObservableObject {
             dateOfBirth: dateOfBirth
         )
         
-        // 發送註冊請求 (使用真實 API)
+        // 發送註冊請求 (使用模擬 API) 真實改成Register
         authService.register(request: request)
             .receive(on: DispatchQueue.main)
             .sink(

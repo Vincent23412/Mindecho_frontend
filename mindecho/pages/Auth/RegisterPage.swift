@@ -614,6 +614,7 @@ private extension RegisterPage {
         focusedField = nil
         
         // 🎯 使用開發模式註冊
+        /*
         viewModel.registerDevelopmentMode(
             email: email,
             password: password,
@@ -622,9 +623,9 @@ private extension RegisterPage {
             lastName: lastName,
             dateOfBirth: dateOfBirth
         )
+         */
+        // 🚫 真實 API 註冊
         
-        // 🚫 真實 API 註冊（暫時不用）
-        /*
         viewModel.register(
             email: email,
             password: password,
@@ -633,7 +634,7 @@ private extension RegisterPage {
             lastName: lastName,
             dateOfBirth: dateOfBirth
         )
-        */
+        
     }
 }
 

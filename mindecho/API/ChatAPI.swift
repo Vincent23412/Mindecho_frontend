@@ -73,7 +73,7 @@ class ChatAPI {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue(token, forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("Bearer \(token)" ,forHTTPHeaderField: "Authorization")
         
         do {
             urlRequest.httpBody = try JSONEncoder().encode(request)
@@ -112,7 +112,7 @@ class ChatAPI {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue(token, forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
             let (data, response) = try await session.data(for: urlRequest)
@@ -150,7 +150,7 @@ class ChatAPI {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue(token, forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
             urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
@@ -188,7 +188,7 @@ class ChatAPI {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "DELETE"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue(token, forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
             let (_, response) = try await session.data(for: urlRequest)
