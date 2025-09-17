@@ -179,7 +179,7 @@ enum PasswordStrength: CaseIterable {
 // MARK: - 表單字段狀態
 struct FieldState {
     var text: String = ""
-    var isValid: Bool = true
+    var isValid: Bool = false
     var errorMessage: String = ""
     var isFocused: Bool = false
     
@@ -253,13 +253,15 @@ class FormValidator: ObservableObject {
             return .valid
         }
     }
-    
-    func validateConfirmPassword() {
-        confirmPasswordState.validate { confirmPassword in
-            if confirmPassword != passwordState.text {
-                return .invalid("密碼不一致")
+
+    func validateConfirmPassword(confirmPassword: String, password: String) {
+        print(confirmPassword, password)
+        confirmPasswordState.validate { _ in
+            if confirmPassword == password {
+                print(confirmPasswordState)
+                return .valid
             }
-            return .valid
+            return .invalid("密碼不一致")
         }
     }
     
@@ -292,12 +294,12 @@ class FormValidator: ObservableObject {
         }
     }
     
-    func validateAllFields() {
-        validateEmail()
-        validatePassword()
-        validateConfirmPassword()
-        validateFirstName()
-        validateLastName()
-        validateDateOfBirth()
-    }
-}
+//    func validateAllFields() {
+//        validateEmail()
+//        validatePassword()
+//        validateConfirmPassword()
+//        validateFirstName()
+//        validateLastName()
+//        validateDateOfBirth()
+//    }
+//}

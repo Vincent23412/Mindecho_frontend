@@ -6,6 +6,7 @@ struct RegisterPage: View {
     // MARK: - 環境和狀態
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = AuthViewModel()
+    @StateObject private var validator = FormValidator()
 
     // MARK: - 表單狀態
     @State private var email = ""
@@ -253,7 +254,7 @@ private extension RegisterPage {
                 AuthTextField(
                     field: .password,
                     text: $password,
-                    isValid: !viewModel.hasError(for: .password),
+                    isValid: !viewModel.hasError(for: .password) && password.count > 1,
                     errorMessage: viewModel.getErrorMessage(for: .password),
                     onEditingChanged: { isFocused in
                         if isFocused {
@@ -276,8 +277,8 @@ private extension RegisterPage {
                 AuthTextField(
                     field: .confirmPassword,
                     text: $confirmPassword,
-                    isValid: !viewModel.hasError(for: .confirmPassword),
-                    errorMessage: viewModel.getErrorMessage(for: .confirmPassword),
+                    isValid: (confirmPassword == password),
+                    errorMessage: viewModel.formValidator.confirmPasswordState.errorMessage,
                     onEditingChanged: { isFocused in
                         if isFocused {
                             focusedField = .confirmPassword
@@ -296,16 +297,20 @@ private extension RegisterPage {
                 .onChange(of: confirmPassword) { _, newValue in
                     viewModel.validateFieldRealTime(field: .confirmPassword, value: newValue)
                 }
+
+                
             }
             
             // 錯誤和成功訊息
+            if !viewModel.successMessage.isEmpty {
+                successMessageView
+            }
+            
             if !viewModel.errorMessage.isEmpty {
                 errorMessageView
             }
             
-            if !viewModel.successMessage.isEmpty {
-                successMessageView
-            }
+           
             
             // 下一步按鈕
             AuthButton.primary(
@@ -724,3 +729,5 @@ struct RegisterPage_Previews: PreviewProvider {
         .previewDisplayName("日期選擇器")
     }
 }
+
+

@@ -229,11 +229,11 @@ class AuthViewModel: ObservableObject {
             formValidator.validatePassword()
             // 如果確認密碼已經輸入，也要重新驗證
             if !formValidator.confirmPasswordState.text.isEmpty {
-                formValidator.validateConfirmPassword()
+                formValidator.validateConfirmPassword(confirmPassword: formValidator.confirmPasswordState.text, password: formValidator.passwordState.text)
             }
         case .confirmPassword:
             formValidator.confirmPasswordState.text = value
-            formValidator.validateConfirmPassword()
+            formValidator.validateConfirmPassword(confirmPassword: formValidator.confirmPasswordState.text, password: formValidator.passwordState.text)
         case .firstName:
             formValidator.firstNameState.text = value
             formValidator.validateFirstName()
