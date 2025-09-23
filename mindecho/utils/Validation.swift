@@ -255,7 +255,6 @@ class FormValidator: ObservableObject {
     }
 
     func validateConfirmPassword(confirmPassword: String, password: String) {
-        print(confirmPassword, password)
         confirmPasswordState.validate { _ in
             if confirmPassword == password {
                 print(confirmPasswordState)
