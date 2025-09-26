@@ -1,10 +1,3 @@
-//
-//  DiaryTabView.swift
-//  mindecho
-//
-//  Created by 陳敬翰 on 2025/9/23.
-//
-
 import SwiftUI
 
 struct DiaryTabView: View {
@@ -17,14 +10,12 @@ struct DiaryTabView: View {
                 .tabItem { Label("聊天", systemImage: "bubble.left") }
             
             NavigationView {
-                MoodDiaryView()
+                DiaryMainView()
             }
             .tabItem { Label("追蹤", systemImage: "chart.bar") }
             
-            NavigationView {
-                EmotionAnalysisView()
-            }
-            .tabItem { Label("放鬆", systemImage: "leaf") }
+            Text("放鬆")
+                .tabItem { Label("放鬆", systemImage: "leaf") }
             
             Text("個人檔案")
                 .tabItem { Label("個人檔案", systemImage: "person") }
