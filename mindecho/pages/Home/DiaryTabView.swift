@@ -6,8 +6,10 @@ struct DiaryTabView: View {
             Text("首頁")
                 .tabItem { Label("首頁", systemImage: "house") }
             
-            Text("聊天")
-                .tabItem { Label("聊天", systemImage: "bubble.left") }
+            NavigationView {
+                ChatListPage()
+            }
+            .tabItem { Label("聊天", systemImage: "bubble.left") }
             
             NavigationView {
                 DiaryMainView()
