@@ -45,7 +45,7 @@ struct ChatListPage: View {
                 
                 Spacer()
             }
-            .background(Color.white)
+            .background(Color.yellow.opacity(0.1).ignoresSafeArea())
             .sheet(isPresented: $showingNewChat) {
                 NewChatView(
                     isPresented: $showingNewChat,

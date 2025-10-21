@@ -138,3 +138,25 @@ struct PsychologicalTestCard: View {
         .shadow(color: .black.opacity(0.1), radius: HomeConstants.Charts.cardShadowRadius)
     }
 }
+
+#Preview {
+    // 建立一個示範的心理資源項目
+    let sampleResource = MentalHealthResource(
+        title: "心理支持專線",
+        subtitle: "提供 24 小時心理諮詢服務",
+        icon: "phone.fill",
+        buttonText: "撥打電話",
+        action: .hotline
+    )
+    
+    // 顯示單一卡片
+    MentalHealthResourceCard(
+        resource: sampleResource,
+        onTap: {
+            print("使用者點擊了『撥打電話』按鈕")
+        }
+    )
+    .previewLayout(.sizeThatFits)
+    .padding()
+    .background(Color.yellow.opacity(0.1))
+}
