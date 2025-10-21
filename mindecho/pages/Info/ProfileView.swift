@@ -109,20 +109,18 @@ extension ProfileView {
     }
     
     
-    // MARK: - 今日提醒
+    // 今日提醒
     private var dailyReminderCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("今日提醒")
                 .font(.headline)
                 .foregroundColor(.brown)
             
-            // 固定文字區塊高度，避免 quote 過長造成版面抖動
             Text("「\(quote)」")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 4)
-                .frame(minHeight: 50, alignment: .topLeading) // 💡固定高度
-
+            
             Button {
                 quote = randomQuote()
             } label: {
@@ -141,10 +139,9 @@ extension ProfileView {
             .foregroundColor(.orange)
         }
         .padding()
-        .frame(minHeight: 120) // 💡整張卡片最小高度統一
         .background(cardBackground)
     }
-
+    
     
     // 緊急聯繫
     private var emergencySection: some View {
