@@ -67,7 +67,7 @@
 		957794282E421C9B003DB25B /* HomeModels  .swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794272E421C9B003DB25B /* HomeModels  .swift */; };
 		9577942A2E421D33003DB25B /* HomeConstants .swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794292E421D33003DB25B /* HomeConstants .swift */; };
 		9577942C2E421D51003DB25B /* BiorhythmCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */; };
-		BF6FE8152E8BDFE50046D2D4 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6FE80D2E8BDFE50046D2D4 /* Main.swift */; };
+		BFB9E3942EABCB78000D8F65 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB9E3932EABCB6B000D8F65 /* MainView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -152,7 +152,7 @@
 		957794272E421C9B003DB25B /* HomeModels  .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeModels  .swift"; sourceTree = "<group>"; };
 		957794292E421D33003DB25B /* HomeConstants .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeConstants .swift"; sourceTree = "<group>"; };
 		9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiorhythmCalculator.swift; sourceTree = "<group>"; };
-		BF6FE80D2E8BDFE50046D2D4 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+		BFB9E3932EABCB6B000D8F65 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		BFC1FE732E7ABCB100EA56B2 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -326,13 +326,13 @@
 		956E29FB2E2D3C7700DEC7A6 /* pages */ = {
 			isa = PBXGroup;
 			children = (
+				BFB9E3932EABCB6B000D8F65 /* MainView.swift */,
 				BFB9E31E2E950A1C000D8F65 /* Info */,
 				BFB9E3022E8C194F000D8F65 /* Relax */,
 				BFC1FE742E82C17B00EA56B2 /* Diary */,
 				956E2A302E2F631900DEC7A6 /* Auth */,
 				957793F02E421AE5003DB25B /* Home */,
 				956E2A2F2E2F631200DEC7A6 /* Chat */,
-				BF6FE80D2E8BDFE50046D2D4 /* Main.swift */,
 			);
 			path = pages;
 			sourceTree = "<group>";
@@ -589,7 +589,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BF6FE8152E8BDFE50046D2D4 /* Main.swift in Sources */,
+				BFB9E3942EABCB78000D8F65 /* MainView.swift in Sources */,
 				957794192E421C1B003DB25B /* HomeSection.swift in Sources */,
 				9577942A2E421D33003DB25B /* HomeConstants .swift in Sources */,
 				957793F22E421B1C003DB25B /* HomeView.swift in Sources */,
