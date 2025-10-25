@@ -159,7 +159,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		BFB9E3022E8C194F000D8F65 /* Relax */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Relax; sourceTree = "<group>"; };
 		BFB9E31E2E950A1C000D8F65 /* Info */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Info; sourceTree = "<group>"; };
-		BFC1FE742E82C17B00EA56B2 /* Diary */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Diary; sourceTree = "<group>"; };
+		BFB9E3B42EAD200A000D8F65 /* Diary */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Diary; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -326,10 +326,10 @@
 		956E29FB2E2D3C7700DEC7A6 /* pages */ = {
 			isa = PBXGroup;
 			children = (
+				BFB9E3B42EAD200A000D8F65 /* Diary */,
 				BFB9E3932EABCB6B000D8F65 /* MainView.swift */,
 				BFB9E31E2E950A1C000D8F65 /* Info */,
 				BFB9E3022E8C194F000D8F65 /* Relax */,
-				BFC1FE742E82C17B00EA56B2 /* Diary */,
 				956E2A302E2F631900DEC7A6 /* Auth */,
 				957793F02E421AE5003DB25B /* Home */,
 				956E2A2F2E2F631200DEC7A6 /* Chat */,
@@ -472,7 +472,7 @@
 			fileSystemSynchronizedGroups = (
 				BFB9E3022E8C194F000D8F65 /* Relax */,
 				BFB9E31E2E950A1C000D8F65 /* Info */,
-				BFC1FE742E82C17B00EA56B2 /* Diary */,
+				BFB9E3B42EAD200A000D8F65 /* Diary */,
 			);
 			name = mindecho;
 			productName = mindecho;
