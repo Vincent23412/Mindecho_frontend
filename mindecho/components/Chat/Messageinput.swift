@@ -1,39 +1,54 @@
 import SwiftUI
 
-// MARK: - 聊天輸入框
+// MARK: - 聊天輸入框（含自殺字詞偵測與導向 ProfileView）
 struct ChatInputView: View {
     @Binding var messageText: String
     let onSend: () -> Void
     let mode: TherapyMode
-    
+
     @State private var isComposing = false
     @State private var showingQuickReplies = false
-    
+
+    // ✅ 新增：危機偵測
+    @State private var showCrisisAlert = false
+    @State private var goToProfile = false
+
+    // 需放在 NavigationStack 之下
+    var crisisKeywords: [String] = [
+        "自殺","想死","活不下去","結束生命","跳樓","輕生","割腕","不想活了","suicide","kill myself","end my life"
+    ]
+
     var placeholder: String {
         switch mode {
-        case .chatMode:
-            return "輸入訊息..."
-        case .cbtMode:
-            return "分享您的想法或困擾..."
-        case .mbtMode:
-            return "描述您的感受或人際困擾..."
+        case .chatMode: return "輸入訊息..."
+        case .cbtMode:  return "分享您的想法或困擾..."
+        case .mbtMode:  return "描述您的感受或人際困擾..."
         }
     }
-    
+
     var quickReplies: [String] {
         switch mode {
-        case .chatMode:
-            return ["我今天心情不錯", "有點累", "想聊聊", "最近怎麼樣？"]
-        case .cbtMode:
-            return ["我感到很焦慮", "總是擔心", "覺得壓力很大", "想不通"]
-        case .mbtMode:
-            return ["人際關係困擾", "不理解他人", "情緒複雜", "感受不明"]
+        case .chatMode: return ["我今天心情不錯", "有點累", "想聊聊", "最近怎麼樣？"]
+        case .cbtMode:  return ["我感到很焦慮", "總是擔心", "覺得壓力很大", "想不通"]
+        case .mbtMode:  return ["人際關係困擾", "不理解他人", "情緒複雜", "感受不明"]
         }
     }
-    
+
+    // ✅ 新增：檢測函式（大小寫與空白處理）
+    func containsCrisisTerms(_ text: String) -> Bool {
+        let t = text.lowercased()
+        return crisisKeywords.contains { kw in
+            t.contains(kw.lowercased())
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // 快速回覆
+            // 隱形導頁錨點（需在 NavigationStack 內）
+            NavigationLink(destination: ProfileView(), isActive: $goToProfile) {
+                EmptyView()
+            }.hidden()
+
             if showingQuickReplies {
                 QuickReplyView(
                     suggestions: quickReplies,
@@ -44,21 +59,16 @@ struct ChatInputView: View {
                     mode: mode
                 )
             }
-            
-            Divider()
-                .background(Color.gray.opacity(0.3))
-            
+
+            Divider().background(Color.gray.opacity(0.3))
+
             HStack(spacing: 12) {
-                // 附件/快速回覆按鈕
-                Button(action: {
-                    showingQuickReplies.toggle()
-                }) {
+                Button(action: { showingQuickReplies.toggle() }) {
                     Image(systemName: showingQuickReplies ? "xmark.circle" : "plus.circle")
                         .font(.title2)
                         .foregroundColor(showingQuickReplies ? .red : .gray)
                 }
-                
-                // 輸入框
+
                 HStack(spacing: 8) {
                     TextField(placeholder, text: $messageText, axis: .vertical)
                         .textFieldStyle(PlainTextFieldStyle())
@@ -66,8 +76,7 @@ struct ChatInputView: View {
                         .onChange(of: messageText) {
                             isComposing = !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         }
-                    
-                    // 字數統計（當輸入較長時顯示）
+
                     if messageText.count > 100 {
                         Text("\(messageText.count)")
                             .font(.caption2)
@@ -85,10 +94,18 @@ struct ChatInputView: View {
                             lineWidth: isComposing ? 2 : 1
                         )
                 )
-                
-                // 發送按鈕
+
+                // 送出
                 Button(action: {
-                    onSend()
+                    let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+
+                    if containsCrisisTerms(trimmed) {
+                        // ✅ 偵測到高風險字詞：觸發警示，讓使用者一鍵前往緊急資訊頁
+                        showCrisisAlert = true
+                    } else {
+                        onSend()
+                    }
                     isComposing = false
                     showingQuickReplies = false
                 }) {
@@ -104,8 +121,18 @@ struct ChatInputView: View {
             .padding(.vertical, 12)
         }
         .background(AppColors.chatBackground)
+        // ✅ 危機引導警示
+        .alert("需要立即協助嗎？", isPresented: $showCrisisAlert) {
+            Button("前往緊急聯絡資訊") {
+                goToProfile = true
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("偵測到您提及嚴重負面/自傷意念。如果您正處於危險或緊急情況，請立即尋求協助。")
+        }
     }
 }
+
 
 // MARK: - 快速回覆建議
 struct QuickReplyView: View {
