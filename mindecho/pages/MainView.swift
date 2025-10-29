@@ -28,12 +28,20 @@ struct MainView: View {
             NavigationView {
                 RelaxTimerView()
             }
-                .tabItem { Label("放鬆", systemImage: "leaf") }
+            .tabItem { Label("放鬆", systemImage: "leaf") }
             
             NavigationView {
                 ProfileView()
-            }                .tabItem { Label("個人檔案", systemImage: "person") }
-        }
+            }
+            .tabItem { Label("個人檔案", systemImage: "person") }
+        
+        
+            NavigationView {
+                RPGSceneView()
+            }
+            .tabItem { Label("遊戲", systemImage: "gamecontroller")
+            }
+    }
     }
 }
 

@@ -68,6 +68,7 @@
 		9577942A2E421D33003DB25B /* HomeConstants .swift in Sources */ = {isa = PBXBuildFile; fileRef = 957794292E421D33003DB25B /* HomeConstants .swift */; };
 		9577942C2E421D51003DB25B /* BiorhythmCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */; };
 		BFB9E3942EABCB78000D8F65 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB9E3932EABCB6B000D8F65 /* MainView.swift */; };
+		BFB9E3EE2EB1E885000D8F65 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BFB9E3ED2EB1E5F6000D8F65 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -153,6 +154,7 @@
 		957794292E421D33003DB25B /* HomeConstants .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeConstants .swift"; sourceTree = "<group>"; };
 		9577942B2E421D51003DB25B /* BiorhythmCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiorhythmCalculator.swift; sourceTree = "<group>"; };
 		BFB9E3932EABCB6B000D8F65 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		BFB9E3ED2EB1E5F6000D8F65 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BFC1FE732E7ABCB100EA56B2 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -160,6 +162,7 @@
 		BFB9E3022E8C194F000D8F65 /* Relax */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Relax; sourceTree = "<group>"; };
 		BFB9E31E2E950A1C000D8F65 /* Info */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Info; sourceTree = "<group>"; };
 		BFB9E3B42EAD200A000D8F65 /* Diary */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Diary; sourceTree = "<group>"; };
+		BFB9E3E22EB113F3000D8F65 /* Game */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Game; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -190,6 +193,7 @@
 		956E29BB2E2D2A9600DEC7A6 = {
 			isa = PBXGroup;
 			children = (
+				BFB9E3ED2EB1E5F6000D8F65 /* Assets.xcassets */,
 				BFC1FE732E7ABCB100EA56B2 /* .gitignore */,
 				956E29C62E2D2A9700DEC7A6 /* mindecho */,
 				956E29D72E2D2A9B00DEC7A6 /* mindechoTests */,
@@ -326,6 +330,7 @@
 		956E29FB2E2D3C7700DEC7A6 /* pages */ = {
 			isa = PBXGroup;
 			children = (
+				BFB9E3E22EB113F3000D8F65 /* Game */,
 				BFB9E3B42EAD200A000D8F65 /* Diary */,
 				BFB9E3932EABCB6B000D8F65 /* MainView.swift */,
 				BFB9E31E2E950A1C000D8F65 /* Info */,
@@ -473,6 +478,7 @@
 				BFB9E3022E8C194F000D8F65 /* Relax */,
 				BFB9E31E2E950A1C000D8F65 /* Info */,
 				BFB9E3B42EAD200A000D8F65 /* Diary */,
+				BFB9E3E22EB113F3000D8F65 /* Game */,
 			);
 			name = mindecho;
 			productName = mindecho;
@@ -563,6 +569,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFB9E3EE2EB1E885000D8F65 /* Assets.xcassets in Resources */,
 				956E29CF2E2D2A9B00DEC7A6 /* Preview Assets.xcassets in Resources */,
 				956E29CC2E2D2A9B00DEC7A6 /* Assets.xcassets in Resources */,
 			);
