@@ -5,6 +5,21 @@ struct EmotionBoxCard: View {
     let description: String
     let buttonTitle: String
     let color: Color
+    let onButtonTap: () -> Void
+    
+    init(
+        title: String,
+        description: String,
+        buttonTitle: String,
+        color: Color,
+        onButtonTap: @escaping () -> Void = {}
+    ) {
+        self.title = title
+        self.description = description
+        self.buttonTitle = buttonTitle
+        self.color = color
+        self.onButtonTap = onButtonTap
+    }
     
     private var headerGradient: LinearGradient {
         LinearGradient(
@@ -49,7 +64,7 @@ struct EmotionBoxCard: View {
 
                 Spacer(minLength: 0)
 
-                Button(action: {}) {
+                Button(action: onButtonTap) {
                     HStack {
                         Text(buttonTitle)
                             .font(.subheadline.weight(.semibold))
