@@ -50,7 +50,7 @@ struct EmotionAnalysisView: View {
             }
             .padding()
         }
-        .background(Color.yellow.opacity(0.05).ignoresSafeArea()) // 👈 加上背景色
+        .background(AppColors.lightYellow) // 👈 加上背景色
     }
 }
 

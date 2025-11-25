@@ -10,61 +10,105 @@ import SwiftUI
 struct HealthDataView: View {
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 5) {
                 
                 // 📊 數據總覽
-                Text("數據概覽")
-                    .font(.headline)
-                    .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("數據概覽")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(.primary)
+                    Text("追蹤你的身體節奏與日常狀態")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal)
                 
                 // 四個數據卡片（兩行 Grid）
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
-                    HealthDataCard(title: "心率變異性 (HRV)", subtitle: "心臟健康指標", value: "48", unit: "ms", color: .orange)
+                    HealthDataCard(title: "心率變異性 (HRV)", subtitle: "心臟健康指標", value: "48", unit: "ms", color: .orange, icon: "waveform.path.ecg")
                     
-                    HealthDataCard(title: "睡眠質量", subtitle: "深度睡眠時間", value: "2.4", unit: "小時", color: .brown)
+                    HealthDataCard(title: "睡眠質量", subtitle: "深度睡眠時間", value: "2.4", unit: "小時", color: .brown, icon: "bed.double.fill")
                     
-                    HealthDataCard(title: "活動量", subtitle: "每日步數", value: "7200", unit: "步", color: .teal)
+                    HealthDataCard(title: "活動量", subtitle: "每日步數", value: "7,200", unit: "步", color: .teal, icon: "figure.walk")
                     
-                    HealthDataCard(title: "體重", subtitle: "體重變化趨勢", value: "53.2", unit: "公斤", color: .blue)
+                    HealthDataCard(title: "體重", subtitle: "體重變化趨勢", value: "53.2", unit: "公斤", color: .blue, icon: "scalemass")
                 }
                 .padding(.horizontal)
                 
                 // 💡 健康建議
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 14) {
                     Text("健康建議")
                         .font(.headline)
-                        .padding(.bottom, 8)
+                        .foregroundColor(.primary)
                     
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "bolt.fill")
-                            .foregroundColor(.yellow)
-                        Text("提高 HRV\n嘗試每天進行 10 分鐘的深呼吸練習，有助於提高心率變異性，降低壓力水平。")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                    suggestionRow(
+                        icon: "bolt.fill",
+                        iconColor: .yellow,
+                        title: "提高 HRV",
+                        detail: "每天 10 分鐘深呼吸或冥想，幫助降低壓力、穩定心率變異性。"
+                    )
                     
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "moon.fill")
-                            .foregroundColor(.purple)
-                        Text("改善睡眠質量\n您的深度睡眠時間略有下降。建議睡前一小時避免使用電子設備，保持臥室溫度在 18–20°C。")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                    suggestionRow(
+                        icon: "moon.fill",
+                        iconColor: .purple,
+                        title: "改善睡眠質量",
+                        detail: "睡前一小時避免藍光，保持臥室 18–20°C，幫助延長深度睡眠。"
+                    )
                 }
-                .padding()
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white)
-                        .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white, Color.white.opacity(0.9)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: .black.opacity(0.08), radius: 12, y: 6)
                 )
                 .padding(.horizontal)
                 
-                Spacer()
+                Spacer(minLength: 20)
             }
             .padding(.top)
         }
-        .background(Color.yellow.opacity(0.05).ignoresSafeArea())
-        .navigationTitle("健康追蹤")
+        .background(AppColors.lightYellow)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Text("健康追蹤")
+                    .font(.title2.weight(.semibold))
+                    .foregroundColor(AppColors.titleColor)
+                    .padding(.leading, 2)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func suggestionRow(icon: String, iconColor: Color, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 34, height: 34)
+                Image(systemName: icon)
+                    .foregroundColor(iconColor)
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineSpacing(2)
+            }
+        }
     }
 }
 
@@ -75,38 +119,71 @@ struct HealthDataCard: View {
     let value: String
     let unit: String
     let color: Color
+    let icon: String
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title)
-                    .font(.subheadline.bold())
-                Spacer()
+        let gradient = LinearGradient(
+            colors: [
+                color.opacity(0.18),
+                color.opacity(0.08)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.2))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: icon)
+                        .foregroundColor(color)
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             
-            Text(subtitle)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Spacer(minLength: 4)
             
-            Text(value)
-                .font(.title.bold())
-                .foregroundColor(color)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.title2.bold())
+                    .foregroundColor(color)
+                Text(unit)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             
-            Text(unit)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Rectangle()
-                .fill(color.opacity(0.2))
-                .frame(height: 30)
-                .cornerRadius(4)
+            // Decorative progress bar
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(color.opacity(0.12))
+                    .frame(height: 10)
+                Capsule()
+                    .fill(gradient)
+                    .frame(width: 110, height: 10)
+            }
+            .padding(.top, 2)
         }
-        .padding()
-        .frame(height: 150) // 👈 統一高度
+        .padding(12)
+        .frame(height: 160)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.white)
-                .shadow(color: .gray.opacity(0.2), radius: 3, x: 0, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.black.opacity(0.04), lineWidth: 0.5)
+                )
+                .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
+                .shadow(color: color.opacity(0.12), radius: 14, y: 10)
         )
     }
 }

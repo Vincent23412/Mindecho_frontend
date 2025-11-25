@@ -20,36 +20,73 @@ struct ScaleSelectionView: View {
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("選擇量表")
-                    .font(.headline)
-                
-                ForEach(scales, id: \.self) { scale in
-                    Button {
-                        selectedScale = scale
-                        showQuestions = true
-                    } label: {
-                        HStack {
-                            Text(scale)
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .shadow(color: .gray.opacity(0.2), radius: 3, x: 0, y: 2)
-                        )
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("選擇量表")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(AppColors.titleColor)
+                        Text("了解自己的狀態，選擇適合的評估工具。")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
+                    .padding(.horizontal)
+                    
+                    ForEach(scales, id: \.self) { scale in
+                        Button {
+                            selectedScale = scale
+                            showQuestions = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
+                                        .fill(AppColors.orange.opacity(0.15))
+                                        .frame(width: 36, height: 36)
+                                    Image(systemName: "doc.text.magnifyingglass")
+                                        .foregroundColor(AppColors.orange)
+                                        .font(.system(size: 15, weight: .semibold))
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(scale)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(AppColors.titleColor)
+                                    Text("點擊開始作答")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(AppColors.titleColor.opacity(0.6))
+                            }
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal)
+                    }
+                    
+                    Spacer(minLength: 12)
                 }
-                
-                Spacer()
+                .padding(.vertical, 18)
             }
-            .padding()
-            .background(Color.yellow.opacity(0.05).ignoresSafeArea())
+            .background(AppColors.lightYellow.ignoresSafeArea())
             .navigationTitle("健康追蹤")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text("健康追蹤")
+                        .font(.title2.weight(.semibold))
+                        .foregroundColor(AppColors.titleColor)
+                        .padding(.leading, 2)
+                }
+            }
             .navigationDestination(isPresented: $showQuestions) {
                 if let scale = selectedScale {
                     ScaleQuestionView(scaleName: scale)
@@ -69,8 +106,14 @@ struct ScaleQuestionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(scaleName)
-                    .font(.headline)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(scaleName)
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(AppColors.titleColor)
+                    Text("請根據最近一週的狀況回答以下問題")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
                 // 👉 把所有題目包進一個卡片
                 VStack(alignment: .leading, spacing: 16) {
@@ -93,9 +136,13 @@ struct ScaleQuestionView: View {
                 }
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(Color.white)
-                        .shadow(color: .gray.opacity(0.2), radius: 3, x: 0, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.black.opacity(0.05), lineWidth: 0.5)
+                        )
+                        .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
                 )
                 
                 Button("提交") {
@@ -106,7 +153,7 @@ struct ScaleQuestionView: View {
             }
             .padding()
         }
-        .background(Color.yellow.opacity(0.05).ignoresSafeArea()) // 👈 改成統一黃色底
+        .background(AppColors.lightYellow.ignoresSafeArea())
         .navigationTitle("量表作答")
         .navigationDestination(isPresented: $showResult) {
             ScaleResultView(scaleName: scaleName, score: answers.reduce(0, +))
@@ -122,7 +169,8 @@ struct ScaleResultView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("\(scaleName) 測驗結果")
-                .font(.headline)
+                .font(.title3.weight(.semibold))
+                .foregroundColor(AppColors.titleColor)
             
             VStack(spacing: 12) {
                 Text("您的總分是 \(score) 分")
@@ -150,8 +198,11 @@ struct ScaleResultView: View {
             
             Spacer()
         }
-        .padding()
-        .background(Color.yellow.opacity(0.05).ignoresSafeArea())
+        .padding(.vertical, 24)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
+        .background(AppColors.lightYellow.ignoresSafeArea())
     }
 }
 

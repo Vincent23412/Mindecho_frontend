@@ -74,7 +74,7 @@ extension ProfileView {
                 .padding(.horizontal, 2)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     EmotionBoxCard(
                         title: "支撐我的片刻",
                         description: "記下那些讓你有動力繼續向前的理由。",
@@ -85,23 +85,23 @@ extension ProfileView {
                         title: "安心收藏箱",
                         description: "收藏能給你帶來安慰和力量的影片、照片和語音。",
                         buttonTitle: "打開收藏箱",
-                        color: .orange.opacity(0.7)
+                        color: .orange
                     )
                     EmotionBoxCard(
                         title: "療癒語錄牆",
                         description: "收集那些曾經撫慰你的話語與詩句。",
                         buttonTitle: "前往查看",
-                        color: .orange.opacity(0.6)
+                        color: .orange
                     )
                     EmotionBoxCard(
                         title: "心情樹洞",
                         description: "寫下你的心事，讓自己慢慢釋放。",
                         buttonTitle: "打開樹洞",
-                        color: .orange.opacity(0.5)
+                        color: .orange
                     )
                 }
                 .padding(.horizontal, 4)
-                .padding(.bottom, 8)
+                .padding(.vertical, 4)
             }
         }
         .padding(.vertical, 8)
@@ -111,7 +111,7 @@ extension ProfileView {
     
     // 今日提醒
     private var dailyReminderCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("今日提醒")
                 .font(.headline)
                 .foregroundColor(.brown)
@@ -119,7 +119,11 @@ extension ProfileView {
             Text("「\(quote)」")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+                .lineLimit(3)
+                .minimumScaleFactor(0.9)
                 .padding(.bottom, 4)
+            
+            Spacer(minLength: 0)
             
             Button {
                 quote = randomQuote()
@@ -139,6 +143,7 @@ extension ProfileView {
             .foregroundColor(.orange)
         }
         .padding()
+        .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
         .background(cardBackground)
     }
     

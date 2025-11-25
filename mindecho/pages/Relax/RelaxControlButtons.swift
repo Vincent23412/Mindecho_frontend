@@ -18,8 +18,8 @@ struct RelaxControlButtons: View {
                 Text("重置")
                     .font(.headline)
                     .frame(width: 100, height: 44)
-                    .background(Color.orange.opacity(0.8))
-                    .foregroundColor(.brown)
+                    .background(AppColors.chatModeColor.opacity(0.2))
+                    .foregroundColor(AppColors.titleColor)
                     .cornerRadius(6)
             }
             
@@ -29,8 +29,8 @@ struct RelaxControlButtons: View {
                 Text(viewModel.isRunning ? "暫停" : "開始")
                     .font(.headline)
                     .frame(width: 100, height: 44)
-                    .background(Color.brown)
-                    .foregroundColor(.white)
+                    .background(AppColors.chatModeColor)
+                    .foregroundColor(AppColors.aiBubbleColor)
                     .cornerRadius(6)
             }
         }

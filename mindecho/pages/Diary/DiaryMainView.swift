@@ -42,7 +42,7 @@ struct DiaryMainView: View {
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
         }
-        .background(Color.yellow.opacity(0.1).ignoresSafeArea())
+        .background(AppColors.lightYellow)
     }
 }
 

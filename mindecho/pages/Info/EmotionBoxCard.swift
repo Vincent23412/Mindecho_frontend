@@ -5,62 +5,90 @@ struct EmotionBoxCard: View {
     let description: String
     let buttonTitle: String
     let color: Color
+    
+    private var headerGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                color.opacity(0.95),
+                color.opacity(0.75)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // MARK: - 上半部（標題區）
-            HStack {
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.leading, 12)
-                Spacer()
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                }
+                
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.18))
+                    .frame(height: 4)
             }
-            .frame(height: 36)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
-            .background(color)
+            .background(headerGradient)
             
             // MARK: - 下半部（內容 + 按鈕）
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 6)
+                    .font(.subheadline)
+                    .foregroundColor(.primary.opacity(0.8))
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(3)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.92)
 
                 Spacer(minLength: 0)
 
                 Button(action: {}) {
-                    Text(buttonTitle)
-                        .font(.caption.bold())
-                        .padding(.vertical, 6)
-                        .frame(maxWidth: .infinity)
-                        .background(color)
-                        .foregroundColor(.white)
-                        .cornerRadius(6)
+                    HStack {
+                        Text(buttonTitle)
+                            .font(.subheadline.weight(.semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(color.opacity(0.12))
+                    .foregroundColor(color)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
-                .padding(.top, 4)
             }
             .padding(.horizontal, 12)
-            .padding(.bottom, 10)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
-        }
-        .frame(width: 160, height: 140)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .overlay(
-                    // 上半橘底圓角覆蓋
-                    VStack(spacing: 0) {
-                        color.frame(height: 36)
-                        Spacer()
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color.white,
+                        Color.white.opacity(0.92)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
-                .shadow(color: .gray.opacity(0.15), radius: 3, x: 0, y: 2)
+            )
+        }
+        .frame(width: 170, height: 150)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 6)
+                .shadow(color: color.opacity(0.15), radius: 18, x: 0, y: 10)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.04), lineWidth: 0.5)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

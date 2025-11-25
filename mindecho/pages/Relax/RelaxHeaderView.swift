@@ -12,10 +12,10 @@ struct RelaxHeaderView: View {
         VStack(spacing: 4) {
             Text("放鬆")
                 .font(.title2.bold())
-                .foregroundColor(.brown)
+                .foregroundColor(AppColors.titleColor)
             Text("透過冥想與呼吸，放鬆身心")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppColors.subtitleColor)
         }
         .padding(.top)
     }

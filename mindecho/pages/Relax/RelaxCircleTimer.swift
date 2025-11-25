@@ -23,14 +23,17 @@ struct RelaxCircleTimer: View {
                     Image(systemName: "chevron.right")
                 }
             }
-            .foregroundColor(.brown)
+            .foregroundColor(AppColors.titleColor)
             .font(.title3.bold())
             
             // 計時圓形
             ZStack {
                 Circle()
                     .fill(
-                        LinearGradient(colors: [.yellow.opacity(0.6), .yellow.opacity(0.3)],
+                        LinearGradient(colors: [
+                            AppColors.chatModeColor.opacity(0.35),
+                            AppColors.chatModeColor.opacity(0.15)
+                        ],
                                        startPoint: .top, endPoint: .bottom)
                     )
                     .frame(width: 220, height: 220)
@@ -38,7 +41,7 @@ struct RelaxCircleTimer: View {
                 
                 Text(timeString(from: viewModel.timeLeft))
                     .font(.system(size: 44, weight: .bold, design: .monospaced))
-                    .foregroundColor(.brown)
+                    .foregroundColor(AppColors.titleColor)
             }
         }
         .padding(.top, 20)

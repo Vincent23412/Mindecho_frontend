@@ -19,7 +19,7 @@ struct RelaxTimerView: View {
             Spacer()
         }
         .padding()
-        .background(Color.yellow.opacity(0.1).ignoresSafeArea())
+        .background(AppColors.chatBackground.ignoresSafeArea())
     }
 }
 

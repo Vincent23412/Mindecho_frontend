@@ -20,10 +20,10 @@ struct RelaxModeSelector: View {
                     VStack(spacing: 6) {
                         Text(mode.rawValue)
                             .font(.headline)
-                            .foregroundColor(.brown)
+                            .foregroundColor(AppColors.titleColor)
                         
                         Rectangle()
-                            .fill(viewModel.selectedMode == mode ? Color.orange : Color.clear)
+                            .fill(viewModel.selectedMode == mode ? AppColors.chatModeColor : Color.clear)
                             .frame(height: 2)
                     }
                 }

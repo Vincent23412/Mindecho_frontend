@@ -12,28 +12,65 @@ struct EmergencyContactCard: View {
     let buttonText: String
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline.bold())
-                .foregroundColor(.brown)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Spacer()
-            Button(buttonText) {}
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.15))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: "lifepreserver")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.brown)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.9)
+                }
+            }
+            
+            Spacer(minLength: 0)
+            
+            Button(action: {}) {
+                HStack {
+                    Image(systemName: "phone.fill")
+                    Text(buttonText)
+                        .fontWeight(.semibold)
+                }
                 .font(.caption)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(Color.orange)
+                .padding(.vertical, 8)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color.orange.opacity(0.95),
+                            Color.orange.opacity(0.75)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .foregroundColor(.white)
-                .cornerRadius(8)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .shadow(color: Color.orange.opacity(0.25), radius: 8, y: 4)
+            }
         }
-        .padding()
-        .frame(width: 160, height: 120)
+        .padding(12)
+        .frame(width: 170, height: 130, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.white)
-                .shadow(color: .gray.opacity(0.15), radius: 3, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+                .shadow(color: Color.orange.opacity(0.12), radius: 16, y: 10)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.orange.opacity(0.08), lineWidth: 1)
         )
     }
 }
