@@ -277,7 +277,7 @@ private extension RegisterPage {
                 AuthTextField(
                     field: .confirmPassword,
                     text: $confirmPassword,
-                    isValid: (confirmPassword == password),
+                    isValid: confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines) == password.trimmingCharacters(in: .whitespacesAndNewlines),
                     errorMessage: viewModel.formValidator.confirmPasswordState.errorMessage,
                     onEditingChanged: { isFocused in
                         if isFocused {
@@ -295,7 +295,7 @@ private extension RegisterPage {
                 )
                 .focused($focusedField, equals: .confirmPassword)
                 .onChange(of: confirmPassword) { _, newValue in
-                    viewModel.validateFieldRealTime(field: .confirmPassword, value: newValue)
+                    viewModel.validateFieldRealTime(field: .confirmPassword, value: newValue.trimmingCharacters(in: .whitespacesAndNewlines))
                 }
 
                 
@@ -729,5 +729,4 @@ struct RegisterPage_Previews: PreviewProvider {
         .previewDisplayName("日期選擇器")
     }
 }
-
 

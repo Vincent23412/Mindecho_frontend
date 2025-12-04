@@ -225,14 +225,16 @@ class AuthViewModel: ObservableObject {
             formValidator.emailState.text = value
             formValidator.validateEmail()
         case .password:
-            formValidator.passwordState.text = value
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            formValidator.passwordState.text = trimmed
             formValidator.validatePassword()
             // 如果確認密碼已經輸入，也要重新驗證
             if !formValidator.confirmPasswordState.text.isEmpty {
                 formValidator.validateConfirmPassword(confirmPassword: formValidator.confirmPasswordState.text, password: formValidator.passwordState.text)
             }
         case .confirmPassword:
-            formValidator.confirmPasswordState.text = value
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            formValidator.confirmPasswordState.text = trimmed
             formValidator.validateConfirmPassword(confirmPassword: formValidator.confirmPasswordState.text, password: formValidator.passwordState.text)
         case .firstName:
             formValidator.firstNameState.text = value

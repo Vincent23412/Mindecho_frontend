@@ -255,9 +255,10 @@ class FormValidator: ObservableObject {
     }
 
     func validateConfirmPassword(confirmPassword: String, password: String) {
+        let trimmedConfirm = confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
         confirmPasswordState.validate { _ in
-            if confirmPassword == password {
-                print(confirmPasswordState)
+            if trimmedConfirm == trimmedPassword {
                 return .valid
             }
             return .invalid("密碼不一致")
