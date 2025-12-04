@@ -576,12 +576,15 @@ private extension RegisterPage {
     
     // 基本信息是否有效
     var isBasicInfoValid: Bool {
+        let trimmedPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedConfirm = confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+        
         return !email.isEmpty &&
-               !password.isEmpty &&
-               !confirmPassword.isEmpty &&
-               !viewModel.hasError(for: .email) &&
-               !viewModel.hasError(for: .password) &&
-               !viewModel.hasError(for: .confirmPassword)
+               !trimmedPass.isEmpty &&
+               !trimmedConfirm.isEmpty &&
+               Validation.isValidPassword(trimmedPass) &&
+               trimmedPass == trimmedConfirm &&
+               !viewModel.hasError(for: .email)
     }
     
     // 個人信息是否有效
@@ -729,4 +732,3 @@ struct RegisterPage_Previews: PreviewProvider {
         .previewDisplayName("日期選擇器")
     }
 }
-

@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import UserNotifications
 
 // MARK: - 認證視圖模型
 class AuthViewModel: ObservableObject {
@@ -96,6 +97,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "註冊成功！歡迎加入 MindEcho！")
                         self?.authState = .authenticated
+                        self?.sendRegistrationSuccessNotification(message: response.message ?? "註冊成功！")
                     } else {
                         self?.showError(response.message ?? "註冊失敗，請重試")
                     }
@@ -265,6 +267,31 @@ class AuthViewModel: ObservableObject {
     
     var isLoginFormValid: Bool {
         return formValidator.isLoginFormValid
+    }
+    
+    // MARK: - 簡易本地通知
+    private func sendRegistrationSuccessNotification(message: String) {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                print("通知授權錯誤: \(error.localizedDescription)")
+                return
+            }
+            guard granted else { return }
+            
+            let content = UNMutableNotificationContent()
+            content.title = "註冊成功"
+            content.body = message
+            content.sound = .default
+            
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.5, repeats: false)
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+            center.add(request) { error in
+                if let error = error {
+                    print("通知排程失敗: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }
 

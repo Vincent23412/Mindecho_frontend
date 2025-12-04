@@ -81,7 +81,8 @@ class AuthService: ObservableObject {
     // MARK: - 註冊功能
     func register(request: RegisterRequest) -> AnyPublisher<AuthResponse, Error> {
      
-        guard let url = URL(string: "\(baseURL)\(AuthConstants.API.register)") else {
+        // 指向 dev 環境註冊 API
+        guard let url = URL(string: "https://mindechoserver.com:8443/dev-api/auth/register") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
@@ -320,12 +321,15 @@ extension AuthService {
                 // 模擬成功回應
                 let user = User(
                     id: UUID().uuidString,
+                    userId: UUID().uuidString,
                     email: request.email,
                     firstName: request.firstName,
                     lastName: request.lastName,
                     dateOfBirth: request.dateOfBirth,
-                    createdAt: Date(),
-                    updatedAt: Date()
+                    isActive: true,
+                    preferences: nil,
+                    createdAt: nil,
+                    updatedAt: nil
                 )
                 
                 return AuthResponse(
@@ -354,12 +358,15 @@ extension AuthService {
                 if request.email == "test@mindecho.com" && request.password == "123456" {
                     let user = User(
                         id: "test_user_id",
+                        userId: "test_user_id",
                         email: request.email,
                         firstName: "測試",
                         lastName: "用戶",
                         dateOfBirth: "1990-01-01",
-                        createdAt: Date(),
-                        updatedAt: Date()
+                        isActive: true,
+                        preferences: nil,
+                        createdAt: nil,
+                        updatedAt: nil
                     )
                     
                     return AuthResponse(

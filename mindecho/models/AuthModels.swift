@@ -3,24 +3,36 @@ import SwiftUI
 
 // MARK: - 用戶數據模型
 struct User: Codable, Identifiable {
-    let id: String
+    /// 部分回傳有 `id` 和 `userId`，留兩個欄位避免解析失敗
+    let id: String?
+    let userId: String?
     let email: String
     let firstName: String
     let lastName: String
-    let dateOfBirth: String?     // 改為可選，因為後端可能不回傳
-    let createdAt: Date?
-    let updatedAt: Date?
+    let dateOfBirth: String?
+    let isActive: Bool?
+    let preferences: [String: String]?
+    let createdAt: String?
+    let updatedAt: String?
     
     enum CodingKeys: String, CodingKey {
-            case id = "userId"
-            case email
-            case firstName
-            case lastName
-            case dateOfBirth
-            case createdAt
-            case updatedAt
-        }
+        case id
+        case userId
+        case email
+        case firstName
+        case lastName
+        case dateOfBirth
+        case isActive
+        case preferences
+        case createdAt
+        case updatedAt
+    }
 
+    /// 取後端的 userId 為主，若沒有則使用 id
+    var primaryId: String {
+        return userId ?? id ?? ""
+    }
+    
     var fullName: String {
         return "\(firstName) \(lastName)"
     }

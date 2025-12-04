@@ -120,14 +120,14 @@ class DailyCheckInManager: ObservableObject {
             print("⚠️ No user found")
             return }
         
-        print("💡 user.id being sent: \(user.id)")
+        print("💡 user.id being sent: \(user.primaryId)")
         
         // 🎯 修改日期格式
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-M-dd"  // 符合後端期望格式
         
         let requestData: [String: Any] = [
-            "userId": user.id,
+            "userId": user.primaryId,
             "physical": [
                 "description": getDescription(scores.physical),
                 "value": scores.physical
