@@ -9,13 +9,59 @@ import SwiftUI
 
 struct RelaxTimerView: View {
     @StateObject private var viewModel = RelaxTimerViewModel()
+    @Environment(\.openURL) private var openURL
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             RelaxHeaderView()
             RelaxModeSelector(viewModel: viewModel)
-            RelaxCircleTimer(viewModel: viewModel)
-            RelaxControlButtons(viewModel: viewModel)
+            
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.videos(for: viewModel.selectedMode)) { item in
+                        Button {
+                            openURL(item.url)
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(AppColors.orange.opacity(0.15))
+                                        .frame(width: 64, height: 48)
+                                    Image(systemName: "play.rectangle.fill")
+                                        .foregroundColor(AppColors.orange)
+                                        .font(.system(size: 20, weight: .semibold))
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(item.title)
+                                        .font(.headline)
+                                        .foregroundColor(AppColors.titleColor)
+                                        .lineLimit(2)
+                                    Text(item.subtitle)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(2)
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(AppColors.cardBackground)
+                                    .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .padding(.top, 4)
+            
             Spacer()
         }
         .padding()

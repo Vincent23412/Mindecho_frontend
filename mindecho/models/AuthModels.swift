@@ -181,6 +181,8 @@ enum FormField: CaseIterable {
     case firstName
     case lastName
     case dateOfBirth
+    case emergencyName
+    case emergencyPhone
     
     var placeholder: String {
         switch self {
@@ -196,6 +198,10 @@ enum FormField: CaseIterable {
             return "姓氏"
         case .dateOfBirth:
             return "出生日期"
+        case .emergencyName:
+            return "緊急聯絡人姓名"
+        case .emergencyPhone:
+            return "緊急聯絡人電話"
         }
     }
     
@@ -209,6 +215,10 @@ enum FormField: CaseIterable {
             return .namePhonePad
         case .dateOfBirth:
             return .numbersAndPunctuation
+        case .emergencyName:
+            return .namePhonePad
+        case .emergencyPhone:
+            return .phonePad
         }
     }
     

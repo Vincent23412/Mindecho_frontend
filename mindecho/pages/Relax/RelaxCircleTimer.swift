@@ -11,46 +11,36 @@ struct RelaxCircleTimer: View {
     @ObservedObject var viewModel: RelaxTimerViewModel
     
     var body: some View {
-        VStack(spacing: 16) {
-            // 時間調整
-            HStack {
-                Button(action: viewModel.decreaseTime) {
-                    Image(systemName: "chevron.left")
-                }
-                Text("\(viewModel.timeLeft / 60) 分鐘")
-                    .font(.headline)
-                Button(action: viewModel.increaseTime) {
-                    Image(systemName: "chevron.right")
-                }
-            }
-            .foregroundColor(AppColors.titleColor)
-            .font(.title3.bold())
-            
-            // 計時圓形
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(colors: [
-                            AppColors.chatModeColor.opacity(0.35),
-                            AppColors.chatModeColor.opacity(0.15)
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            AppColors.chatModeColor.opacity(0.25),
+                            AppColors.chatModeColor.opacity(0.08)
                         ],
-                                       startPoint: .top, endPoint: .bottom)
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-                    .frame(width: 220, height: 220)
-                    .shadow(radius: 5)
-                
-                Text(timeString(from: viewModel.timeLeft))
-                    .font(.system(size: 44, weight: .bold, design: .monospaced))
+                )
+                .frame(height: 160)
+                .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+            
+            VStack(spacing: 10) {
+                Image(systemName: "play.rectangle.on.rectangle.fill")
+                    .font(.system(size: 36, weight: .semibold))
                     .foregroundColor(AppColors.titleColor)
+                Text("請選擇上方模式，從下方清單播放影片")
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.titleColor)
+                Text("呼吸 / 冥想影片會在 YouTube 開啟")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
             }
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
         }
-        .padding(.top, 20)
-    }
-    
-    private func timeString(from seconds: Int) -> String {
-        let min = seconds / 60
-        let sec = seconds % 60
-        return String(format: "%02d:%02d", min, sec)
+        .padding(.vertical, 8)
     }
 }
 

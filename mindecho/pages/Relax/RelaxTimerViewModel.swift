@@ -15,50 +15,53 @@ class RelaxTimerViewModel: ObservableObject {
     }
     
     @Published var selectedMode: Mode = .breath
-    @Published var timeLeft: Int = 300
-    @Published var isRunning = false
     
-    private var timer: Timer?
+    struct VideoItem: Identifiable {
+        let id = UUID()
+        let title: String
+        let subtitle: String
+        let url: URL
+    }
     
-    func toggleTimer() {
-        if isRunning {
-            stopTimer()
-        } else {
-            startTimer()
+    func videos(for mode: Mode) -> [VideoItem] {
+        switch mode {
+        case .breath:
+            return [
+                VideoItem(
+                    title: "5 分鐘方框呼吸",
+                    subtitle: "短時間穩定情緒的方框呼吸練習",
+                    url: URL(string: "https://www.youtube.com/watch?v=EYQsRBNYdPk")!
+                ),
+                VideoItem(
+                    title: "4-7-8 呼吸法",
+                    subtitle: "入睡前放鬆的經典呼吸技巧",
+                    url: URL(string: "https://www.youtube.com/watch?v=YRPh_GaiL8s")!
+                ),
+                VideoItem(
+                    title: "引導式深呼吸",
+                    subtitle: "搭配舒緩音樂的深呼吸引導",
+                    url: URL(string: "https://www.youtube.com/watch?v=aXItOY0sLRY")!
+                )
+            ]
+        case .meditation:
+            return [
+                VideoItem(
+                    title: "10 分鐘靜心冥想",
+                    subtitle: "簡單易入門的日常靜心",
+                    url: URL(string: "https://www.youtube.com/watch?v=inpok4MKVLM")!
+                ),
+                VideoItem(
+                    title: "正念身體掃描",
+                    subtitle: "覺察身體、放鬆緊繃的引導",
+                    url: URL(string: "https://www.youtube.com/watch?v=ltVPj6-5qFg")!
+                ),
+                VideoItem(
+                    title: "睡前冥想",
+                    subtitle: "柔和語音，幫助安穩入睡",
+                    url: URL(string: "https://www.youtube.com/watch?v=oKxuiw3iMBE")!
+                )
+            ]
         }
-    }
-    
-    func resetTimer(for mode: Mode) {
-        stopTimer()
-        timeLeft = (mode == .breath) ? 300 : 1500
-    }
-    
-    func increaseTime() {
-        timeLeft += 60
-    }
-    
-    func decreaseTime() {
-        if timeLeft > 60 {
-            timeLeft -= 60
-        }
-    }
-    
-    private func startTimer() {
-        isRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            if self.timeLeft > 0 {
-                self.timeLeft -= 1
-            } else {
-                self.stopTimer()
-            }
-        }
-    }
-    
-    private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-        isRunning = false
     }
 }
 
@@ -66,14 +69,15 @@ struct RelaxTimerPreviewWrapper: View {
     @StateObject private var viewModel = RelaxTimerViewModel()
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("目前模式：\(viewModel.selectedMode.rawValue)")
-            Text("剩餘時間：\(viewModel.timeLeft) 秒")
-            Button(viewModel.isRunning ? "暫停" : "開始") {
-                viewModel.toggleTimer()
+        VStack(alignment: .leading, spacing: 12) {
+            Text("預覽模式：\(viewModel.selectedMode.rawValue)")
+                .font(.headline)
+            ForEach(viewModel.videos(for: viewModel.selectedMode)) { item in
+                Text(item.title)
+                    .font(.subheadline)
             }
         }
-        .padding()
+        .padding(16)
         .previewLayout(.sizeThatFits)
     }
 }

@@ -8,6 +8,7 @@ import SwiftUI
 
 struct DiaryMainView: View {
     @State private var selectedTab = 0 // 預設顯示「健康數據」
+    @State private var selectedTimePeriod = "本週"
     
     var body: some View {
         VStack(spacing: 0) {
@@ -37,10 +38,30 @@ struct DiaryMainView: View {
             TabView(selection: $selectedTab) {
                 NavigationView { HealthDataView() }.tag(0)
                 NavigationView { MoodDiaryView() }.tag(1)
-                NavigationView { ScaleQuestionView(scaleName: "追蹤") }.tag(2)
+                NavigationView {
+                    ScrollView {
+                        FiveIndicatorsCard(
+                            selectedTimePeriod: $selectedTimePeriod,
+                            indicatorOrder: [.physical, .emotional, .sleep, .mental],
+                            customDisplayNames: [
+                                .physical: "PHQ-9",
+                                .emotional: "GAD-7",
+                                .sleep: "BSRS-5",
+                                .mental: "RFQ-8"
+                            ]
+                        )
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+                            .frame(height: 350)
+                        Spacer(minLength: 20)
+                    }
+                    .background(AppColors.lightYellow)
+                }
+                .tag(2)
                 NavigationView { EmotionAnalysisView() }.tag(3)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .indexViewStyle(.page(backgroundDisplayMode: .never))
         }
         .background(AppColors.lightYellow)
     }
@@ -49,4 +70,3 @@ struct DiaryMainView: View {
 #Preview {
     DiaryMainView()
 }
-

@@ -5,8 +5,25 @@ struct FiveIndicatorsCard: View {
     @ObservedObject private var checkInManager = DailyCheckInManager.shared
     @State private var showingDropdown = false
     @State private var selectedIndicator: HealthIndicatorType? = nil  // nil = 顯示所有指標
-
+    
+    private let indicatorOrder: [HealthIndicatorType]
+    private let customDisplayNames: [HealthIndicatorType: String]
+    
     let timePeriodOptions = HomeConstants.Charts.timePeriodOptions
+    
+    init(
+        selectedTimePeriod: Binding<String>,
+        indicatorOrder: [HealthIndicatorType] = [.physical, .emotional, .sleep, .mental, .appetite],
+        customDisplayNames: [HealthIndicatorType: String] = [:]
+    ) {
+        _selectedTimePeriod = selectedTimePeriod
+        self.indicatorOrder = indicatorOrder
+        self.customDisplayNames = customDisplayNames
+    }
+    
+    private var activeIndicators: [HealthIndicatorType] {
+        indicatorOrder
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -24,24 +41,14 @@ struct FiveIndicatorsCard: View {
                         selectedIndicator = nil
                     }
                     Divider()
-                    Button("生理") {
-                        selectedIndicator = .physical
-                    }
-                    Button("心情") {
-                        selectedIndicator = .emotional
-                    }
-                    Button("睡眠") {
-                        selectedIndicator = .sleep
-                    }
-                    Button("精神") {
-                        selectedIndicator = .mental
-                    }
-                    Button("食慾") {
-                        selectedIndicator = .appetite
+                    ForEach(activeIndicators, id: \.self) { indicator in
+                        Button(displayName(for: indicator)) {
+                            selectedIndicator = indicator
+                        }
                     }
                 } label: {
                     HStack(spacing: 4) {
-                        Text(selectedIndicator?.displayName ?? "全部")
+                        Text(selectedIndicator.map { displayName(for: $0) } ?? "全部")
                             .font(.caption)
                             .foregroundColor(AppColors.titleColor.opacity(0.7))
                         Image(systemName: "line.3.horizontal.decrease")
@@ -74,13 +81,11 @@ struct FiveIndicatorsCard: View {
             // 圖例 - 根據選擇顯示
             HStack(spacing: 12) {
                 if let selected = selectedIndicator {
-                    indicatorLegend(name: selected.displayName, color: selected.color)
+                    indicatorLegend(name: displayName(for: selected), color: selected.color)
                 } else {
-                    indicatorLegend(name: "生理", color: HealthIndicatorType.physical.color)
-                    indicatorLegend(name: "心情", color: HealthIndicatorType.emotional.color)
-                    indicatorLegend(name: "睡眠", color: HealthIndicatorType.sleep.color)
-                    indicatorLegend(name: "精神", color: HealthIndicatorType.mental.color)
-                    indicatorLegend(name: "食慾", color: HealthIndicatorType.appetite.color)
+                    ForEach(activeIndicators, id: \.self) { indicator in
+                        indicatorLegend(name: displayName(for: indicator), color: indicator.color)
+                    }
                 }
             }
 
@@ -132,50 +137,16 @@ struct FiveIndicatorsCard: View {
                             )
                         } else {
                             // 顯示所有指標
-                            createIndicatorLine(
-                                data: checkInManager.getDataForPeriod(selectedTimePeriod, indicator: .physical),
-                                color: HealthIndicatorType.physical.color,
-                                width: width,
-                                height: height,
-                                dayWidth: dayWidth,
-                                lineWidth: 2
-                            )
-                            
-                            createIndicatorLine(
-                                data: checkInManager.getDataForPeriod(selectedTimePeriod, indicator: .emotional),
-                                color: HealthIndicatorType.emotional.color,
-                                width: width,
-                                height: height,
-                                dayWidth: dayWidth,
-                                lineWidth: 2
-                            )
-                            
-                            createIndicatorLine(
-                                data: checkInManager.getDataForPeriod(selectedTimePeriod, indicator: .sleep),
-                                color: HealthIndicatorType.sleep.color,
-                                width: width,
-                                height: height,
-                                dayWidth: dayWidth,
-                                lineWidth: 2
-                            )
-                            
-                            createIndicatorLine(
-                                data: checkInManager.getDataForPeriod(selectedTimePeriod, indicator: .mental),
-                                color: HealthIndicatorType.mental.color,
-                                width: width,
-                                height: height,
-                                dayWidth: dayWidth,
-                                lineWidth: 2
-                            )
-                            
-                            createIndicatorLine(
-                                data: checkInManager.getDataForPeriod(selectedTimePeriod, indicator: .appetite),
-                                color: HealthIndicatorType.appetite.color,
-                                width: width,
-                                height: height,
-                                dayWidth: dayWidth,
-                                lineWidth: 2
-                            )
+                            ForEach(activeIndicators, id: \.self) { indicator in
+                                createIndicatorLine(
+                                    data: checkInManager.getDataForPeriod(selectedTimePeriod, indicator: indicator),
+                                    color: indicator.color,
+                                    width: width,
+                                    height: height,
+                                    dayWidth: dayWidth,
+                                    lineWidth: 2
+                                )
+                            }
                         }
                         
                         // 如果沒有數據，顯示提示
@@ -233,6 +204,9 @@ struct FiveIndicatorsCard: View {
     }
     
     // MARK: - 輔助方法
+    private func displayName(for indicator: HealthIndicatorType) -> String {
+        customDisplayNames[indicator] ?? indicator.displayName
+    }
     
     /// 創建圖例項目
     private func indicatorLegend(name: String, color: Color) -> some View {

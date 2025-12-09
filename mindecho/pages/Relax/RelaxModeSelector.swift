@@ -15,7 +15,6 @@ struct RelaxModeSelector: View {
             ForEach(RelaxTimerViewModel.Mode.allCases, id: \.self) { mode in
                 Button {
                     viewModel.selectedMode = mode
-                    viewModel.resetTimer(for: mode)
                 } label: {
                     VStack(spacing: 6) {
                         Text(mode.rawValue)

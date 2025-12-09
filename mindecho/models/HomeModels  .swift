@@ -140,7 +140,7 @@ enum TestAction {
 }
 
 // MARK: - 健康指標類型
-enum HealthIndicatorType: Codable {
+enum HealthIndicatorType: Codable, Hashable {
     case physical   // 生理健康
     case mental     // 精神狀態
     case emotional  // 情緒狀態

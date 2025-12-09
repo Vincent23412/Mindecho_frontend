@@ -16,6 +16,8 @@ struct RegisterPage: View {
     @State private var lastName = ""
     @State private var dateOfBirth = ""
     @State private var selectedDate = Date()
+    @State private var emergencyContactName = ""
+    @State private var emergencyContactPhone = ""
     @State private var showDatePicker = false
     @State private var showLoginPage = false
     @State private var agreeToTerms = false
@@ -102,6 +104,57 @@ struct RegisterPage: View {
                 .foregroundColor(AppColors.orange)
             }
             .opacity(animateContent ? 1 : 0)
+        }
+    }
+}
+
+// 緊急聯絡人
+extension RegisterPage {
+    var emergencyContactSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("緊急聯絡人")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppColors.darkBrown)
+            
+            AuthTextField(
+                field: .emergencyName,
+                text: $emergencyContactName,
+                isValid: !emergencyContactName.isEmpty,
+                errorMessage: emergencyContactName.isEmpty ? "請填寫緊急聯絡人姓名" : "",
+                onEditingChanged: { isFocused in
+                    if isFocused {
+                        focusedField = .emergencyName
+                    }
+                },
+                onCommit: {
+                    focusedField = .emergencyPhone
+                }
+            )
+            .focused($focusedField, equals: .emergencyName)
+            
+            AuthTextField(
+                field: .emergencyPhone,
+                text: $emergencyContactPhone,
+                isValid: !emergencyContactPhone.isEmpty,
+                errorMessage: emergencyContactPhone.isEmpty ? "請填寫緊急聯絡人電話" : "",
+                onEditingChanged: { isFocused in
+                    if isFocused {
+                        focusedField = .emergencyPhone
+                    }
+                },
+                onCommit: {}
+            )
+            .keyboardType(.phonePad)
+            .focused($focusedField, equals: .emergencyPhone)
+            
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                Text("將用於緊急聯繫之用，請確認資訊正確。")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 }
@@ -254,8 +307,8 @@ private extension RegisterPage {
                 AuthTextField(
                     field: .password,
                     text: $password,
-                    isValid: !viewModel.hasError(for: .password) && password.count > 1,
-                    errorMessage: viewModel.getErrorMessage(for: .password),
+                    isValid: Validation.isValidPassword(password),
+                    errorMessage: password.count < 6 ? "密碼至少需要6個字符" : viewModel.getErrorMessage(for: .password),
                     onEditingChanged: { isFocused in
                         if isFocused {
                             focusedField = .password
@@ -278,7 +331,7 @@ private extension RegisterPage {
                     field: .confirmPassword,
                     text: $confirmPassword,
                     isValid: confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines) == password.trimmingCharacters(in: .whitespacesAndNewlines),
-                    errorMessage: viewModel.formValidator.confirmPasswordState.errorMessage,
+                    errorMessage: confirmPassword.isEmpty ? "" : viewModel.formValidator.confirmPasswordState.errorMessage,
                     onEditingChanged: { isFocused in
                         if isFocused {
                             focusedField = .confirmPassword
@@ -382,6 +435,9 @@ private extension RegisterPage {
                 
                 // 出生日期選擇器
                 dateOfBirthField
+                
+                // 緊急聯絡人
+                emergencyContactSection
             }
             
             // 服務條款同意
@@ -592,6 +648,8 @@ private extension RegisterPage {
         return !firstName.isEmpty &&
                !lastName.isEmpty &&
                !dateOfBirth.isEmpty &&
+               !emergencyContactName.isEmpty &&
+               !emergencyContactPhone.isEmpty &&
                !viewModel.hasError(for: .firstName) &&
                !viewModel.hasError(for: .lastName) &&
                !viewModel.hasError(for: .dateOfBirth)

@@ -1,29 +1,8 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @State private var quote = "你的故事還沒有結束，最精彩的章節還在後面"
     @State private var showingSupportReasons = false
-    @State private var showingCollectionBox = false
-    
-    private let samplePhotos: [PhotoItem] = [
-        PhotoItem(title: "我和小黃的合照", subtitle: "2023/05/15 - 快樂的一天"),
-        PhotoItem(title: "我和小黃的合照", subtitle: "2023/05/15 - 快樂的一天"),
-        PhotoItem(title: "我和小黃的合照", subtitle: "2023/05/15 - 快樂的一天"),
-        PhotoItem(title: "我和小黃的合照", subtitle: "2023/05/15 - 快樂的一天")
-    ]
-    
-    private let sampleVideos: [VideoItem] = [
-        VideoItem(title: "海浪聲音", subtitle: "放鬆冥想影片"),
-        VideoItem(title: "海浪聲音", subtitle: "放鬆冥想影片"),
-        VideoItem(title: "海浪聲音", subtitle: "放鬆冥想影片")
-    ]
-    
-    private let sampleAudios: [AudioItem] = [
-        AudioItem(title: "媽媽的鼓勵", duration: "1:30"),
-        AudioItem(title: "媽媽的鼓勵", duration: "1:30"),
-        AudioItem(title: "媽媽的鼓勵", duration: "1:30"),
-        AudioItem(title: "媽媽的鼓勵", duration: "1:30")
-    ]
+    @State private var showingPersonalInfo = false
     
     private let supportReasons: [SupportReason] = [
         SupportReason(
@@ -46,12 +25,16 @@ struct ProfileView: View {
                 
                 // MARK: - 使用者卡片
                 userInfoCard
+                NavigationLink(
+                    destination: PersonalInfoView(),
+                    isActive: $showingPersonalInfo
+                ) {
+                    EmptyView()
+                }
+                .hidden()
                 
                 // MARK: - 情緒行李箱
                 emotionBoxSection
-                
-                // MARK: - 今日提醒
-                dailyReminderCard
                 
                 // MARK: - 緊急聯繫
                 emergencySection
@@ -65,18 +48,50 @@ struct ProfileView: View {
                     showingSupportReasons = false
                 }
             }
-            .sheet(isPresented: $showingCollectionBox) {
-                SafeCollectionModal(
-                    photos: samplePhotos,
-                    videos: sampleVideos,
-                    audios: sampleAudios
-                ) {
-                    showingCollectionBox = false
-                }
-            }
         }
         .background(Color.yellow.opacity(0.1).ignoresSafeArea())
         .navigationTitle("個人檔案")
+    }
+}
+
+// MARK: - 編輯個人資訊頁
+struct EditPersonalInfoView: View {
+    @State private var email: String = "user@example.com"
+    @State private var firstName: String = "小美"
+    @State private var lastName: String = "Chen"
+    @State private var birthDate: Date = Date(timeIntervalSince1970: 1036003200) // 2002-10-30
+    @State private var preferredTheme: String = "暖色 / 友善提醒"
+    
+    var body: some View {
+        Form {
+            Section(header: Text("基本資料")) {
+                TextField("Email", text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                TextField("名", text: $firstName)
+                TextField("姓", text: $lastName)
+                DatePicker("生日", selection: $birthDate, displayedComponents: .date)
+            }
+            
+            Section(header: Text("偏好設定")) {
+                TextField("偏好主題", text: $preferredTheme)
+            }
+            
+            Section {
+                Button {
+                    // 預留：保存行為
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("保存變更")
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                }
+            }
+        }
+        .navigationTitle("編輯個人資訊")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -549,14 +564,27 @@ extension ProfileView {
     // 使用者卡片
     private var userInfoCard: some View {
         HStack(spacing: 16) {
-            Circle()
-                .fill(Color.orange.opacity(0.8))
-                .frame(width: 80, height: 80)
-                .overlay(
-                    Text("小美")
-                        .font(.title3.bold())
+            Button {
+                showingPersonalInfo = true
+            } label: {
+                Circle()
+                    .fill(Color.orange.opacity(0.8))
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        VStack(spacing: 2) {
+                            Text("小美")
+                                .font(.title3.bold())
+                            Text("個人資訊")
+                                .font(.caption2.weight(.semibold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.white.opacity(0.18))
+                                .cornerRadius(6)
+                        }
                         .foregroundColor(.white)
-                )
+                    )
+            }
+            .buttonStyle(.plain)
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("這是一個屬於你的安全空間，在這裡可以整理情緒、收集力量、找到希望。")
@@ -598,15 +626,6 @@ extension ProfileView {
                         showingSupportReasons = true
                     }
                 )
-                    EmotionBoxCard(
-                        title: "安心收藏箱",
-                        description: "收藏能給你帶來安慰和力量的影片、照片和語音。",
-                        buttonTitle: "打開收藏箱",
-                        color: .orange,
-                        onButtonTap: {
-                            showingCollectionBox = true
-                        }
-                    )
 //                    EmotionBoxCard(
 //                        title: "療癒語錄牆",
 //                        description: "收集那些曾經撫慰你的話語與詩句。",
@@ -626,45 +645,6 @@ extension ProfileView {
         }
         .padding(.vertical, 8)
 
-    }
-    
-    
-    // 今日提醒
-    private var dailyReminderCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("今日提醒")
-                .font(.headline)
-                .foregroundColor(.brown)
-            
-            Text("「\(quote)」")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .lineLimit(3)
-                .minimumScaleFactor(0.9)
-                .padding(.bottom, 4)
-            
-            Spacer(minLength: 0)
-            
-            Button {
-                quote = randomQuote()
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text("換一句")
-                }
-                .font(.caption)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.orange.opacity(0.15))
-                )
-            }
-            .foregroundColor(.orange)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
-        .background(cardBackground)
     }
     
     
@@ -699,22 +679,120 @@ extension ProfileView {
             .fill(Color.white)
             .shadow(color: .gray.opacity(0.15), radius: 4, x: 0, y: 2)
     }
-    
-    
-    // MARK: - 隨機名言
-    func randomQuote() -> String {
-        [
-            "你的故事還沒有結束，最精彩的章節還在後面。",
-            "今天的努力，是明天的底氣。",
-            "即使慢，也不要停止前進。",
-            "有時候，溫柔比勇敢更強大。"
-        ].randomElement()!
-    }
 }
 
 
 #Preview {
     NavigationView {
         ProfileView()
+    }
+}
+
+// MARK: - 個人資訊頁
+struct PersonalInfoView: View {
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // 頂部頭像與基本資料
+                VStack(spacing: 12) {
+                    Circle()
+                        .fill(Color.orange.opacity(0.85))
+                        .frame(width: 110, height: 110)
+                        .overlay(
+                            Text("小美")
+                                .font(.title2.bold())
+                                .foregroundColor(.white)
+                        )
+                    
+                    Text("小美 Chen")
+                        .font(.title3.bold())
+                        .foregroundColor(AppColors.titleColor)
+                    Text("安全空間中的個人資訊，僅供自己查看與整理")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.9))
+                        .shadow(color: .black.opacity(0.08), radius: 10, y: 6)
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                
+                // 詳細欄位
+                VStack(spacing: 12) {
+                    infoRow(icon: "envelope.fill", title: "Email", value: "user@example.com")
+                    infoRow(icon: "person.text.rectangle", title: "姓名", value: "陳小美")
+                    infoRow(icon: "calendar", title: "生日", value: "2002-10-30")
+                    infoRow(icon: "heart.text.square.fill", title: "偏好主題", value: "暖色 / 友善提醒")
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+                )
+                .padding(.horizontal, 16)
+                
+                // 按鈕區
+                VStack(spacing: 12) {
+                    NavigationLink {
+                        EditPersonalInfoView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "pencil")
+                            Text("編輯個人資訊")
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote)
+                        }
+                        .padding()
+                        .foregroundColor(.white)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(AppColors.orange)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                
+                Spacer(minLength: 20)
+            }
+            .padding(.bottom, 24)
+            .background(AppColors.lightYellow.ignoresSafeArea())
+        }
+        .navigationTitle("個人資訊")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private func infoRow(icon: String, title: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(AppColors.orange.opacity(0.15))
+                    .frame(width: 32, height: 32)
+                Image(systemName: icon)
+                    .foregroundColor(AppColors.orange)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppColors.titleColor)
+                Text(value)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
     }
 }

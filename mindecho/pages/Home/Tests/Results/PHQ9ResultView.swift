@@ -3,6 +3,7 @@ import SwiftUI
 struct PHQ9ResultView: View {
     let score: Int
     @Binding var isPresented: Bool
+    @State private var showComfortSheet = false
     
     var depressionLevel: String {
         switch score {
@@ -95,6 +96,49 @@ struct PHQ9ResultView: View {
         .background(AppColors.lightYellow)
         .navigationTitle("測試結果")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if score >= 10 {
+                showComfortSheet = true
+            }
+        }
+        .sheet(isPresented: $showComfortSheet) {
+            ComfortSupportView {
+                showComfortSheet = false
+                isPresented = false
+            }
+        }
+    }
+}
+
+private struct ComfortSupportView: View {
+    let onClose: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("給自己一點溫柔")
+                .font(.title3.weight(.bold))
+                .foregroundColor(AppColors.titleColor)
+            
+            Text("分數偏高時，代表你最近承受了不少情緒壓力。先深呼吸，給自己一點空間，必要時請尋求專業協助。")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+            
+            Spacer()
+            
+            Button(action: onClose) {
+                Text("收到，回到頁面")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppColors.darkBrown)
+                    .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(AppColors.lightYellow)
+        .presentationDetents([.fraction(0.75)])
     }
 }
 

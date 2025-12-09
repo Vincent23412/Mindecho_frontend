@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var animationProgress: Double = 0
     @State private var currentPage = 0
     @State private var showingDailyCheckIn = false
+    @State private var quote = "你的故事還沒有結束，最精彩的章節還在後面"
     
     // MARK: - Observable Objects
     @ObservedObject private var checkInManager = DailyCheckInManager.shared
@@ -39,6 +40,11 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
+                    // 今日提醒
+                    dailyReminderCard
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                    
                     // 每日檢測提醒（如果還沒完成）
                     if !checkInManager.hasCompletedToday {
                         DailyCheckInReminderCard(onTap: {
@@ -47,16 +53,6 @@ struct HomeView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
                     }
-                    
-                    // 頁面指示器（3個頁面）
-                    HStack(spacing: 8) {
-                        ForEach(0..<3, id: \.self) { index in
-                            Circle()
-                                .fill(currentPage == index ? AppColors.titleColor : AppColors.titleColor.opacity(0.3))
-                                .frame(width: 8, height: 8)
-                        }
-                    }
-                    .padding(.top, 8)
                     
                     // 水平滑動視圖
                     TabView(selection: $currentPage) {
@@ -107,6 +103,7 @@ struct HomeView: View {
                         .tag(2)
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                    .indexViewStyle(.page(backgroundDisplayMode: .never))
                     .frame(height: 380)
                     
                     // 心理健康資源區塊
@@ -193,6 +190,57 @@ struct HomeView: View {
     }
     
     // MARK: - 私有方法
+    
+    private var dailyReminderCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("今日提醒")
+                .font(.headline)
+                .foregroundColor(AppColors.titleColor)
+            
+            Text("「\(quote)」")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+                .minimumScaleFactor(0.9)
+                .frame(minHeight: 50, alignment: .topLeading)
+                .padding(.bottom, 4)
+            
+            Spacer(minLength: 0)
+            
+            Button {
+                quote = randomQuote()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Text("換一句")
+                }
+                .font(.caption)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(AppColors.orange.opacity(0.15))
+                )
+            }
+            .foregroundColor(AppColors.orange)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .gray.opacity(0.15), radius: 4, x: 0, y: 2)
+        )
+    }
+    
+    private func randomQuote() -> String {
+        [
+            "你的故事還沒有結束，最精彩的章節還在後面。",
+            "今天的努力，是明天的底氣。",
+            "即使慢，也不要停止前進。",
+            "有時候，溫柔比勇敢更強大。"
+        ].randomElement()!
+    }
     
     /// 載入存儲的設定
     private func loadStoredSettings() {

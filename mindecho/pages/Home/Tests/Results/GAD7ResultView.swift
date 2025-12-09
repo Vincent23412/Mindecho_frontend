@@ -3,6 +3,7 @@ import SwiftUI
 struct GAD7ResultView: View {
     let score: Int
     @Binding var isPresented: Bool
+    @State private var showComfortSheet = false
     
     var anxietyLevel: String {
         switch score {
@@ -94,7 +95,56 @@ struct GAD7ResultView: View {
         .background(AppColors.lightYellow)
         .navigationTitle("測試結果")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if score >= 10 {
+                showComfortSheet = true
+            }
+        }
+        .sheet(isPresented: $showComfortSheet) {
+            ComfortSupportView {
+                showComfortSheet = false
+                isPresented = false
+            }
+        }
     }
+}
+
+private struct ComfortSupportView: View {
+    let onClose: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("給自己一點溫柔")
+                .font(.title3.weight(.bold))
+                .foregroundColor(AppColors.titleColor)
+            
+            Text("分數偏高時，代表你近期焦慮感較強。先停下來深呼吸，提醒自己並不孤單，必要時尋求專業協助。")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+            
+            Spacer()
+            
+            Button(action: onClose) {
+                Text("收到，回到頁面")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppColors.darkBrown)
+                    .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(AppColors.lightYellow)
+        .presentationDetents([.fraction(0.75)])
+    }
+}
+
+private struct SupportReasonQuick: Identifiable {
+    let id = UUID()
+    let title: String
+    let detail: String
 }
 
 #Preview {
