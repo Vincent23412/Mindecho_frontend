@@ -698,7 +698,9 @@ private extension RegisterPage {
             confirmPassword: confirmPassword,
             firstName: firstName,
             lastName: lastName,
-            dateOfBirth: dateOfBirth
+            dateOfBirth: dateOfBirth,
+            emergencyContactName: emergencyContactName,
+            emergencyContactPhone: emergencyContactPhone
         )
         
     }

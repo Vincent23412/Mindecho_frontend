@@ -47,7 +47,9 @@ class AuthViewModel: ObservableObject {
         confirmPassword: String,
         firstName: String,
         lastName: String,
-        dateOfBirth: String
+        dateOfBirth: String,
+        emergencyContactName: String,
+        emergencyContactPhone: String
     ) {
         // 清除之前的訊息
         clearMessages()
@@ -76,7 +78,9 @@ class AuthViewModel: ObservableObject {
             password: password,
             firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
             lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
-            dateOfBirth: dateOfBirth
+            dateOfBirth: dateOfBirth,
+            emergencyContactName: emergencyContactName.trimmingCharacters(in: .whitespacesAndNewlines),
+            emergencyContactPhone: emergencyContactPhone.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
         // 發送註冊請求 (使用模擬 API) 真實改成Register
@@ -247,6 +251,12 @@ class AuthViewModel: ObservableObject {
         case .dateOfBirth:
             formValidator.dateOfBirthState.text = value
             formValidator.validateDateOfBirth()
+        case .emergencyName:
+            formValidator.emergencyNameState.text = value
+            formValidator.validateEmergencyName()
+        case .emergencyPhone:
+            formValidator.emergencyPhoneState.text = value
+            formValidator.validateEmergencyPhone()
         }
     }
     
@@ -325,6 +335,10 @@ extension AuthViewModel {
             return !formValidator.lastNameState.isValid && !formValidator.lastNameState.text.isEmpty
         case .dateOfBirth:
             return !formValidator.dateOfBirthState.isValid && !formValidator.dateOfBirthState.text.isEmpty
+        case .emergencyName:
+            return !formValidator.emergencyNameState.isValid && !formValidator.emergencyNameState.text.isEmpty
+        case .emergencyPhone:
+            return !formValidator.emergencyPhoneState.isValid && !formValidator.emergencyPhoneState.text.isEmpty
         }
     }
     
@@ -343,6 +357,10 @@ extension AuthViewModel {
             return formValidator.lastNameState.errorMessage
         case .dateOfBirth:
             return formValidator.dateOfBirthState.errorMessage
+        case .emergencyName:
+            return formValidator.emergencyNameState.errorMessage
+        case .emergencyPhone:
+            return formValidator.emergencyPhoneState.errorMessage
         }
     }
 }

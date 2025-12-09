@@ -51,6 +51,8 @@ struct RegisterRequest: Codable {
     let firstName: String
     let lastName: String
     let dateOfBirth: String
+    let emergencyContactName: String?
+    let emergencyContactPhone: String?
     
     func toDictionary() -> [String: Any] {
         return [
@@ -58,7 +60,9 @@ struct RegisterRequest: Codable {
             "password": password,
             "firstName": firstName,
             "lastName": lastName,
-            "dateOfBirth": dateOfBirth
+            "dateOfBirth": dateOfBirth,
+            "emergencyContactName": emergencyContactName as Any,
+            "emergencyContactPhone": emergencyContactPhone as Any
         ]
     }
 }

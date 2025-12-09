@@ -210,6 +210,8 @@ class FormValidator: ObservableObject {
     @Published var firstNameState = FieldState()
     @Published var lastNameState = FieldState()
     @Published var dateOfBirthState = FieldState()
+    @Published var emergencyNameState = FieldState()
+    @Published var emergencyPhoneState = FieldState()
     
     var isRegistrationFormValid: Bool {
         return emailState.isValid &&
@@ -291,6 +293,27 @@ class FormValidator: ObservableObject {
                 return .invalid("請選擇有效的出生日期")
             }
             return .valid
+        }
+    }
+    
+    func validateEmergencyName() {
+        emergencyNameState.validate { name in
+            // 緊急聯絡人可選填，填寫時不得為空
+            if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return .valid
+            }
+            return Validation.isValidName(name) ? .valid : .invalid("請輸入有效的姓名")
+        }
+    }
+    
+    func validateEmergencyPhone() {
+        emergencyPhoneState.validate { phone in
+            // 可選填：若有填寫，至少6碼
+            let trimmed = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                return .valid
+            }
+            return trimmed.count >= 6 ? .valid : .invalid("請輸入有效的電話")
         }
     }
     
