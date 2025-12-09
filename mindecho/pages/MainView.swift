@@ -33,7 +33,7 @@ struct MainView: View {
 
 // MARK: - Tabs
 private enum MainTab: String, CaseIterable, Identifiable {
-    case home, chat, diary, relax, profile, game
+    case home, chat, diary, relax, profile
     
     var id: String { rawValue }
     
@@ -44,7 +44,6 @@ private enum MainTab: String, CaseIterable, Identifiable {
         case .diary: return "追蹤"
         case .relax: return "放鬆"
         case .profile: return "個人檔案"
-        case .game: return "遊戲"
         }
     }
     
@@ -55,7 +54,6 @@ private enum MainTab: String, CaseIterable, Identifiable {
         case .diary: return "chart.bar"
         case .relax: return "leaf"
         case .profile: return "person"
-        case .game: return "gamecontroller"
         }
     }
     
@@ -67,7 +65,6 @@ private enum MainTab: String, CaseIterable, Identifiable {
         case .diary: DiaryMainView()
         case .relax: RelaxTimerView()
         case .profile: ProfileView()
-        case .game: RPGSceneView()
         }
     }
 }
@@ -77,27 +74,40 @@ private struct CustomTabBar: View {
     @Binding var selectedTab: MainTab
     
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 15) {
+        GeometryReader { geo in
+            let spacing: CGFloat = 12
+            let padding: CGFloat = 12
+            let count = CGFloat(MainTab.allCases.count)
+            let totalSpacing = spacing * (count - 1)
+            let itemWidth = (geo.size.width - totalSpacing - padding * 2) / count
+            
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: spacing) {
                     ForEach(MainTab.allCases) { tab in
-                        TabButton(tab: tab, isSelected: tab == selectedTab) {
+                        TabButton(
+                            tab: tab,
+                            isSelected: tab == selectedTab,
+                            fixedWidth: itemWidth
+                        ) {
                             selectedTab = tab
                         }
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
+                .padding(.horizontal, padding)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             .background(.ultraThinMaterial)
         }
+        .frame(height: 70)
     }
 }
 
 private struct TabButton: View {
     let tab: MainTab
     let isSelected: Bool
+    let fixedWidth: CGFloat?
     let action: () -> Void
     
     var body: some View {
@@ -108,7 +118,7 @@ private struct TabButton: View {
                 Text(tab.title)
                     .font(.footnote)
             }
-            .frame(minWidth: 52)
+            .frame(width: fixedWidth ?? 60)
             .padding(.vertical, 6)
             .foregroundColor(isSelected ? .accentColor : .secondary)
             .background(
