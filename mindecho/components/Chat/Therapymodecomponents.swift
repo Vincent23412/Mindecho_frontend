@@ -219,6 +219,12 @@ struct ModeIntroductionView: View {
                 "改善人際關係理解",
                 "提升心智化水平"
             ]
+        case .mentalization:
+            return [
+                "辨識自我與他人情緒、意圖",
+                "在衝突中保持清晰與彈性",
+                "練習同理與心智化思維"
+            ]
         }
     }
     

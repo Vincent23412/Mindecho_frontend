@@ -401,6 +401,12 @@ class ChatHook: ObservableObject {
                 ChatMessage(content: "和同事相處有些困難，不知道他們在想什麼", isFromUser: true, mode: .mbtMode),
                 ChatMessage(content: "人際關係確實複雜。讓我們用心智化的角度來看，您能具體描述一下是什麼樣的互動讓您感到困惑嗎？", isFromUser: false, mode: .mbtMode)
             ]
+        case .mentalization:
+            return [
+                ChatMessage(content: session.therapyMode.welcomeMessage, isFromUser: false, mode: .mentalization),
+                ChatMessage(content: "最近和朋友誤會很多，不知道彼此在想什麼", isFromUser: true, mode: .mentalization),
+                ChatMessage(content: "我們可以一起拆解這些互動。當時你怎麼理解對方的意圖？你自己的情緒又是什麼呢？", isFromUser: false, mode: .mentalization)
+            ]
         case .chatMode:
             return [
                 ChatMessage(content: session.therapyMode.welcomeMessage, isFromUser: false, mode: .chatMode),

@@ -258,6 +258,17 @@ extension ChatAPI {
                 return "讓我們用認知行為療法的方式來分析這個問題。首先，我們可以識別一些可能影響您情緒的想法模式。"
             }
             
+        case .mentalization:
+            if lowercaseMessage.contains("誤會") || lowercaseMessage.contains("不理解") {
+                return "聽起來彼此有些誤解。我們可以試著從對方角度想想，他/她可能在意的是什麼？"
+            } else if lowercaseMessage.contains("情緒") || lowercaseMessage.contains("感覺") {
+                return "留意自己的情緒很重要。此刻你的感覺是什麼？你覺得對方可能感受到什麼呢？"
+            } else if lowercaseMessage.contains("關係") || lowercaseMessage.contains("互動") {
+                return "人際互動往往有多層含義。我們一起推敲每個人的想法與意圖，看看是否有其他解讀。"
+            } else {
+                return "我們可以一起練習心智化：你如何解讀對方的想法與情緒？這些推測有沒有其他可能的解讀？"
+            }
+            
         case .mbtMode:
             if lowercaseMessage.contains("不理解") || lowercaseMessage.contains("不懂") {
                 return "理解他人的想法確實不容易。讓我們試著從心智化的角度來看，您覺得對方可能在想什麼？"

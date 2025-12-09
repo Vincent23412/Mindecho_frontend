@@ -234,9 +234,9 @@ private extension AuthTextField {
         case .email:
             return .emailAddress
         case .password:
-            return .password
+            return nil // 避免系統密碼自動填寫在預覽中攔截鍵盤
         case .confirmPassword:
-            return .password
+            return nil // 避免系統密碼自動填寫在預覽中攔截鍵盤
         case .firstName:
             return .givenName
         case .lastName:
