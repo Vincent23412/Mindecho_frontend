@@ -5,12 +5,14 @@ import UserNotifications
 
 // MARK: - 認證視圖模型
 class AuthViewModel: ObservableObject {
+    static let shared = AuthViewModel()
     
     // MARK: - Published 屬性 (自動觸發 UI 更新)
     @Published var authState: AuthState = .idle
     @Published var errorMessage: String = ""
     @Published var successMessage: String = ""
     @Published var isLoading: Bool = false
+    @Published var shouldShowDailyCheckIn: Bool = false
     
     // MARK: - 表單驗證器
     @Published var formValidator = FormValidator()
@@ -31,10 +33,12 @@ class AuthViewModel: ObservableObject {
         authService.$isAuthenticated
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isAuthenticated in
+                guard let self else { return }
                 if isAuthenticated {
-                    self?.authState = .authenticated
+                    self.authState = .authenticated
                 } else {
-                    self?.authState = .unauthenticated
+                    self.authState = .unauthenticated
+                    self.shouldShowDailyCheckIn = false
                 }
             }
             .store(in: &cancellables)
@@ -48,8 +52,12 @@ class AuthViewModel: ObservableObject {
         firstName: String,
         lastName: String,
         dateOfBirth: String,
-        emergencyContactName: String,
-        emergencyContactPhone: String
+        gender: String,
+        educationLevel: Int,
+        supportContactName: String,
+        supportContactInfo: String,
+        familyContactName: String,
+        familyContactInfo: String
     ) {
         // 清除之前的訊息
         clearMessages()
@@ -61,7 +69,13 @@ class AuthViewModel: ObservableObject {
             confirmPassword: confirmPassword,
             firstName: firstName,
             lastName: lastName,
-            dateOfBirth: dateOfBirth
+            dateOfBirth: dateOfBirth,
+            gender: gender,
+            educationLevel: educationLevel,
+            supportContactName: supportContactName,
+            supportContactInfo: supportContactInfo,
+            familyContactName: familyContactName,
+            familyContactInfo: familyContactInfo
         )
         
         if !validationErrors.isEmpty {
@@ -79,8 +93,12 @@ class AuthViewModel: ObservableObject {
             firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
             lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
             dateOfBirth: dateOfBirth,
-            emergencyContactName: emergencyContactName.trimmingCharacters(in: .whitespacesAndNewlines),
-            emergencyContactPhone: emergencyContactPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+            gender: gender,
+            educationLevel: educationLevel,
+            supportContactName: supportContactName.trimmingCharacters(in: .whitespacesAndNewlines),
+            supportContactInfo: supportContactInfo.trimmingCharacters(in: .whitespacesAndNewlines),
+            familyContactName: familyContactName.trimmingCharacters(in: .whitespacesAndNewlines),
+            familyContactInfo: familyContactInfo.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
         // 發送註冊請求 (使用模擬 API) 真實改成Register
@@ -101,6 +119,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "註冊成功！歡迎加入 MindEcho！")
                         self?.authState = .authenticated
+                        self?.shouldShowDailyCheckIn = true
                         self?.sendRegistrationSuccessNotification(message: response.message ?? "註冊成功！")
                     } else {
                         self?.showError(response.message ?? "註冊失敗，請重試")
@@ -150,6 +169,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "登錄成功！")
                         self?.authState = .authenticated
+                        self?.shouldShowDailyCheckIn = true
                     } else {
                         self?.showError(response.message ?? "電子郵件或密碼錯誤")
                     }
@@ -162,6 +182,7 @@ class AuthViewModel: ObservableObject {
     func logout() {
         authService.logout()
         authState = .unauthenticated
+        shouldShowDailyCheckIn = false
         clearMessages()
     }
     
@@ -257,6 +278,9 @@ class AuthViewModel: ObservableObject {
         case .emergencyPhone:
             formValidator.emergencyPhoneState.text = value
             formValidator.validateEmergencyPhone()
+        case .supportContactName, .supportContactInfo, .familyContactName, .familyContactInfo:
+            // 目前不做即時驗證，僅供焦點用
+            break
         }
     }
     
@@ -339,6 +363,8 @@ extension AuthViewModel {
             return !formValidator.emergencyNameState.isValid && !formValidator.emergencyNameState.text.isEmpty
         case .emergencyPhone:
             return !formValidator.emergencyPhoneState.isValid && !formValidator.emergencyPhoneState.text.isEmpty
+        case .supportContactName, .supportContactInfo, .familyContactName, .familyContactInfo:
+            return false
         }
     }
     
@@ -361,6 +387,8 @@ extension AuthViewModel {
             return formValidator.emergencyNameState.errorMessage
         case .emergencyPhone:
             return formValidator.emergencyPhoneState.errorMessage
+        case .supportContactName, .supportContactInfo, .familyContactName, .familyContactInfo:
+            return ""
         }
     }
 }

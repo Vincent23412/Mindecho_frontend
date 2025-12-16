@@ -5,7 +5,7 @@ struct RegisterPage: View {
 
     // MARK: - 環境和狀態
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = AuthViewModel()
+    @StateObject private var viewModel = AuthViewModel.shared
     @StateObject private var validator = FormValidator()
 
     // MARK: - 表單狀態
@@ -18,9 +18,16 @@ struct RegisterPage: View {
     @State private var selectedDate = Date()
     @State private var emergencyContactName = ""
     @State private var emergencyContactPhone = ""
+    @State private var supportContactName = ""
+    @State private var supportContactInfo = ""
+    @State private var familyContactName = ""
+    @State private var familyContactInfo = ""
+    @State private var selectedGender: String = ""
+    @State private var selectedEducationLevel: Int = 0
     @State private var showDatePicker = false
     @State private var showLoginPage = false
     @State private var agreeToTerms = false
+    @State private var showSuccessAlert = false
 
     // MARK: - 動畫和UI狀態
     @State private var animateContent = false
@@ -72,8 +79,11 @@ struct RegisterPage: View {
             }
             .onChange(of: viewModel.authState) { _, state in
                 if case .authenticated = state {
-                    dismiss()
+                    showSuccessAlert = true
                 }
+            }
+            .onChange(of: viewModel.successMessage) { _, newValue in
+                showSuccessAlert = !newValue.isEmpty
             }
         }
         .fullScreenCover(isPresented: $showLoginPage) {
@@ -86,6 +96,36 @@ struct RegisterPage: View {
                 isPresented: $showDatePicker
             )
         }
+        .alert("註冊成功", isPresented: $showSuccessAlert) {
+            Button("好的") {
+                resetFormToStart()
+                showLoginPage = true
+            }
+        } message: {
+            Text(viewModel.successMessage.isEmpty ? "註冊成功！歡迎加入 MindEcho！" : viewModel.successMessage)
+        }
+    }
+
+    /// 成功後重置頁面狀態，回到第一步
+    private func resetFormToStart() {
+        currentStep = 0
+        email = ""
+        password = ""
+        confirmPassword = ""
+        firstName = ""
+        lastName = ""
+        dateOfBirth = ""
+        selectedDate = Date()
+        selectedGender = ""
+        selectedEducationLevel = 0
+        supportContactName = ""
+        supportContactInfo = ""
+        familyContactName = ""
+        familyContactInfo = ""
+        emergencyContactName = ""
+        emergencyContactPhone = ""
+        agreeToTerms = false
+        focusedField = nil
     }
 
     // MARK: - 底部區域
@@ -111,50 +151,150 @@ struct RegisterPage: View {
 // 緊急聯絡人
 extension RegisterPage {
     var emergencyContactSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("緊急聯絡人")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(AppColors.darkBrown)
             
-            AuthTextField(
-                field: .emergencyName,
-                text: $emergencyContactName,
-                isValid: !emergencyContactName.isEmpty,
-                errorMessage: emergencyContactName.isEmpty ? "請填寫緊急聯絡人姓名" : "",
-                onEditingChanged: { isFocused in
-                    if isFocused {
-                        focusedField = .emergencyName
-                    }
-                },
-                onCommit: {
-                    focusedField = .emergencyPhone
-                }
+            contactGroup(
+                title: "有困難時會想找的人",
+                name: $supportContactName,
+                info: $supportContactInfo,
+                nameField: .supportContactName,
+                infoField: .supportContactInfo
             )
-            .focused($focusedField, equals: .emergencyName)
             
-            AuthTextField(
-                field: .emergencyPhone,
-                text: $emergencyContactPhone,
-                isValid: !emergencyContactPhone.isEmpty,
-                errorMessage: emergencyContactPhone.isEmpty ? "請填寫緊急聯絡人電話" : "",
-                onEditingChanged: { isFocused in
-                    if isFocused {
-                        focusedField = .emergencyPhone
-                    }
-                },
-                onCommit: {}
+            contactGroup(
+                title: "親人",
+                name: $familyContactName,
+                info: $familyContactInfo,
+                nameField: .familyContactName,
+                infoField: .familyContactInfo
             )
-            .keyboardType(.phonePad)
-            .focused($focusedField, equals: .emergencyPhone)
             
             HStack(spacing: 6) {
                 Image(systemName: "info.circle")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
-                Text("將用於緊急聯繫之用，請確認資訊正確。")
+                Text("至少填寫 1 位朋友/支援者與 1 位親人，請確認聯絡方式可用。")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+}
+
+private extension RegisterPage {
+    var genderSelector: some View {
+        let options = ["男", "女", "其他"]
+        return HStack(spacing: 10) {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    selectedGender = option
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: selectedGender == option ? "largecircle.fill.circle" : "circle")
+                            .foregroundColor(selectedGender == option ? AppColors.orange : AppColors.mediumBrown)
+                        Text(option)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AppColors.darkBrown)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedGender == option ? AppColors.lightYellow.opacity(0.7) : Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(AppColors.lightBrown.opacity(0.6), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    var educationSelector: some View {
+        let options: [(Int, String)] = [
+            (1, "小學(或同等學歷)或以下"),
+            (2, "初級中學或初級職業學校(或同等學歷)"),
+            (3, "高級中學或高級職業學校(或同等學歷)"),
+            (4, "大學或專科、技術學院(或同等學歷)"),
+            (5, "研究所或以上(碩博士)")
+        ]
+        return VStack(alignment: .leading, spacing: 10) {
+            ForEach(options, id: \.0) { level, title in
+                Button {
+                    selectedEducationLevel = level
+                } label: {
+                    HStack {
+                        Image(systemName: selectedEducationLevel == level ? "checkmark.square.fill" : "square")
+                            .foregroundColor(selectedEducationLevel == level ? AppColors.orange : AppColors.mediumBrown.opacity(0.7))
+                        Text(title)
+                            .font(.system(size: 14))
+                            .foregroundColor(AppColors.darkBrown)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(AppColors.lightBrown.opacity(0.5), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    func contactGroup(title: String,
+                      name: Binding<String>,
+                      info: Binding<String>,
+                      namePlaceholder: String = "姓名或稱呼方式",
+                      infoPlaceholder: String = "電話或 Email",
+                      nameField: FormField,
+                      infoField: FormField) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppColors.darkBrown)
+            
+            AuthTextField(
+                field: nameField,
+                text: name,
+                isValid: !name.wrappedValue.isEmpty,
+                errorMessage: name.wrappedValue.isEmpty ? "請填寫姓名或稱呼方式" : "",
+                onEditingChanged: { isFocused in
+                    if isFocused {
+                        focusedField = nameField
+                    }
+                },
+                onCommit: {
+                    focusedField = infoField
+                },
+                placeholderOverride: namePlaceholder
+            )
+            .focused($focusedField, equals: nameField)
+            
+            AuthTextField(
+                field: infoField,
+                text: info,
+                isValid: !info.wrappedValue.isEmpty,
+                errorMessage: info.wrappedValue.isEmpty ? "請填寫聯絡方式" : "",
+                onEditingChanged: { isFocused in
+                    if isFocused {
+                        focusedField = infoField
+                    }
+                },
+                onCommit: {},
+                placeholderOverride: infoPlaceholder
+            )
+            .focused($focusedField, equals: infoField)
         }
     }
 }
@@ -432,6 +572,22 @@ private extension RegisterPage {
                 .onChange(of: lastName) { _, newValue in
                     viewModel.validateFieldRealTime(field: .lastName, value: newValue)
                 }
+
+                // 性別
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("生理性別")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.darkBrown)
+                    genderSelector
+                }
+
+                // 教育程度
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("教育程度")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.darkBrown)
+                    educationSelector
+                }
                 
                 // 出生日期選擇器
                 dateOfBirthField
@@ -648,8 +804,12 @@ private extension RegisterPage {
         return !firstName.isEmpty &&
                !lastName.isEmpty &&
                !dateOfBirth.isEmpty &&
-               !emergencyContactName.isEmpty &&
-               !emergencyContactPhone.isEmpty &&
+               !selectedGender.isEmpty &&
+               selectedEducationLevel != 0 &&
+               !supportContactName.isEmpty &&
+               !supportContactInfo.isEmpty &&
+               !familyContactName.isEmpty &&
+               !familyContactInfo.isEmpty &&
                !viewModel.hasError(for: .firstName) &&
                !viewModel.hasError(for: .lastName) &&
                !viewModel.hasError(for: .dateOfBirth)
@@ -678,7 +838,26 @@ private extension RegisterPage {
     func performRegistration() {
         // 隱藏鍵盤
         focusedField = nil
+        viewModel.errorMessage = ""
         
+        // 基本驗證（除基礎欄位外）
+        guard !selectedGender.isEmpty else {
+            viewModel.errorMessage = "請選擇性別"
+            return
+        }
+        guard selectedEducationLevel != 0 else {
+            viewModel.errorMessage = "請選擇教育程度"
+            return
+        }
+        guard !supportContactName.isEmpty, !supportContactInfo.isEmpty else {
+            viewModel.errorMessage = "請填寫緊急聯絡人（朋友/支援者）姓名與聯絡方式"
+            return
+        }
+        guard !familyContactName.isEmpty, !familyContactInfo.isEmpty else {
+            viewModel.errorMessage = "請填寫緊急聯絡人（親人）姓名與聯絡方式"
+            return
+        }
+
         // 🎯 使用開發模式註冊
         /*
         viewModel.registerDevelopmentMode(
@@ -687,7 +866,13 @@ private extension RegisterPage {
             confirmPassword: confirmPassword,
             firstName: firstName,
             lastName: lastName,
-            dateOfBirth: dateOfBirth
+            dateOfBirth: dateOfBirth,
+            gender: selectedGender,
+            educationLevel: selectedEducationLevel,
+            supportContactName: supportContactName,
+            supportContactInfo: supportContactInfo,
+            familyContactName: familyContactName,
+            familyContactInfo: familyContactInfo
         )
          */
         // 🚫 真實 API 註冊
@@ -699,8 +884,12 @@ private extension RegisterPage {
             firstName: firstName,
             lastName: lastName,
             dateOfBirth: dateOfBirth,
-            emergencyContactName: emergencyContactName,
-            emergencyContactPhone: emergencyContactPhone
+            gender: selectedGender,
+            educationLevel: selectedEducationLevel,
+            supportContactName: supportContactName,
+            supportContactInfo: supportContactInfo,
+            familyContactName: familyContactName,
+            familyContactInfo: familyContactInfo
         )
         
     }

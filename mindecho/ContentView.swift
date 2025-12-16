@@ -8,18 +8,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var authService = AuthService.shared
+    @StateObject private var authViewModel = AuthViewModel.shared
     @State private var selectedTab = 0
     
     var body: some View {
         Group {
-            if authService.isAuthenticated {
+            if authViewModel.isAuthenticated {
                 // 已登錄
                 mainTabView
             } else {
                 // 未登錄 
                 WelcomePage()
             }
+        }
+        .fullScreenCover(isPresented: $authViewModel.shouldShowDailyCheckIn) {
+            DailyCheckInView(isPresented: $authViewModel.shouldShowDailyCheckIn)
         }
     }
     

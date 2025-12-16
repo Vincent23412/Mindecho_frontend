@@ -2,7 +2,7 @@ import Foundation
 import Combine
 
 // MARK: - 認證服務類
-class AuthService: ObservableObject {
+class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     
     // MARK: - 單例模式
     static let shared = AuthService()
@@ -14,7 +14,18 @@ class AuthService: ObservableObject {
     
     // MARK: - 私有屬性
     private let baseURL = "https://mindechoserver.com"
-    private let session: URLSession
+    private lazy var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = AuthConstants.Network.requestTimeout
+        config.timeoutIntervalForResource = AuthConstants.Network.requestTimeout * 2
+        return URLSession(
+            configuration: config,
+            delegate: allowInsecureSelfSigned ? self : nil,
+            delegateQueue: nil
+        )
+    }()
+    /// 僅開發用：允許自簽/無效憑證（正式版請關閉）
+    private let allowInsecureSelfSigned = true
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - UserDefaults 鍵值
@@ -24,14 +35,21 @@ class AuthService: ObservableObject {
         static let userData = AuthConstants.UserDefaultsKeys.userData
     }
     
-    private init() {
-        // 配置 URLSession
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = AuthConstants.Network.requestTimeout
-        config.timeoutIntervalForResource = AuthConstants.Network.requestTimeout * 2
-        self.session = URLSession(configuration: config)
-        
+    private override init() {
+        super.init()
         loadStoredAuth()
+    }
+
+    // MARK: - URLSessionDelegate（僅開發用，信任自簽憑證）
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard allowInsecureSelfSigned,
+              challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, URLCredential(trust: trust))
     }
     
     // MARK: - 載入本地存儲的認證資訊
@@ -81,8 +99,8 @@ class AuthService: ObservableObject {
     // MARK: - 註冊功能
     func register(request: RegisterRequest) -> AnyPublisher<AuthResponse, Error> {
      
-        // 指向 dev 環境註冊 API
-        guard let url = URL(string: "https://mindechoserver.com:8443/dev-api/auth/register") else {
+        // 指向本機 dev API（若在模擬器/實機測試請視需求改成 127.0.0.1 或區網 IP）
+        guard let url = URL(string: "https://localhost/dev-api/auth/register") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
@@ -175,8 +193,8 @@ class AuthService: ObservableObject {
     // MARK: - 登錄功能
     func login(request: LoginRequest) -> AnyPublisher<AuthResponse, Error> {
 
-        
-        guard let url = URL(string: "\(baseURL)\(AuthConstants.API.login)") else {
+        // 本地反向代理登入端點
+        guard let url = URL(string: "https://localhost/dev-api/auth/login") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }

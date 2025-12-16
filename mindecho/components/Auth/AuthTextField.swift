@@ -10,6 +10,7 @@ struct AuthTextField: View {
     let errorMessage: String
     let onEditingChanged: (Bool) -> Void
     let onCommit: () -> Void
+    let placeholderOverride: String?
     
     // MARK: - 內部狀態
     @State private var isSecureTextVisible = false
@@ -23,7 +24,8 @@ struct AuthTextField: View {
         isValid: Bool = true,
         errorMessage: String = "",
         onEditingChanged: @escaping (Bool) -> Void = { _ in },
-        onCommit: @escaping () -> Void = {}
+        onCommit: @escaping () -> Void = {},
+        placeholderOverride: String? = nil
     ) {
         self.field = field
         self._text = text
@@ -31,13 +33,14 @@ struct AuthTextField: View {
         self.errorMessage = errorMessage
         self.onEditingChanged = onEditingChanged
         self.onCommit = onCommit
+        self.placeholderOverride = placeholderOverride
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // 標籤
             HStack {
-                Text(field.placeholder)
+                Text(placeholderOverride ?? field.placeholder)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(labelColor)
                 
@@ -53,11 +56,11 @@ struct AuthTextField: View {
             HStack(spacing: 12) {
                 // 輸入框
                 if field.isSecure && !isSecureTextVisible {
-                    SecureField("", text: $text)
+                    SecureField(placeholderOverride ?? field.placeholder, text: $text)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(AppColors.darkBrown)
                 } else {
-                    TextField("", text: $text)
+                    TextField(placeholderOverride ?? field.placeholder, text: $text)
                         .keyboardType(field.keyboardType)
                         .textContentType(textContentType)
                         .textInputAutocapitalization(autocapitalization)
@@ -243,6 +246,14 @@ private extension AuthTextField {
             return .familyName
         case .dateOfBirth:
             return .dateTime
+        case .emergencyName:
+            return .name
+        case .emergencyPhone:
+            return .telephoneNumber
+        case .supportContactName, .familyContactName:
+            return .name
+        case .supportContactInfo, .familyContactInfo:
+            return .telephoneNumber
         }
     }
     
@@ -256,6 +267,14 @@ private extension AuthTextField {
         case .firstName, .lastName:
             return .words
         case .dateOfBirth:
+            return .never
+        case .emergencyName:
+            return .words
+        case .emergencyPhone:
+            return .never
+        case .supportContactName, .familyContactName:
+            return .words
+        case .supportContactInfo, .familyContactInfo:
             return .never
         }
     }

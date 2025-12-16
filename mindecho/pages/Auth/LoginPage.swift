@@ -5,7 +5,7 @@ struct LoginPage: View {
     
     // MARK: - 環境和狀態
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = AuthViewModel()
+    @StateObject private var viewModel = AuthViewModel.shared
     
     // MARK: - 表單狀態
     @State private var email = ""
@@ -191,14 +191,15 @@ private extension LoginPage {
                 AuthTextField(
                     field: .password,
                     text: $password,
-                    isValid: !viewModel.hasError(for: .password),
-                    errorMessage: viewModel.getErrorMessage(for: .password),
+                    isValid: true,
+                    errorMessage: "",
                     onEditingChanged: { isFocused in
                         if isFocused {
                             focusedField = .password
                         }
-                        if !isFocused && !password.isEmpty {
-                            viewModel.validateFieldRealTime(field: .password, value: password)
+                        if !isFocused {
+                            viewModel.formValidator.passwordState.text = password
+                            viewModel.formValidator.passwordState.isValid = !password.isEmpty
                         }
                     },
                     onCommit: {
@@ -209,7 +210,8 @@ private extension LoginPage {
                 )
                 .focused($focusedField, equals: .password)
                 .onChange(of: password) { _, newValue in
-                    viewModel.validateFieldRealTime(field: .password, value: newValue)
+                    viewModel.formValidator.passwordState.text = newValue
+                    viewModel.formValidator.passwordState.isValid = !newValue.isEmpty
                 }
             }
             
@@ -339,10 +341,7 @@ private extension LoginPage {
         // 隱藏鍵盤
         focusedField = nil
         
-        // 🎯 使用開發模式登錄
-        // viewModel.loginDevelopmentMode(email: email, password: password)
-        
-        // 🚫 真實 API 登錄（暫時不用）
+        // 🎯 真實 API 登錄
         viewModel.login(email: email, password: password)
     }
 }

@@ -75,7 +75,13 @@ struct Validation {
         confirmPassword: String,
         firstName: String,
         lastName: String,
-        dateOfBirth: String
+        dateOfBirth: String,
+        gender: String,
+        educationLevel: Int,
+        supportContactName: String,
+        supportContactInfo: String,
+        familyContactName: String,
+        familyContactInfo: String
     ) -> [ValidationError] {
         var errors: [ValidationError] = []
         
@@ -113,6 +119,32 @@ struct Validation {
             errors.append(.emptyField("出生日期"))
         } else if !isValidDateOfBirth(dateOfBirth) {
             errors.append(.invalidDateOfBirth)
+        }
+
+        // 性別
+        if gender.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(.emptyField("性別"))
+        }
+
+        // 教育程度 (1~5)
+        if educationLevel < 1 || educationLevel > 5 {
+            errors.append(.emptyField("教育程度"))
+        }
+
+        // 緊急聯絡人 (朋友/支援者)
+        if supportContactName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(.emptyField("緊急聯絡人（朋友/支援者）姓名"))
+        }
+        if supportContactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(.emptyField("緊急聯絡人（朋友/支援者）聯絡方式"))
+        }
+
+        // 緊急聯絡人 (親人)
+        if familyContactName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(.emptyField("緊急聯絡人（親人）姓名"))
+        }
+        if familyContactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(.emptyField("緊急聯絡人（親人）聯絡方式"))
         }
         
         return errors
@@ -228,9 +260,8 @@ class FormValidator: ObservableObject {
     }
     
     var isLoginFormValid: Bool {
-        return emailState.isValid &&
-               passwordState.isValid &&
-               !emailState.text.isEmpty &&
+        return !emailState.text.isEmpty &&
+               Validation.isValidEmail(emailState.text) &&
                !passwordState.text.isEmpty
     }
     

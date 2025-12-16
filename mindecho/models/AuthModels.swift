@@ -51,8 +51,12 @@ struct RegisterRequest: Codable {
     let firstName: String
     let lastName: String
     let dateOfBirth: String
-    let emergencyContactName: String?
-    let emergencyContactPhone: String?
+    let gender: String
+    let educationLevel: Int
+    let supportContactName: String
+    let supportContactInfo: String
+    let familyContactName: String
+    let familyContactInfo: String
     
     func toDictionary() -> [String: Any] {
         return [
@@ -61,8 +65,12 @@ struct RegisterRequest: Codable {
             "firstName": firstName,
             "lastName": lastName,
             "dateOfBirth": dateOfBirth,
-            "emergencyContactName": emergencyContactName as Any,
-            "emergencyContactPhone": emergencyContactPhone as Any
+            "gender": gender,
+            "educationLevel": educationLevel,
+            "supportContactName": supportContactName,
+            "supportContactInfo": supportContactInfo,
+            "familyContactName": familyContactName,
+            "familyContactInfo": familyContactInfo
         ]
     }
 }
@@ -187,6 +195,10 @@ enum FormField: CaseIterable {
     case dateOfBirth
     case emergencyName
     case emergencyPhone
+    case supportContactName
+    case supportContactInfo
+    case familyContactName
+    case familyContactInfo
     
     var placeholder: String {
         switch self {
@@ -206,6 +218,14 @@ enum FormField: CaseIterable {
             return "緊急聯絡人姓名"
         case .emergencyPhone:
             return "緊急聯絡人電話"
+        case .supportContactName:
+            return "朋友/支援者姓名"
+        case .supportContactInfo:
+            return "朋友/支援者聯絡方式"
+        case .familyContactName:
+            return "親人姓名"
+        case .familyContactInfo:
+            return "親人聯絡方式"
         }
     }
     
@@ -222,6 +242,10 @@ enum FormField: CaseIterable {
         case .emergencyName:
             return .namePhonePad
         case .emergencyPhone:
+            return .phonePad
+        case .supportContactName, .familyContactName:
+            return .namePhonePad
+        case .supportContactInfo, .familyContactInfo:
             return .phonePad
         }
     }

@@ -24,6 +24,7 @@ extension AuthViewModel {
             
             // 直接設定為已認證
             AuthService.shared.isAuthenticated = true
+            self.shouldShowDailyCheckIn = true
             
             self.successMessage = "登錄成功！（開發模式）"
             self.errorMessage = ""
@@ -38,7 +39,13 @@ extension AuthViewModel {
         confirmPassword: String,
         firstName: String,
         lastName: String,
-        dateOfBirth: String
+        dateOfBirth: String,
+        gender: String,
+        educationLevel: Int,
+        supportContactName: String,
+        supportContactInfo: String,
+        familyContactName: String,
+        familyContactInfo: String
     ) {
         // 驗證表單
         let validationErrors = Validation.validateRegistrationForm(
@@ -47,7 +54,13 @@ extension AuthViewModel {
             confirmPassword: confirmPassword,
             firstName: firstName,
             lastName: lastName,
-            dateOfBirth: dateOfBirth
+            dateOfBirth: dateOfBirth,
+            gender: gender,
+            educationLevel: educationLevel,
+            supportContactName: supportContactName,
+            supportContactInfo: supportContactInfo,
+            familyContactName: familyContactName,
+            familyContactInfo: familyContactInfo
         )
         
         if !validationErrors.isEmpty {
@@ -65,6 +78,7 @@ extension AuthViewModel {
             
             // 直接設定為已認證
             AuthService.shared.isAuthenticated = true
+            self.shouldShowDailyCheckIn = true
             
             self.successMessage = "註冊成功！歡迎加入 MindEcho！（開發模式）"
             self.errorMessage = ""
