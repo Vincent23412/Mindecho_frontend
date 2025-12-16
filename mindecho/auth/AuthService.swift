@@ -53,7 +53,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     }
     
     // MARK: - 載入本地存儲的認證資訊
-    private func loadStoredAuth() {
+    fileprivate func loadStoredAuth() {
         if let token = UserDefaults.standard.string(forKey: Keys.authToken),
            let userData = UserDefaults.standard.data(forKey: Keys.userData),
            let user = try? JSONDecoder().decode(User.self, from: userData) {
@@ -324,6 +324,13 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         return request
+    }
+    
+    /// 確保從本地載入最新認證資訊（供外部需要時呼叫）
+    func refreshStoredAuthIfNeeded() {
+        if currentUser == nil || authToken == nil {
+            loadStoredAuth()
+        }
     }
 }
 

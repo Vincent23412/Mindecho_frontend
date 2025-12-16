@@ -255,10 +255,10 @@ private extension RegisterPage {
     func contactGroup(title: String,
                       name: Binding<String>,
                       info: Binding<String>,
-                      namePlaceholder: String = "姓名或稱呼方式",
-                      infoPlaceholder: String = "電話或 Email",
                       nameField: FormField,
-                      infoField: FormField) -> some View {
+                      infoField: FormField,
+                      namePlaceholder: String = "姓名或稱呼方式",
+                      infoPlaceholder: String = "電話或 Email") -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 14, weight: .medium))

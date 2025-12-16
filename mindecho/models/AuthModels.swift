@@ -96,12 +96,23 @@ struct AuthResponse: Codable {
     let token: String?
     let refreshToken: String?
     
+    // 後端有時回傳 userData 而非 user
+    private enum AdditionalKeys: String, CodingKey {
+        case userData
+    }
+    
     // 自訂初始化方法，處理後端回應格式
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         self.message = try container.decodeIfPresent(String.self, forKey: .message)
-        self.user = try container.decodeIfPresent(User.self, forKey: .user)
+        // 嘗試解析 user 或 userData
+        if let user = try container.decodeIfPresent(User.self, forKey: .user) {
+            self.user = user
+        } else {
+            let additional = try decoder.container(keyedBy: AdditionalKeys.self)
+            self.user = try additional.decodeIfPresent(User.self, forKey: .userData)
+        }
         self.token = try container.decodeIfPresent(String.self, forKey: .token)
         self.refreshToken = try container.decodeIfPresent(String.self, forKey: .refreshToken)
         

@@ -148,7 +148,7 @@ struct DailyCheckInView: View {
                         .transition(.slide)
                     }
                     
-                    Button(action: nextQuestion) {
+                    Button(action: onPrimaryButtonTap) {
                         Text(currentQuestion == questions.count - 1 ? "完成檢測" : "下一題")
                             .font(.subheadline)
                             .fontWeight(.medium)
@@ -196,13 +196,37 @@ struct DailyCheckInView: View {
             if currentQuestion < questions.count - 1 {
                 currentQuestion += 1
             } else {
-                // 計算分數並保存（只執行一次）
-                let scores = calculateScores()
-                calculatedScores = scores
-                checkInManager.saveDailyCheckIn(scores: scores)
-                showingResult = true
+                handleCompletion()
             }
         }
+    }
+
+    private func onPrimaryButtonTap() {
+        // 顯式 log 方便追蹤是否有按下完成檢測
+        if currentQuestion == questions.count - 1 {
+            print("🟠 DailyCheckIn: tapped 完成檢測")
+        }
+        nextQuestion()
+    }
+
+    private func handleCompletion() {
+        // 計算分數並保存（只執行一次）
+        let scores = calculateScores()
+        calculatedScores = scores
+        checkInManager.saveDailyCheckIn(scores: scores)
+
+        // 送出問卷回答並記錄 log（配合後端確認）
+        let answerTexts = answers.map { idx in
+            idx >= 0 && idx < moodOptions.count ? moodOptions[idx].label : ""
+        }
+        print("🟢 DailyCheckIn: sending dailyQuestions payload")
+        checkInManager.sendDailyQuestions(
+            questions: questions.map { $0.title },
+            answers: answerTexts,
+            date: scores.date
+        )
+
+        showingResult = true
     }
     
     private func calculateScores() -> DailyCheckInScores {

@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - 每日檢測數據管理器（修正版）
-class DailyCheckInManager: ObservableObject {
+class DailyCheckInManager: NSObject, ObservableObject {
     static let shared = DailyCheckInManager()
     
     // MARK: - Published 屬性
@@ -24,9 +24,19 @@ class DailyCheckInManager: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let weeklyScoresKey = HomeConstants.UserDefaultsKeys.weeklyScores
     private var cancellables = Set<AnyCancellable>()
+    private let allowInsecureSelfSigned = true
+    private lazy var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 60
+        return URLSession(configuration: config,
+                          delegate: allowInsecureSelfSigned ? self : nil,
+                          delegateQueue: nil)
+    }()
     
     // MARK: - 初始化
-    private init() {
+    private override init() {
+        super.init()
         loadWeeklyScores()
         
         // 當用戶登錄時，自動從 API 獲取數據
@@ -41,6 +51,7 @@ class DailyCheckInManager: ObservableObject {
     
     // MARK: - 保存今日檢測
     func saveDailyCheckIn(scores: DailyCheckInScores) {
+        AuthService.shared.refreshStoredAuthIfNeeded()
         // 移除同一天的舊數據（如果存在）
         let targetDate = Calendar.current.startOfDay(for: scores.date)
         weeklyScores.removeAll {
@@ -169,6 +180,73 @@ class DailyCheckInManager: ObservableObject {
                 }
             )
             .store(in: &cancellables)
+    }
+
+    // MARK: - 上傳每日問卷答案
+    func sendDailyQuestions(questions: [String], answers: [String], date: Date = Date()) {
+        AuthService.shared.refreshStoredAuthIfNeeded()
+        guard let user = AuthService.shared.currentUser else {
+            print("⚠️ sendDailyQuestions: no user")
+            return
+        }
+        guard questions.count == 5, answers.count == 5 else {
+            print("⚠️ sendDailyQuestions: invalid question/answer count")
+            return
+        }
+        guard let token = AuthService.shared.authToken else {
+            print("⚠️ sendDailyQuestions: no auth token")
+            return
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let entryDate = formatter.string(from: date)
+
+        let payload: [String: Any] = [
+            "userId": user.primaryId,
+            "question1": answers[0],
+            "question2": answers[1],
+            "question3": answers[2],
+            "question4": answers[3],
+            "question5": answers[4],
+            "entryDate": entryDate
+        ]
+
+        guard let url = URL(string: "https://localhost/dev-api/main/dailyQuestions") else {
+            print("❌ sendDailyQuestions: bad URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        } catch {
+            print("❌ sendDailyQuestions: encode error \(error)")
+            return
+        }
+
+        print("🚀 sendDailyQuestions -> \(url.absoluteString)")
+        print("🧾 payload: \(payload)")
+
+        session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ sendDailyQuestions error: \(error)")
+                return
+            }
+            if let http = response as? HTTPURLResponse {
+                print("✅ dailyQuestions status: \(http.statusCode)")
+                if !(200...299).contains(http.statusCode) {
+                    print("❗️ dailyQuestions non-2xx response")
+                }
+            }
+            if let data, let text = String(data: data, encoding: .utf8) {
+                print("📄 dailyQuestions response: \(text)")
+            }
+        }.resume()
     }
     
     // MARK: - 分數轉描述
@@ -349,5 +427,19 @@ class DailyCheckInManager: ObservableObject {
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }
+    }
+}
+
+// MARK: - 自簽憑證處理（僅開發用）
+extension DailyCheckInManager: URLSessionDelegate {
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard allowInsecureSelfSigned,
+              challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, URLCredential(trust: trust))
     }
 }
