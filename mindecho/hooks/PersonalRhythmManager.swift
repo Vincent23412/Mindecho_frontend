@@ -5,6 +5,7 @@ import Combine
 // MARK: - PersonalRhythmManager.swift - 個人節律數據管理器（基於五項指標）
 class PersonalRhythmManager: ObservableObject {
     static let shared = PersonalRhythmManager()
+    private static let minRequiredDataPoints = 1
     
     // MARK: - Published 屬性
     @Published var currentResult: PersonalRhythmResult?
@@ -14,7 +15,7 @@ class PersonalRhythmManager: ObservableObject {
     // MARK: - 計算屬性
     var hasData: Bool {
         guard let result = currentResult else { return false }
-        return result.totalDataPoints >= 15 && !result.cycles.isEmpty  // 確保有檢測到週期
+        return result.totalDataPoints >= Self.minRequiredDataPoints && !result.cycles.isEmpty
     }
     
     // MARK: - 私有屬性
@@ -34,7 +35,7 @@ class PersonalRhythmManager: ObservableObject {
         DailyCheckInManager.shared.$weeklyScores
             .debounce(for: .seconds(1), scheduler: RunLoop.main)
             .sink { [weak self] scores in
-                if scores.count >= 15 {  // 提高數據要求到15筆
+                if scores.count >= Self.minRequiredDataPoints {
                     self?.calculateRhythmsIfNeeded()
                 }
             }
@@ -45,8 +46,8 @@ class PersonalRhythmManager: ObservableObject {
     func calculateRhythmsIfNeeded(force: Bool = false) {
         let scores = DailyCheckInManager.shared.weeklyScores
         
-        guard scores.count >= 15 else {
-            print("PersonalRhythm: 數據不足，需要至少15筆記錄")
+        guard scores.count >= Self.minRequiredDataPoints else {
+            print("PersonalRhythm: 數據不足，需要至少\(Self.minRequiredDataPoints)筆記錄")
             return
         }
         
@@ -112,7 +113,7 @@ class PersonalRhythmManager: ObservableObject {
             
             // 檢查當前是否有足夠的實際數據支持這個結果
             let currentDataCount = DailyCheckInManager.shared.weeklyScores.count
-            if currentDataCount < 15 {
+            if currentDataCount < Self.minRequiredDataPoints {
                 print("PersonalRhythm: 存儲結果無效（當前數據不足：\(currentDataCount)筆），已清除")
                 clearStoredData()
                 return

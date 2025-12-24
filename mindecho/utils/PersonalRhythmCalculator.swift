@@ -6,7 +6,7 @@ class PersonalRhythmCalculator {
     
     // MARK: - 配置參數
     private struct Config {
-        static let minDataPoints = 15    // 提高最小數據要求
+        static let minDataPoints = 1     // 最少 1 筆就顯示結果
         static let updateInterval = 5    // 每5筆新數據更新
         static let minPeriod: Double = 7
         static let maxPeriod: Double = 45

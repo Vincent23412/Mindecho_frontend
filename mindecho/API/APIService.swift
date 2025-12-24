@@ -1,17 +1,35 @@
 import Foundation
 import Combine
 
-class APIService: ObservableObject {
+class APIService: NSObject, ObservableObject, URLSessionDelegate {
     static let shared = APIService()
     
-    private let baseURL = "localhost/dev-api/"
+    private let baseURL = "http://localhost/dev-api"
 
-    private let session: URLSession
-    
-    private init() {
+    private let allowInsecureSelfSigned = true
+    private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30.0
-        self.session = URLSession(configuration: config)
+        return URLSession(
+            configuration: config,
+            delegate: allowInsecureSelfSigned ? self : nil,
+            delegateQueue: nil
+        )
+    }()
+    
+    private override init() {
+        super.init()
+    }
+    
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard allowInsecureSelfSigned,
+              challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, URLCredential(trust: trust))
     }
     
     func updateMetrics(data: [String: Any]) -> AnyPublisher<Bool, Error> {
@@ -53,14 +71,14 @@ class APIService: ObservableObject {
     }
 
     
-    func getMetrics() -> AnyPublisher<[APIMetricEntry], Error> {
+    func getMetrics() -> AnyPublisher<[DailyQuestionEntry], Error> {
         guard let user = AuthService.shared.currentUser,
               let token = AuthService.shared.authToken else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
         
-        var components = URLComponents(string: "\(baseURL)/api/main/getMetrics")
-        components?.queryItems = [URLQueryItem(name: "userId", value: user.id)]
+        var components = URLComponents(string: "\(baseURL)/main/dailyQuestions")
+        components?.queryItems = [URLQueryItem(name: "userId", value: user.primaryId)]
         
         guard let url = components?.url else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
@@ -89,33 +107,119 @@ class APIService: ObservableObject {
                 }
                 return data
             }
-            .decode(type: MetricResponse.self, decoder: JSONDecoder())
+            .decode(type: DailyQuestionsResponse.self, decoder: JSONDecoder())
             .map { response in
-                print("🔄 Decoded metrics from API for date: \(response.metrics.entryDate)")
-                return [response.metrics]  // 包裝成數組返回
+                let dates = response.dailyQuestions.map { $0.entryDate }.joined(separator: ", ")
+                print("🔄 Decoded daily questions from API for date(s): \(dates)")
+                return response.dailyQuestions
             }
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+    
+    func getScaleQuestions(code: String) async throws -> [String] {
+        let items = try await getScaleQuestionItems(code: code)
+        return items.map { $0.text }
+    }
+    
+    func getScaleQuestionItems(code: String) async throws -> [ScaleQuestionItem] {
+        guard let url = URL(string: "\(baseURL)/main/scales/\(code)/questions") else {
+            throw URLError(.badURL)
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = AuthService.shared.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        
+        let decoder = JSONDecoder()
+        if let payload = try? decoder.decode(ScaleQuestionsResponse.self, from: data) {
+            return payload.scale.questions.sorted { $0.order < $1.order }
+        }
+        if let items = try? decoder.decode([ScaleQuestionItem].self, from: data) {
+            return items.sorted { $0.order < $1.order }
+        }
+        if let list = try? decoder.decode([String].self, from: data) {
+            return list.enumerated().map { index, text in
+                ScaleQuestionItem(id: "\(code)_\(index + 1)", order: index + 1, text: text, isReverse: false)
+            }
+        }
+        
+        return []
+    }
+
+    func submitScaleAnswers(code: String, userId: String, answers: [ScaleAnswerPayload]) async throws {
+        guard let url = URL(string: "\(baseURL)/main/scales/\(code)/answers") else {
+            throw URLError(.badURL)
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = AuthService.shared.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let payload = ScaleAnswersRequest(userId: userId, answers: answers)
+        request.httpBody = try JSONEncoder().encode(payload)
+        
+        let (_, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    func getScaleSessions(userId: String) async throws -> [ScaleSessionScale] {
+        var components = URLComponents(string: "https://localhost/dev-api/main/scales/sessions")
+        components?.queryItems = [URLQueryItem(name: "userId", value: userId)]
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = AuthService.shared.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        print("ScaleSessions: GET \(url.absoluteString)")
+        
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        
+        let payload = try JSONDecoder().decode(ScaleSessionsResponse.self, from: data)
+        print("ScaleSessions: received \(payload.scales.count) scales")
+        return payload.scales
+    }
 }
 
-// ✅ 保持原來的結構，服務器返回單個對象
-struct MetricResponse: Codable {
+struct DailyQuestionsResponse: Codable {
     let message: String
-    let metrics: APIMetricEntry  // 保持單個對象
+    let dailyQuestions: [DailyQuestionEntry]
 }
 
-struct APIMetricEntry: Codable {
-    let physical: APIMetricValue
-    let mood: APIMetricValue
-    let sleep: APIMetricValue
-    let energy: APIMetricValue
-    let appetite: APIMetricValue
+struct DailyQuestionEntry: Codable {
+    let physical: Int
+    let mental: Int
+    let emotion: Int
+    let sleep: Int
+    let diet: Int
     let userId: String
     let entryDate: String
     
     func toDailyCheckInScores() -> DailyCheckInScores? {
         let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         guard let date = formatter.date(from: entryDate) else {
             // 如果 ISO8601 解析失敗，嘗試其他格式
             let backupFormatter = DateFormatter()
@@ -125,27 +229,84 @@ struct APIMetricEntry: Codable {
                 return nil
             }
             return DailyCheckInScores(
-                physical: physical.value,
-                mental: energy.value,
-                emotional: mood.value,
-                sleep: sleep.value,
-                appetite: appetite.value,
+                physical: normalizeScore(physical),
+                mental: normalizeScore(mental),
+                emotional: normalizeScore(emotion),
+                sleep: normalizeScore(sleep),
+                appetite: normalizeScore(diet),
                 date: backupDate
             )
         }
         
         return DailyCheckInScores(
-            physical: physical.value,
-            mental: energy.value,
-            emotional: mood.value,
-            sleep: sleep.value,
-            appetite: appetite.value,
+            physical: normalizeScore(physical),
+            mental: normalizeScore(mental),
+            emotional: normalizeScore(emotion),
+            sleep: normalizeScore(sleep),
+            appetite: normalizeScore(diet),
             date: date
         )
     }
+
+    private func normalizeScore(_ value: Int) -> Int {
+        if value <= 5 {
+            return max(1, value)
+        }
+        switch value {
+        case ..<21: return 1
+        case ..<41: return 2
+        case ..<61: return 3
+        case ..<81: return 4
+        default: return 5
+        }
+    }
 }
 
-struct APIMetricValue: Codable {
+struct ScaleQuestionsResponse: Decodable {
+    let message: String
+    let scale: ScaleResponse
+}
+
+struct ScaleResponse: Decodable {
+    let id: String
+    let code: String
+    let name: String
     let description: String
+    let questions: [ScaleQuestionItem]
+}
+
+struct ScaleQuestionItem: Decodable {
+    let id: String
+    let order: Int
+    let text: String
+    let isReverse: Bool
+}
+
+struct ScaleAnswersRequest: Encodable {
+    let userId: String
+    let answers: [ScaleAnswerPayload]
+}
+
+struct ScaleAnswerPayload: Encodable {
+    let questionId: String
     let value: Int
+}
+
+struct ScaleSessionsResponse: Decodable {
+    let message: String
+    let scales: [ScaleSessionScale]
+}
+
+struct ScaleSessionScale: Decodable, Identifiable {
+    let id: String
+    let code: String
+    let name: String
+    let description: String
+    let sessions: [ScaleSessionEntry]
+}
+
+struct ScaleSessionEntry: Decodable, Identifiable {
+    let id: String
+    let totalScore: Int
+    let createdAt: String
 }

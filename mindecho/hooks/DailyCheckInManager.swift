@@ -43,6 +43,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
         AuthService.shared.$isAuthenticated
             .sink { [weak self] isAuthenticated in
                 if isAuthenticated {
+                    self?.loadWeeklyScores()
                     self?.loadDataFromAPI()
                 }
             }
@@ -98,7 +99,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
     }
     
     // MARK: - 處理 API 返回的數據
-    private func processAPIData(_ metrics: [APIMetricEntry]) {
+    private func processAPIData(_ metrics: [DailyQuestionEntry]) {
         
         for metric in metrics {
             if let dailyScore = metric.toDailyCheckInScores() {
@@ -204,11 +205,11 @@ class DailyCheckInManager: NSObject, ObservableObject {
 
         let payload: [String: Any] = [
             "userId": user.primaryId,
-            "question1": answers[0],
-            "question2": answers[1],
-            "question3": answers[2],
-            "question4": answers[3],
-            "question5": answers[4],
+            "physical": answers[0],
+            "mental": answers[1],
+            "emotion": answers[2],
+            "sleep": answers[3],
+            "diet": answers[4],
             "entryDate": entryDate
         ]
 
@@ -252,10 +253,10 @@ class DailyCheckInManager: NSObject, ObservableObject {
     // MARK: - 分數轉描述
     private func getDescription(_ value: Int) -> String {
         switch value {
-        case 0..<30: return "awful"
-        case 30..<50: return "bad"
-        case 50..<70: return "okay"
-        case 70..<90: return "good"
+        case 1: return "awful"
+        case 2: return "bad"
+        case 3: return "okay"
+        case 4: return "good"
         default: return "great"
         }
     }
@@ -263,7 +264,8 @@ class DailyCheckInManager: NSObject, ObservableObject {
     
     // MARK: - 本地存儲方法
     private func loadWeeklyScores() {
-        guard let data = userDefaults.data(forKey: weeklyScoresKey),
+        guard let key = userScopedWeeklyScoresKey(),
+              let data = userDefaults.data(forKey: key),
               let scores = try? JSONDecoder().decode([DailyCheckInScores].self, from: data) else {
             weeklyScores = []
             return
@@ -274,10 +276,19 @@ class DailyCheckInManager: NSObject, ObservableObject {
     }
     
     private func saveWeeklyScores() {
-        if let data = try? JSONEncoder().encode(weeklyScores) {
-            userDefaults.set(data, forKey: weeklyScoresKey)
-            print("已保存 \(weeklyScores.count) 筆數據到本地")
+        guard let key = userScopedWeeklyScoresKey(),
+              let data = try? JSONEncoder().encode(weeklyScores) else {
+            return
         }
+        userDefaults.set(data, forKey: key)
+            print("已保存 \(weeklyScores.count) 筆數據到本地")
+    }
+
+    private func userScopedWeeklyScoresKey() -> String? {
+        guard let userId = AuthService.shared.currentUser?.primaryId, !userId.isEmpty else {
+            return nil
+        }
+        return "\(weeklyScoresKey)_\(userId)"
     }
     
     // MARK: - 其他方法保持不變

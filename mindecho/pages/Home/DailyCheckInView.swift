@@ -217,7 +217,7 @@ struct DailyCheckInView: View {
 
         // 送出問卷回答（數字分數）並記錄 log（配合後端確認）
         let answerValues = answers.map { idx in
-            idx >= 0 && idx < moodOptions.count ? moodOptions[idx].value : 0
+            idx >= 0 && idx < moodOptions.count ? (idx + 1) : 0
         }
         print("🟢 DailyCheckIn: sending dailyQuestions payload")
         checkInManager.sendDailyQuestions(
@@ -231,11 +231,11 @@ struct DailyCheckInView: View {
     
     private func calculateScores() -> DailyCheckInScores {
         return DailyCheckInScores(
-            physical: moodOptions[answers[0]].value,
-            mental: moodOptions[answers[1]].value,
-            emotional: moodOptions[answers[2]].value,
-            sleep: moodOptions[answers[3]].value,
-            appetite: moodOptions[answers[4]].value,
+            physical: answers[0] + 1,
+            mental: answers[1] + 1,
+            emotional: answers[2] + 1,
+            sleep: answers[3] + 1,
+            appetite: answers[4] + 1,
             date: Date()
         )
     }

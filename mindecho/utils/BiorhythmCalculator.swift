@@ -61,8 +61,8 @@ struct BiorhythmCalculator {
         let recentAverage = recentData.reduce(0, +) / Double(recentData.count)
         let previousAverage = previousData.isEmpty ? recentAverage : previousData.reduce(0, +) / Double(previousData.count)
         
-        // 將 0-100 的範圍轉換為 -100 到 100 的生理節律範圍
-        let normalizedCurrent = (recentAverage - 50) * 2
+        // 將 1-5 的範圍轉換為 -100 到 100 的生理節律範圍
+        let normalizedCurrent = (recentAverage - 3) * 50
         let trend = recentAverage - previousAverage
         
         // 加入趨勢影響，讓數值更動態

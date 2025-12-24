@@ -20,6 +20,7 @@ class AuthViewModel: ObservableObject {
     // MARK: - 依賴注入
     private let authService: AuthService
     private var cancellables = Set<AnyCancellable>()
+    private var forceDailyCheckInOnAuth = false
     
     // MARK: - 初始化
     init(authService: AuthService = AuthService.shared) {
@@ -36,7 +37,12 @@ class AuthViewModel: ObservableObject {
                 guard let self else { return }
                 if isAuthenticated {
                     self.authState = .authenticated
-                    self.updateDailyCheckInVisibility()
+                    if self.forceDailyCheckInOnAuth {
+                        self.shouldShowDailyCheckIn = true
+                        self.forceDailyCheckInOnAuth = false
+                    } else {
+                        self.updateDailyCheckInVisibility()
+                    }
                 } else {
                     self.authState = .unauthenticated
                     self.shouldShowDailyCheckIn = false
@@ -120,7 +126,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "註冊成功！歡迎加入 MindEcho！")
                         self?.authState = .authenticated
-                        self?.updateDailyCheckInVisibility()
+                        self?.showDailyCheckInAfterLogin()
                         self?.sendRegistrationSuccessNotification(message: response.message ?? "註冊成功！")
                     } else {
                         self?.showError(response.message ?? "註冊失敗，請重試")
@@ -170,7 +176,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "登錄成功！")
                         self?.authState = .authenticated
-                        self?.updateDailyCheckInVisibility()
+                        self?.showDailyCheckInAfterLogin()
                     } else {
                         self?.showError(response.message ?? "電子郵件或密碼錯誤")
                     }
@@ -184,6 +190,8 @@ class AuthViewModel: ObservableObject {
         authService.logout()
         authState = .unauthenticated
         shouldShowDailyCheckIn = false
+        forceDailyCheckInOnAuth = false
+        DailyCheckInManager.shared.clearAllData()
         clearMessages()
     }
     
@@ -244,6 +252,11 @@ class AuthViewModel: ObservableObject {
         if case .loading = authState {
             authState = .idle
         }
+    }
+
+    func showDailyCheckInAfterLogin() {
+        forceDailyCheckInOnAuth = true
+        shouldShowDailyCheckIn = true
     }
 
     func updateDailyCheckInVisibility() {

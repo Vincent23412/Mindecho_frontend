@@ -64,10 +64,7 @@ struct MentalHealthResourcesSection: View {
 
 // MARK: - 心理測驗區塊
 struct PsychologicalTestsSection: View {
-    @State private var showingPHQ9Test = false
-    @State private var showingGAD7Test = false
-    @State private var showingBSRS5Test = false
-    @State private var showingRFQ8Test = false
+    @State private var activeScale: ScaleMeta?
     
     private let tests = HomeConstants.Tests.psychologicalTests
     
@@ -96,31 +93,16 @@ struct PsychologicalTestsSection: View {
                 .padding(.horizontal, 16)
             }
         }
-        .sheet(isPresented: $showingPHQ9Test) {
-            PHQ9TestView(isPresented: $showingPHQ9Test)
-        }
-        .sheet(isPresented: $showingGAD7Test) {
-            GAD7TestView(isPresented: $showingGAD7Test)
-        }
-        .sheet(isPresented: $showingBSRS5Test) {
-            BSRS5TestView(isPresented: $showingBSRS5Test)
-        }
-        .sheet(isPresented: $showingRFQ8Test) {
-            RFQ8TestView(isPresented: $showingRFQ8Test)
+        .sheet(item: $activeScale) { meta in
+            ScaleTestView(meta: meta, isPresented: Binding(
+                get: { activeScale != nil },
+                set: { if !$0 { activeScale = nil } }
+            ))
         }
     }
     
     private func handleTestAction(_ action: TestAction) {
-        switch action {
-        case .phq9:
-            showingPHQ9Test = true
-        case .gad7:
-            showingGAD7Test = true
-        case .bsrs5:
-            showingBSRS5Test = true
-        case .rfq8:
-            showingRFQ8Test = true
-        }
+        activeScale = HomeConstants.Tests.scaleMetaByAction[action]
     }
 }
 

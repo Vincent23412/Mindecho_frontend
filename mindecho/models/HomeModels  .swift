@@ -4,11 +4,11 @@ import SwiftUI
 // MARK: - 每日檢測分數模型
 struct DailyCheckInScores: Codable, Identifiable {
     let id = UUID()
-    let physical: Int      // 生理健康 (0-100)
-    let mental: Int        // 精神狀態 (0-100)
-    let emotional: Int     // 情緒狀態 (0-100)
-    let sleep: Int         // 睡眠品質 (0-100)
-    let appetite: Int      // 飲食表現 (0-100)
+    let physical: Int      // 生理健康 (1-5)
+    let mental: Int        // 精神狀態 (1-5)
+    let emotional: Int     // 情緒狀態 (1-5)
+    let sleep: Int         // 睡眠品質 (1-5)
+    let appetite: Int      // 飲食表現 (1-5)
     let date: Date
     
     var overall: Int {
@@ -137,6 +137,13 @@ enum TestAction {
     case gad7
     case bsrs5
     case rfq8
+    case cesd
+    case sats
+    case aq10
+    case psycap
+    case cdrisc
+    case pansi
+    case bss
 }
 
 // MARK: - 健康指標類型

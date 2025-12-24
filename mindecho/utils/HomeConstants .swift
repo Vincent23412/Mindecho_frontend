@@ -7,38 +7,38 @@ struct HomeConstants {
     struct DailyCheckIn {
         static let questions = [
             DailyCheckInQuestion(
-                title: "你今天的身體感覺如何？",
-                subtitle: "評估你的整體身體健康狀況",
+                title: "身體感覺有活力嗎？",
+                subtitle: "評估你的身體活力狀態",
                 category: .physical
             ),
             DailyCheckInQuestion(
-                title: "你今天的精神狀態如何？",
-                subtitle: "評估你的專注力和清晰度",
+                title: "今天心情如何？",
+                subtitle: "評估你的情緒狀態",
                 category: .mental
             ),
             DailyCheckInQuestion(
-                title: "你今天的心情如何？",
-                subtitle: "評估你的情緒穩定性",
+                title: "腦筋覺得靈活好使嗎？",
+                subtitle: "評估你的思緒清晰度",
                 category: .emotional
             ),
             DailyCheckInQuestion(
-                title: "你昨晚的睡眠品質如何？",
-                subtitle: "評估你的睡眠品質和充足度",
+                title: "這一夜的睡眠品質如何？",
+                subtitle: "評估你的睡眠品質",
                 category: .sleep
             ),
             DailyCheckInQuestion(
-                title: "你今天的食慾如何？",
+                title: "今天的食慾如何？",
                 subtitle: "評估你的飲食狀態",
                 category: .appetite
             )
         ]
         
         static let moodOptions = [
-            MoodOption(emoji: "😰", label: "很差", value: 20),
-            MoodOption(emoji: "😞", label: "不好", value: 40),
-            MoodOption(emoji: "😐", label: "一般", value: 60),
-            MoodOption(emoji: "😊", label: "良好", value: 80),
-            MoodOption(emoji: "😄", label: "極佳", value: 100)
+            MoodOption(emoji: "😰", label: "很差", value: 1),
+            MoodOption(emoji: "😞", label: "不好", value: 2),
+            MoodOption(emoji: "😐", label: "一般", value: 3),
+            MoodOption(emoji: "😊", label: "良好", value: 4),
+            MoodOption(emoji: "😄", label: "極佳", value: 5)
         ]
     }
     
@@ -93,39 +93,103 @@ struct HomeConstants {
     // MARK: - 心理測驗
     struct Tests {
         static let psychologicalTests = [
-            PsychologicalTest(
-                title: "PHQ-9 憂鬱症篩檢",
-                subtitle: "評估憂鬱症狀嚴重程度",
-                icon: "heart.circle.fill",
-                duration: "3分鐘",
-                questions: "9題",
-                action: .phq9
+            makeTest(action: .cesd, title: "憂鬱量表：CESD量表（4,8,12,16為反向題，總分超過12分為疑似憂鬱傾向）", icon: "heart.circle.fill"),
+            makeTest(action: .bsrs5, title: "BSRS-5簡式健康量表", icon: "list.clipboard.fill"),
+            makeTest(action: .sats, title: "SATS消沉指數", icon: "cloud.rain.fill"),
+            makeTest(action: .aq10, title: "孤獨症量表：AQ10", icon: "person.2.fill"),
+            makeTest(action: .psycap, title: "心理資本量表", icon: "sparkles"),
+            makeTest(action: .cdrisc, title: "中文版Connor-Davidson復原力量表", icon: "shield.lefthalf.fill"),
+            makeTest(action: .pansi, title: "正向與負向自殺意念量表：PANSI-C", icon: "exclamationmark.triangle.fill"),
+            makeTest(action: .bss, title: "自殺意念評估：BSS", icon: "waveform.path.ecg")
+        ]
+        
+        private static func makeTest(action: TestAction, title: String, icon: String) -> PsychologicalTest {
+            let count = scaleMetaByAction[action]?.questionCount ?? 0
+            let minutes = max(1, Int(ceil(Double(count) / 2.0)))
+            return PsychologicalTest(
+                title: title,
+                subtitle: "",
+                icon: icon,
+                duration: "\(minutes)分鐘",
+                questions: "\(count)題",
+                action: action
+            )
+        }
+
+        static let scaleMetas: [ScaleMeta] = [
+            ScaleMeta(
+                action: .cesd,
+                code: "CESD20",
+                title: "CES-D 憂鬱量表",
+                questionCount: 20,
+                instructions: "請依「過去一週內」的情形作答（4、8、12、16為反向題）",
+                reverseIndices: Set([4, 8, 12, 16])
             ),
-            PsychologicalTest(
-                title: "GAD-7 焦慮症篩檢",
-                subtitle: "評估廣泛性焦慮症狀",
-                icon: "brain.head.profile",
-                duration: "2分鐘",
-                questions: "7題",
-                action: .gad7
+            ScaleMeta(
+                action: .bsrs5,
+                code: "BSRS5",
+                title: "BSRS-5簡式健康量表",
+                questionCount: 5,
+                instructions: "最近一週內的感受",
+                reverseIndices: Set<Int>()
             ),
-            PsychologicalTest(
-                title: "BSRS-5 心理症狀量表",
-                subtitle: "篩檢心理健康狀況",
-                icon: "list.clipboard.fill",
-                duration: "2分鐘",
-                questions: "5題",
-                action: .bsrs5
+            ScaleMeta(
+                action: .sats,
+                code: "SATS10",
+                title: "SATS 消沉指數",
+                questionCount: 10,
+                instructions: "請依近期感受作答",
+                reverseIndices: Set<Int>()
             ),
-            PsychologicalTest(
-                title: "RFQ-8 反思功能量表",
-                subtitle: "評估心智化能力",
-                icon: "lightbulb.fill",
-                duration: "3分鐘",
-                questions: "8題",
-                action: .rfq8
+            ScaleMeta(
+                action: .aq10,
+                code: "AQ10",
+                title: "AQ-10 孤獨症量表",
+                questionCount: 10,
+                instructions: "請依實際狀況作答（3、7、9為反向題）",
+                reverseIndices: Set([3, 7, 9])
+            ),
+            ScaleMeta(
+                action: .psycap,
+                code: "PCQ12",
+                title: "心理資本量表",
+                questionCount: 12,
+                instructions: "請依實際狀況作答",
+                reverseIndices: Set<Int>()
+            ),
+            ScaleMeta(
+                action: .cdrisc,
+                code: "CDRISC25",
+                title: "Connor-Davidson 復原力量表",
+                questionCount: 25,
+                instructions: "請依實際狀況作答",
+                reverseIndices: Set<Int>()
+            ),
+            ScaleMeta(
+                action: .pansi,
+                code: "PANSI14",
+                title: "PANSI-C 自殺意念量表",
+                questionCount: 14,
+                instructions: "請依實際狀況作答",
+                reverseIndices: Set<Int>()
+            ),
+            ScaleMeta(
+                action: .bss,
+                code: "BSS21",
+                title: "BSS 自殺意念量表",
+                questionCount: 21,
+                instructions: "請依實際狀況作答",
+                reverseIndices: Set<Int>()
             )
         ]
+
+        static let scaleMetaByAction: [TestAction: ScaleMeta] = {
+            var map: [TestAction: ScaleMeta] = [:]
+            for meta in scaleMetas {
+                map[meta.action] = meta
+            }
+            return map
+        }()
     }
     
     // MARK: - 圖表設定
@@ -136,7 +200,7 @@ struct HomeConstants {
         static let cardShadowRadius: CGFloat = 2
         
         // 時間週期選項
-        static let timePeriodOptions = ["本週", "本月"]
+        static let timePeriodOptions = ["本週"]
     }
     
     // MARK: - UserDefaults 鍵值

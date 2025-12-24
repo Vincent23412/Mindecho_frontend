@@ -10,18 +10,18 @@ struct DailyCheckInResultView: View {
     
     private var healthStatus: String {
         switch overallScore {
-        case 90...100: return "極佳狀態"
-        case 80...89: return "良好狀態"
-        case 60...79: return "一般狀態"
-        case 40...59: return "需要關注"
+        case 5: return "極佳狀態"
+        case 4: return "良好狀態"
+        case 3: return "一般狀態"
+        case 2: return "需要關注"
         default: return "需要調整"
         }
     }
     
     private var statusColor: Color {
         switch overallScore {
-        case 80...100: return .green
-        case 60...79: return AppColors.orange
+        case 4...5: return .green
+        case 3: return AppColors.orange
         default: return .red
         }
     }
@@ -78,7 +78,7 @@ struct DailyCheckInResultView: View {
                             .frame(width: 120, height: 120)
                         
                         Circle()
-                            .trim(from: 0, to: CGFloat(overallScore) / 100)
+                            .trim(from: 0, to: CGFloat(overallScore) / 5)
                             .stroke(statusColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                             .frame(width: 120, height: 120)
                             .rotationEffect(.degrees(-90))

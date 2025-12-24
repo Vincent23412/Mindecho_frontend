@@ -8,7 +8,7 @@ import SwiftUI
 
 struct DiaryMainView: View {
     @State private var selectedTab = 0 // 預設顯示「健康數據」
-    @State private var selectedTimePeriod = "本週"
+    @StateObject private var scaleSessionManager = ScaleSessionManager.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -40,19 +40,9 @@ struct DiaryMainView: View {
                 NavigationView { MoodDiaryView() }.tag(1)
                 NavigationView {
                     ScrollView {
-                        FiveIndicatorsCard(
-                            selectedTimePeriod: $selectedTimePeriod,
-                            indicatorOrder: [.physical, .emotional, .sleep, .mental],
-                            customDisplayNames: [
-                                .physical: "PHQ-9",
-                                .emotional: "GAD-7",
-                                .sleep: "BSRS-5",
-                                .mental: "RFQ-8"
-                            ]
-                        )
+                        ScaleTrackingCard(manager: scaleSessionManager)
                             .padding(.horizontal, 16)
                             .padding(.top, 16)
-                            .frame(height: 350)
                         Spacer(minLength: 20)
                     }
                     .background(AppColors.lightYellow)
@@ -62,8 +52,16 @@ struct DiaryMainView: View {
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .indexViewStyle(.page(backgroundDisplayMode: .never))
+            .onChange(of: selectedTab) { _, value in
+                if value == 2 {
+                    scaleSessionManager.loadSessions()
+                }
+            }
         }
         .background(AppColors.lightYellow)
+        .onAppear {
+            scaleSessionManager.loadSessions()
+        }
     }
 }
 

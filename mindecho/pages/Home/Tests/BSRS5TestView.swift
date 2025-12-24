@@ -7,11 +7,11 @@ struct BSRS5TestView: View {
     @State private var showingResult = false
     
     let questions = [
-        "睡眠困難，譬如難以入睡、易醒或早醒",
-        "感覺緊張或不安",
-        "容易苦惱或動怒",
-        "感覺憂鬱、心情低落",
-        "覺得比不上別人"
+        "感到緊張、焦慮或不安",
+        "感到情緒低落、心情不好",
+        "覺得容易生氣或煩躁",
+        "感到睡眠困難（難以入睡、易醒或睡不好）",
+        "覺得生活壓力很大、事情變得困難"
     ]
     
     let options = ["完全沒有", "輕微", "中等程度", "厲害", "非常厲害"]
@@ -66,7 +66,7 @@ struct BSRS5TestView: View {
                 }
                 .padding()
                 .background(AppColors.lightYellow)
-                .navigationTitle("BSRS-5 心理症狀量表")
+                .navigationTitle("BSRS-5簡式健康量表")
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarItems(trailing: Button("取消") { isPresented = false })
             }

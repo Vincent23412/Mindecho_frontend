@@ -97,7 +97,8 @@ struct FiveIndicatorsCard: View {
                     let height = geometry.size.height
                     let dataLabels = checkInManager.getDateLabelsForPeriod(selectedTimePeriod)
                     let dayCount = dataLabels.count
-                    let dayWidth = dayCount > 1 ? width / CGFloat(dayCount - 1) : width
+                    let horizontalInset: CGFloat = 12
+                    let dayWidth = dayCount > 1 ? (width - horizontalInset) / CGFloat(dayCount - 1) : (width - horizontalInset)
 
                     ZStack {
                         // 背景網格線
@@ -114,7 +115,7 @@ struct FiveIndicatorsCard: View {
                         VStack {
                             ForEach(0..<5, id: \.self) { i in
                                 HStack {
-                                    Text("\(100 - i * 25)")
+                                    Text("\(5 - i)")
                                         .font(.caption2)
                                         .foregroundColor(AppColors.titleColor.opacity(0.6))
                                     Spacer()
@@ -133,7 +134,8 @@ struct FiveIndicatorsCard: View {
                                 width: width,
                                 height: height,
                                 dayWidth: dayWidth,
-                                lineWidth: 3  // 單線時加粗
+                                lineWidth: 3,
+                                showValueLabels: true
                             )
                         } else {
                             // 顯示所有指標
@@ -144,7 +146,8 @@ struct FiveIndicatorsCard: View {
                                     width: width,
                                     height: height,
                                     dayWidth: dayWidth,
-                                    lineWidth: 2
+                                    lineWidth: 2,
+                                    showValueLabels: false
                                 )
                             }
                         }
@@ -227,7 +230,8 @@ struct FiveIndicatorsCard: View {
         width: CGFloat,
         height: CGFloat,
         dayWidth: CGFloat,
-        lineWidth: CGFloat = 2
+        lineWidth: CGFloat = 2,
+        showValueLabels: Bool = false
     ) -> some View {
         ZStack {
             // 線條
@@ -236,7 +240,7 @@ struct FiveIndicatorsCard: View {
                 for i in 0..<data.count {
                     if data[i] > 0 {
                         let x = CGFloat(i) * dayWidth
-                        let normalizedValue = CGFloat(data[i]) / 100.0
+                        let normalizedValue = CGFloat(data[i] - 1) / 4.0
                         let y = height - (normalizedValue * height)
 
                         if !hasStarted {
@@ -253,14 +257,23 @@ struct FiveIndicatorsCard: View {
             // 數據點
             ForEach(Array(data.enumerated()), id: \.offset) { i, value in
                 if value > 0 {
+                    let x = CGFloat(i) * dayWidth
+                    let y = height - (CGFloat(value - 1) / 4.0 * height)
                     Circle()
                         .fill(color)
                         .frame(width: lineWidth + 2, height: lineWidth + 2)
                         .position(
-                            x: CGFloat(i) * dayWidth,
-                            y: height - (CGFloat(value) / 100.0 * height)
+                            x: x,
+                            y: y
                         )
                         .shadow(color: color.opacity(0.3), radius: 2)
+                    
+                    if showValueLabels {
+                        Text("\(value)")
+                            .font(.caption2)
+                            .foregroundColor(color)
+                            .position(x: x, y: max(8, y - 12))
+                    }
                 }
             }
         }

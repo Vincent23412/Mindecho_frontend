@@ -54,6 +54,8 @@ struct HomeView: View {
                         .padding(.top, 16)
                     }
                     
+                    Spacer().frame(height: 24)
+                    
                     // 水平滑動視圖
                     TabView(selection: $currentPage) {
                         // 第一頁：五項指標追蹤卡片
@@ -63,6 +65,14 @@ struct HomeView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.top, 8)
                                 .frame(height: 350)
+                            
+                            DailyScoresTableCard(
+                                scores: checkInManager.weeklyScores,
+                                selectedTimePeriod: selectedTimePeriod
+                            )
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                            
                             Spacer()
                         }
                         .tag(0)
@@ -104,7 +114,7 @@ struct HomeView: View {
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                     .indexViewStyle(.page(backgroundDisplayMode: .never))
-                    .frame(height: 380)
+                    .frame(height: 560)
                     
                     // 心理健康資源區塊
                     MentalHealthResourcesSection()
@@ -117,6 +127,9 @@ struct HomeView: View {
                 }
             }
             .background(AppColors.lightYellow)
+            .onAppear {
+                checkInManager.loadDataFromAPI()
+            }
             .navigationTitle("首頁")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(AppColors.cardBackground, for: .navigationBar)
