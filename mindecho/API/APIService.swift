@@ -201,6 +201,98 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
         print("ScaleSessions: received \(payload.scales.count) scales")
         return payload.scales
     }
+
+    func submitDiaryEntry(userId: String, mood: String, content: String, entryDate: Date) async throws -> DiaryEntryResponse {
+        guard let url = URL(string: "https://localhost/dev-api/diary") else {
+            throw URLError(.badURL)
+        }
+        
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        let payload = DiaryEntryRequest(
+            userId: userId,
+            mood: mood,
+            content: content,
+            entryDate: formatter.string(from: entryDate)
+        )
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = AuthService.shared.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try JSONEncoder().encode(payload)
+        
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        
+        return try JSONDecoder().decode(DiaryEntryResponse.self, from: data)
+    }
+
+    func getUserProfile() async throws -> User {
+        guard let url = URL(string: "\(baseURL)/api/users/profile") else {
+            throw URLError(.badURL)
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = AuthService.shared.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        
+        let decoder = JSONDecoder()
+        if let payload = try? decoder.decode(UserProfileResponse.self, from: data),
+           let user = payload.user {
+            return user
+        }
+        if let user = try? decoder.decode(User.self, from: data) {
+            return user
+        }
+        
+        throw URLError(.cannotParseResponse)
+    }
+
+    func updateUserProfile(userId: String, email: String, firstName: String, lastName: String) async throws -> User {
+        guard let url = URL(string: "\(baseURL)/api/users/profile") else {
+            throw URLError(.badURL)
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = AuthService.shared.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let payload = UserProfileUpdateRequest(userId: userId, email: email, firstName: firstName, lastName: lastName)
+        request.httpBody = try JSONEncoder().encode(payload)
+        
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        
+        let decoder = JSONDecoder()
+        if let payload = try? decoder.decode(UserProfileResponse.self, from: data),
+           let user = payload.user {
+            return user
+        }
+        if let user = try? decoder.decode(User.self, from: data) {
+            return user
+        }
+        
+        throw URLError(.cannotParseResponse)
+    }
 }
 
 struct DailyQuestionsResponse: Codable {
@@ -309,4 +401,42 @@ struct ScaleSessionEntry: Decodable, Identifiable {
     let id: String
     let totalScore: Int
     let createdAt: String
+}
+
+struct DiaryEntryRequest: Encodable {
+    let userId: String
+    let mood: String
+    let content: String
+    let entryDate: String
+}
+
+struct DiaryEntryResponse: Decodable {
+    let message: String
+    let entry: DiaryEntry
+}
+
+struct DiaryEntry: Decodable {
+    let id: String
+    let userId: String
+    let mood: String
+    let entryDate: String
+}
+
+struct UserProfileResponse: Decodable {
+    let message: String?
+    let user: User?
+}
+
+struct UserProfileUpdateRequest: Encodable {
+    let userId: String
+    let email: String
+    let firstName: String
+    let lastName: String
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case email
+        case firstName
+        case lastName
+    }
 }

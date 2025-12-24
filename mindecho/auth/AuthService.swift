@@ -85,6 +85,16 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
             self.isAuthenticated = true
         }
     }
+
+    func updateProfile(_ user: User) {
+        if let userData = try? JSONEncoder().encode(user) {
+            UserDefaults.standard.set(userData, forKey: Keys.userData)
+        }
+        
+        DispatchQueue.main.async {
+            self.currentUser = user
+        }
+    }
     
     // MARK: - 清除認證資訊
     private func clearAuth() {
@@ -354,6 +364,12 @@ extension AuthService {
                     firstName: request.firstName,
                     lastName: request.lastName,
                     dateOfBirth: request.dateOfBirth,
+                    gender: request.gender,
+                    educationLevel: request.educationLevel,
+                    supportContactName: request.supportContactName,
+                    supportContactInfo: request.supportContactInfo,
+                    familyContactName: request.familyContactName,
+                    familyContactInfo: request.familyContactInfo,
                     isActive: true,
                     preferences: nil,
                     createdAt: nil,
@@ -391,6 +407,12 @@ extension AuthService {
                         firstName: "測試",
                         lastName: "用戶",
                         dateOfBirth: "1990-01-01",
+                        gender: "unknown",
+                        educationLevel: nil,
+                        supportContactName: nil,
+                        supportContactInfo: nil,
+                        familyContactName: nil,
+                        familyContactInfo: nil,
                         isActive: true,
                         preferences: nil,
                         createdAt: nil,

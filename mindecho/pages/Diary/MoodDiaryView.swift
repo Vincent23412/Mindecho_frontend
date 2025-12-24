@@ -10,13 +10,16 @@ struct MoodDiaryView: View {
     @State private var selectedDate = Date()
     @State private var selectedMood: String? = nil
     @State private var diaryText: String = ""   // 用來存放日記內容
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+    @State private var successMessage: String?
     
     let moods = [
-        ("很差", "😫"),
-        ("不好", "😐"),
-        ("一般", "🙂"),
-        ("良好", "😃"),
-        ("極佳", "🤩")
+        ("VERY_BAD", "😫", "很差"),
+        ("BAD", "😐", "不好"),
+        ("OKAY", "🙂", "一般"),
+        ("GOOD", "😃", "良好"),
+        ("HAPPY", "🤩", "極佳")
     ]
     
     var body: some View {
@@ -48,7 +51,7 @@ struct MoodDiaryView: View {
                             .foregroundColor(AppColors.titleColor)
                         Spacer()
                         if let mood = selectedMood {
-                            Text("已選擇：\(mood)")
+                            Text("已選擇：\(displayName(for: mood))")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -62,7 +65,7 @@ struct MoodDiaryView: View {
                                 } label: {
                                     VStack(spacing: 6) {
                                         Text(mood.1).font(.largeTitle)
-                                        Text(mood.0)
+                                        Text(mood.2)
                                             .font(.caption)
                                             .foregroundColor(AppColors.titleColor)
                                     }
@@ -117,15 +120,15 @@ struct MoodDiaryView: View {
                         .foregroundColor(AppColors.titleColor)
                     
                     Button {
-                        print("已儲存心情: \(selectedMood ?? "未選擇")")
-                        print("日記內容: \(diaryText)")
+                        Task { await saveDiaryEntry() }
                     } label: {
                         HStack {
                             Image(systemName: "tray.and.arrow.down.fill")
-                            Text("儲存")
+                            Text(isSaving ? "儲存中..." : "儲存")
                         }
                         .frame(maxWidth: .infinity)
                     }
+                    .disabled(isSaving)
                     .buttonStyle(.borderedProminent)
                 }
                 .padding()
@@ -136,11 +139,63 @@ struct MoodDiaryView: View {
                 )
                 .padding(.horizontal)
                 
+                if let successMessage {
+                    Text(successMessage)
+                        .font(.caption)
+                        .foregroundColor(.green)
+                        .padding(.horizontal)
+                }
+                
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal)
+                }
+                
                 Spacer(minLength: 20)
             }
             .padding(.vertical, 12)
         }
         .background(AppColors.lightYellow.ignoresSafeArea())
+    }
+    
+    private func displayName(for moodCode: String) -> String {
+        moods.first(where: { $0.0 == moodCode })?.2 ?? moodCode
+    }
+    
+    private func saveDiaryEntry() async {
+        errorMessage = nil
+        successMessage = nil
+        
+        guard let userId = AuthService.shared.currentUser?.primaryId, !userId.isEmpty else {
+            errorMessage = "找不到使用者資訊"
+            return
+        }
+        guard let mood = selectedMood else {
+            errorMessage = "請選擇心情"
+            return
+        }
+        let content = diaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else {
+            errorMessage = "請輸入日記內容"
+            return
+        }
+        
+        isSaving = true
+        do {
+            _ = try await APIService.shared.submitDiaryEntry(
+                userId: userId,
+                mood: mood,
+                content: content,
+                entryDate: selectedDate
+            )
+            successMessage = "已儲存日記"
+            diaryText = ""
+        } catch {
+            errorMessage = "儲存失敗，請稍後再試"
+        }
+        isSaving = false
     }
 }
 

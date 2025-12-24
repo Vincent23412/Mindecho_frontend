@@ -12,7 +12,7 @@ struct RelaxModeSelector: View {
     
     var body: some View {
         HStack {
-            ForEach(RelaxTimerViewModel.Mode.allCases, id: \.self) { mode in
+            ForEach(RelaxTimerViewModel.Mode.allCases) { mode in
                 Button {
                     viewModel.selectedMode = mode
                 } label: {
@@ -20,6 +20,7 @@ struct RelaxModeSelector: View {
                         Text(mode.rawValue)
                             .font(.headline)
                             .foregroundColor(AppColors.titleColor)
+                            .lineLimit(1)
                         
                         Rectangle()
                             .fill(viewModel.selectedMode == mode ? AppColors.chatModeColor : Color.clear)

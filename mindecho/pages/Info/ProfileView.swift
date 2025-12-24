@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @State private var showingSupportReasons = false
     @State private var showingPersonalInfo = false
+    @ObservedObject private var authService = AuthService.shared
     
     private let supportReasons: [SupportReason] = [
         SupportReason(
@@ -26,7 +27,7 @@ struct ProfileView: View {
                 // MARK: - 使用者卡片
                 userInfoCard
                 NavigationLink(
-                    destination: PersonalInfoView(),
+                    destination: PersonalInfoView(user: authService.currentUser),
                     isActive: $showingPersonalInfo
                 ) {
                     EmptyView()
@@ -51,16 +52,21 @@ struct ProfileView: View {
         }
         .background(Color.yellow.opacity(0.1).ignoresSafeArea())
         .navigationTitle("個人檔案")
+        .task {
+            await refreshUserProfile()
+        }
     }
 }
 
 // MARK: - 編輯個人資訊頁
 struct EditPersonalInfoView: View {
-    @State private var email: String = "user@example.com"
-    @State private var firstName: String = "小美"
-    @State private var lastName: String = "Chen"
+    @ObservedObject private var authService = AuthService.shared
+    @State private var email: String = ""
+    @State private var firstName: String = ""
+    @State private var lastName: String = ""
     @State private var birthDate: Date = Date(timeIntervalSince1970: 1036003200) // 2002-10-30
-    @State private var preferredTheme: String = "暖色 / 友善提醒"
+    @State private var errorMessage: String?
+    @State private var isSaving = false
     
     var body: some View {
         Form {
@@ -73,25 +79,83 @@ struct EditPersonalInfoView: View {
                 DatePicker("生日", selection: $birthDate, displayedComponents: .date)
             }
             
-            Section(header: Text("偏好設定")) {
-                TextField("偏好主題", text: $preferredTheme)
+            if let errorMessage = errorMessage {
+                Section {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundColor(.red)
+                }
             }
             
             Section {
                 Button {
-                    // 預留：保存行為
+                    Task { await saveProfile() }
                 } label: {
                     HStack {
                         Spacer()
-                        Text("保存變更")
+                        Text(isSaving ? "保存中..." : "保存變更")
                             .fontWeight(.semibold)
                         Spacer()
                     }
                 }
+                .disabled(isSaving)
             }
         }
         .navigationTitle("編輯個人資訊")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            hydrateUser()
+        }
+    }
+    
+    private func hydrateUser() {
+        guard let user = authService.currentUser else { return }
+        email = user.email
+        firstName = user.firstName
+        lastName = user.lastName
+        if let date = parseBirthDate(user.dateOfBirth) {
+            birthDate = date
+        }
+    }
+    
+    private func parseBirthDate(_ value: String?) -> Date? {
+        guard let value = value, !value.isEmpty else { return nil }
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = isoFormatter.date(from: value) ?? ISO8601DateFormatter().date(from: value) {
+            return date
+        }
+        let fallback = DateFormatter()
+        fallback.dateFormat = "yyyy-MM-dd"
+        return fallback.date(from: value)
+    }
+    
+    private func saveProfile() async {
+        errorMessage = nil
+        isSaving = true
+        defer { isSaving = false }
+        
+        do {
+            guard let userId = authService.currentUser?.primaryId, !userId.isEmpty else {
+                await MainActor.run {
+                    errorMessage = "找不到使用者資訊"
+                }
+                return
+            }
+            let user = try await APIService.shared.updateUserProfile(
+                userId: userId,
+                email: email,
+                firstName: firstName,
+                lastName: lastName
+            )
+            await MainActor.run {
+                authService.updateProfile(user)
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "更新失敗，請重試"
+            }
+        }
     }
 }
 
@@ -563,7 +627,14 @@ extension ProfileView {
     
     // 使用者卡片
     private var userInfoCard: some View {
-        HStack(spacing: 16) {
+        let displayName = authService.currentUser?.firstName.isEmpty == false
+            ? authService.currentUser?.firstName ?? "使用者"
+            : "使用者"
+        let initials = authService.currentUser?.initials.isEmpty == false
+            ? authService.currentUser?.initials ?? "ME"
+            : "ME"
+
+        return HStack(spacing: 16) {
             Button {
                 showingPersonalInfo = true
             } label: {
@@ -572,7 +643,7 @@ extension ProfileView {
                     .frame(width: 80, height: 80)
                     .overlay(
                         VStack(spacing: 2) {
-                            Text("小美")
+                            Text(initials)
                                 .font(.title3.bold())
                             Text("個人資訊")
                                 .font(.caption2.weight(.semibold))
@@ -587,19 +658,13 @@ extension ProfileView {
             .buttonStyle(.plain)
             
             VStack(alignment: .leading, spacing: 8) {
+                Text(displayName)
+                    .font(.headline)
+                    .foregroundColor(AppColors.titleColor)
                 Text("這是一個屬於你的安全空間，在這裡可以整理情緒、收集力量、找到希望。")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                HStack {
-                    Label("今天感覺：平靜", systemImage: "face.smiling")
-                        .font(.caption)
-                    Spacer()
-                    Label("連續登入：7天", systemImage: "calendar")
-                        .font(.caption)
-                }
-                .foregroundColor(.brown)
-                .padding(.top, 4)
             }
         }
         .padding()
@@ -650,7 +715,20 @@ extension ProfileView {
     
     // 緊急聯繫
     private var emergencySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let supportName = authService.currentUser?.supportContactName?.isEmpty == false
+            ? authService.currentUser?.supportContactName ?? "支持者"
+            : "支持者"
+        let supportInfo = authService.currentUser?.supportContactInfo?.isEmpty == false
+            ? authService.currentUser?.supportContactInfo ?? "無資料"
+            : "無資料"
+        let familyName = authService.currentUser?.familyContactName?.isEmpty == false
+            ? authService.currentUser?.familyContactName ?? "家人"
+            : "家人"
+        let familyInfo = authService.currentUser?.familyContactInfo?.isEmpty == false
+            ? authService.currentUser?.familyContactInfo ?? "無資料"
+            : "無資料"
+
+        return VStack(alignment: .leading, spacing: 16) {
             Text("緊急聯繫")
                 .font(.headline)
                 .foregroundColor(.brown)
@@ -663,10 +741,16 @@ extension ProfileView {
                 )
                 EmergencyContactCard(
                     title: "我的支持者",
-                    subtitle: "李雅雯：0912-345-678",
+                    subtitle: "\(supportName)：\(supportInfo)",
                     buttonText: "立即撥打"
                 )
             }
+            
+            EmergencyContactCard(
+                title: "我的家人",
+                subtitle: "\(familyName)：\(familyInfo)",
+                    buttonText: "立即撥打"
+                )
         }
         .padding()
         .background(cardBackground)
@@ -681,6 +765,23 @@ extension ProfileView {
     }
 }
 
+extension ProfileView {
+    private func refreshUserProfile() async {
+        guard authService.authToken != nil else {
+            return
+        }
+        
+        do {
+            let user = try await APIService.shared.getUserProfile()
+            await MainActor.run {
+                authService.updateProfile(user)
+            }
+        } catch {
+            print("Profile: failed to fetch profile: \(error)")
+        }
+    }
+}
+
 
 #Preview {
     NavigationView {
@@ -690,7 +791,14 @@ extension ProfileView {
 
 // MARK: - 個人資訊頁
 struct PersonalInfoView: View {
+    let user: User?
+
     var body: some View {
+        let initials = user?.initials.isEmpty == false ? user?.initials ?? "ME" : "ME"
+        let fullName = user?.fullName.isEmpty == false ? user?.fullName ?? "使用者" : "使用者"
+        let email = user?.email.isEmpty == false ? user?.email ?? "-" : "-"
+        let birthday = formatBirthDate(user?.dateOfBirth)
+
         ScrollView {
             VStack(spacing: 20) {
                 // 頂部頭像與基本資料
@@ -699,12 +807,12 @@ struct PersonalInfoView: View {
                         .fill(Color.orange.opacity(0.85))
                         .frame(width: 110, height: 110)
                         .overlay(
-                            Text("小美")
+                            Text(initials)
                                 .font(.title2.bold())
                                 .foregroundColor(.white)
                         )
                     
-                    Text("小美 Chen")
+                    Text(fullName)
                         .font(.title3.bold())
                         .foregroundColor(AppColors.titleColor)
                     Text("安全空間中的個人資訊，僅供自己查看與整理")
@@ -725,10 +833,9 @@ struct PersonalInfoView: View {
                 
                 // 詳細欄位
                 VStack(spacing: 12) {
-                    infoRow(icon: "envelope.fill", title: "Email", value: "user@example.com")
-                    infoRow(icon: "person.text.rectangle", title: "姓名", value: "陳小美")
-                    infoRow(icon: "calendar", title: "生日", value: "2002-10-30")
-                    infoRow(icon: "heart.text.square.fill", title: "偏好主題", value: "暖色 / 友善提醒")
+                    infoRow(icon: "envelope.fill", title: "Email", value: email)
+                    infoRow(icon: "person.text.rectangle", title: "姓名", value: fullName)
+                    infoRow(icon: "calendar", title: "生日", value: birthday)
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -794,5 +901,19 @@ struct PersonalInfoView: View {
             Spacer()
         }
         .padding(.vertical, 6)
+    }
+
+    private func formatBirthDate(_ value: String?) -> String {
+        guard let value = value, !value.isEmpty else {
+            return "-"
+        }
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = isoFormatter.date(from: value) ?? ISO8601DateFormatter().date(from: value) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            return formatter.string(from: date)
+        }
+        return value
     }
 }

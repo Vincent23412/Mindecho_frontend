@@ -9,9 +9,13 @@ import SwiftUI
 import Combine
 
 class RelaxTimerViewModel: ObservableObject {
-    enum Mode: String, CaseIterable {
-        case breath = "呼吸"
+    enum Mode: String, CaseIterable, Identifiable {
+        case breath = "呼吸放鬆"
+        case mindfulness = "正念呼吸"
+        case progressive = "漸進式放鬆"
         case meditation = "冥想"
+        
+        var id: String { rawValue }
     }
     
     @Published var selectedMode: Mode = .breath
@@ -23,45 +27,102 @@ class RelaxTimerViewModel: ObservableObject {
         let url: URL
     }
     
-    func videos(for mode: Mode) -> [VideoItem] {
-        switch mode {
-        case .breath:
-            return [
+    struct VideoSection: Identifiable {
+        let id = UUID()
+        let title: String
+        let items: [VideoItem]
+    }
+    
+    private let sections: [VideoSection] = [
+        VideoSection(
+            title: "呼吸放鬆",
+            items: [
                 VideoItem(
-                    title: "5 分鐘方框呼吸",
-                    subtitle: "短時間穩定情緒的方框呼吸練習",
-                    url: URL(string: "https://www.youtube.com/watch?v=EYQsRBNYdPk")!
+                    title: "呼吸放鬆法 1",
+                    subtitle: "https://www.youtube.com/watch?v=olOYzwaiMcY",
+                    url: URL(string: "https://www.youtube.com/watch?v=olOYzwaiMcY")!
                 ),
                 VideoItem(
-                    title: "4-7-8 呼吸法",
-                    subtitle: "入睡前放鬆的經典呼吸技巧",
-                    url: URL(string: "https://www.youtube.com/watch?v=YRPh_GaiL8s")!
+                    title: "呼吸放鬆法 2",
+                    subtitle: "https://www.youtube.com/watch?v=yz2NjOUMBIE",
+                    url: URL(string: "https://www.youtube.com/watch?v=yz2NjOUMBIE&list=PLgzxdlIcydXAz-XT2GLihQlH9q_nEQKTk")!
                 ),
                 VideoItem(
-                    title: "引導式深呼吸",
-                    subtitle: "搭配舒緩音樂的深呼吸引導",
-                    url: URL(string: "https://www.youtube.com/watch?v=aXItOY0sLRY")!
+                    title: "呼吸放鬆法 3",
+                    subtitle: "https://www.youtube.com/watch?v=sYDwONgry2A",
+                    url: URL(string: "https://www.youtube.com/watch?v=sYDwONgry2A")!
+                ),
+                VideoItem(
+                    title: "呼吸放鬆法 4",
+                    subtitle: "https://www.youtube.com/watch?v=UrMa3uOq67g",
+                    url: URL(string: "https://www.youtube.com/watch?v=UrMa3uOq67g")!
                 )
             ]
-        case .meditation:
-            return [
+        ),
+        VideoSection(
+            title: "正念呼吸",
+            items: [
                 VideoItem(
-                    title: "10 分鐘靜心冥想",
-                    subtitle: "簡單易入門的日常靜心",
-                    url: URL(string: "https://www.youtube.com/watch?v=inpok4MKVLM")!
+                    title: "正念呼吸 1",
+                    subtitle: "https://www.youtube.com/watch?v=9XzRNDLlSSQ",
+                    url: URL(string: "https://www.youtube.com/watch?v=9XzRNDLlSSQ&list=PL5nF87IeD9iodsrCfyUlcpuv2kzqkvm3K&index=2")!
                 ),
                 VideoItem(
-                    title: "正念身體掃描",
-                    subtitle: "覺察身體、放鬆緊繃的引導",
-                    url: URL(string: "https://www.youtube.com/watch?v=ltVPj6-5qFg")!
+                    title: "正念呼吸 2",
+                    subtitle: "https://www.youtube.com/watch?v=XvUJl71hHhM",
+                    url: URL(string: "https://www.youtube.com/watch?v=XvUJl71hHhM&list=PL69Lw5aOg_-_5b4JigAKPJZI1nQafkZhv&index=3")!
                 ),
                 VideoItem(
-                    title: "睡前冥想",
-                    subtitle: "柔和語音，幫助安穩入睡",
-                    url: URL(string: "https://www.youtube.com/watch?v=oKxuiw3iMBE")!
+                    title: "正念呼吸 3",
+                    subtitle: "https://www.youtube.com/watch?v=y0oJoGT1o6U",
+                    url: URL(string: "https://www.youtube.com/watch?v=y0oJoGT1o6U&list=PLqC8PGr0r_opMB9UhOgCsJn8gkaIeXXKY")!
                 )
             ]
+        ),
+        VideoSection(
+            title: "漸進式放鬆",
+            items: [
+                VideoItem(
+                    title: "漸進式放鬆法 1",
+                    subtitle: "https://www.youtube.com/watch?v=TEok1rznak4",
+                    url: URL(string: "https://www.youtube.com/watch?v=TEok1rznak4")!
+                ),
+                VideoItem(
+                    title: "漸進式放鬆法 2",
+                    subtitle: "https://www.youtube.com/watch?v=al9vb6myEdw",
+                    url: URL(string: "https://www.youtube.com/watch?v=al9vb6myEdw")!
+                )
+            ]
+        ),
+        VideoSection(
+            title: "冥想",
+            items: [
+                VideoItem(
+                    title: "冥想 1",
+                    subtitle: "https://www.youtube.com/watch?v=LrxvPgGXLvg",
+                    url: URL(string: "https://www.youtube.com/watch?v=LrxvPgGXLvg")!
+                ),
+                VideoItem(
+                    title: "韓瑞克森肌肉放鬆訓練",
+                    subtitle: "https://www.youtube.com/watch?v=Y77208p_zo4",
+                    url: URL(string: "https://www.youtube.com/watch?v=Y77208p_zo4")!
+                ),
+                VideoItem(
+                    title: "冥想 2",
+                    subtitle: "https://www.youtube.com/watch?v=tFSpuL4nfgM",
+                    url: URL(string: "https://www.youtube.com/watch?v=tFSpuL4nfgM")!
+                )
+            ]
+        ),
+        
+    ]
+    
+    func sections(for mode: Mode) -> [VideoSection] {
+        let filtered = sections.filter { $0.title == mode.rawValue }
+        if filtered.isEmpty {
+            return sections
         }
+        return filtered
     }
 }
 
@@ -72,9 +133,13 @@ struct RelaxTimerPreviewWrapper: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("預覽模式：\(viewModel.selectedMode.rawValue)")
                 .font(.headline)
-            ForEach(viewModel.videos(for: viewModel.selectedMode)) { item in
-                Text(item.title)
-                    .font(.subheadline)
+            ForEach(viewModel.sections(for: viewModel.selectedMode)) { section in
+                Text(section.title)
+                    .font(.subheadline.bold())
+                ForEach(section.items) { item in
+                    Text(item.title)
+                        .font(.subheadline)
+                }
             }
         }
         .padding(16)

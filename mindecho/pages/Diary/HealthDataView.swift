@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct HealthDataView: View {
+    @StateObject private var healthKitManager = HealthKitManager.shared
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 5) {
@@ -25,13 +27,41 @@ struct HealthDataView: View {
                 
                 // 四個數據卡片（兩行 Grid）
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
-                    HealthDataCard(title: "心率變異性 (HRV)", subtitle: "心臟健康指標", value: "48", unit: "ms", color: .orange, icon: "waveform.path.ecg")
+                    HealthDataCard(
+                        title: "心率變異性 (HRV)",
+                        subtitle: "心臟健康指標",
+                        value: formatValue(healthKitManager.hrvMs, decimals: 0),
+                        unit: healthKitManager.hrvMs == nil ? "" : "ms",
+                        color: .orange,
+                        icon: "waveform.path.ecg"
+                    )
                     
-                    HealthDataCard(title: "睡眠質量", subtitle: "深度睡眠時間", value: "2.4", unit: "小時", color: .brown, icon: "bed.double.fill")
+                    HealthDataCard(
+                        title: "睡眠質量",
+                        subtitle: "深度睡眠時間",
+                        value: formatValue(healthKitManager.sleepHours, decimals: 1),
+                        unit: healthKitManager.sleepHours == nil ? "" : "小時",
+                        color: .brown,
+                        icon: "bed.double.fill"
+                    )
                     
-                    HealthDataCard(title: "活動量", subtitle: "每日步數", value: "7,200", unit: "步", color: .teal, icon: "figure.walk")
+                    HealthDataCard(
+                        title: "活動量",
+                        subtitle: "每日步數",
+                        value: formatValue(healthKitManager.steps, decimals: 0),
+                        unit: healthKitManager.steps == nil ? "" : "步",
+                        color: .teal,
+                        icon: "figure.walk"
+                    )
                     
-                    HealthDataCard(title: "體重", subtitle: "體重變化趨勢", value: "53.2", unit: "公斤", color: .blue, icon: "scalemass")
+                    HealthDataCard(
+                        title: "體重",
+                        subtitle: "體重變化趨勢",
+                        value: formatValue(healthKitManager.weightKg, decimals: 1),
+                        unit: healthKitManager.weightKg == nil ? "" : "公斤",
+                        color: .blue,
+                        icon: "scalemass"
+                    )
                 }
                 .padding(.horizontal)
                 
@@ -76,6 +106,9 @@ struct HealthDataView: View {
             .padding(.top)
         }
         .background(AppColors.lightYellow)
+        .onAppear {
+            healthKitManager.refresh()
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -84,7 +117,20 @@ struct HealthDataView: View {
                     .foregroundColor(AppColors.titleColor)
                     .padding(.leading, 2)
             }
+#if DEBUG
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("填入模擬") {
+                    healthKitManager.loadMockData()
+                }
+                .font(.subheadline)
+            }
+#endif
         }
+    }
+    
+    private func formatValue(_ value: Double?, decimals: Int) -> String {
+        guard let value else { return "無資料" }
+        return String(format: "%.\(decimals)f", value)
     }
     
     @ViewBuilder

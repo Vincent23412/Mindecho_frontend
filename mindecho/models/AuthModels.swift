@@ -10,6 +10,12 @@ struct User: Codable, Identifiable {
     let firstName: String
     let lastName: String
     let dateOfBirth: String?
+    let gender: String?
+    let educationLevel: Int?
+    let supportContactName: String?
+    let supportContactInfo: String?
+    let familyContactName: String?
+    let familyContactInfo: String?
     let isActive: Bool?
     let preferences: [String: String]?
     let createdAt: String?
@@ -22,6 +28,12 @@ struct User: Codable, Identifiable {
         case firstName
         case lastName
         case dateOfBirth
+        case gender
+        case educationLevel
+        case supportContactName
+        case supportContactInfo
+        case familyContactName
+        case familyContactInfo
         case isActive
         case preferences
         case createdAt

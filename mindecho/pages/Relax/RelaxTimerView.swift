@@ -17,45 +17,53 @@ struct RelaxTimerView: View {
             RelaxModeSelector(viewModel: viewModel)
             
             ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(viewModel.videos(for: viewModel.selectedMode)) { item in
-                        Button {
-                            openURL(item.url)
-                        } label: {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(AppColors.orange.opacity(0.15))
-                                        .frame(width: 64, height: 48)
-                                    Image(systemName: "play.rectangle.fill")
-                                        .foregroundColor(AppColors.orange)
-                                        .font(.system(size: 20, weight: .semibold))
+                VStack(spacing: 18) {
+                    ForEach(viewModel.sections(for: viewModel.selectedMode)) { section in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(section.title)
+                                .font(.headline)
+                                .foregroundColor(AppColors.titleColor)
+                            
+                            ForEach(section.items) { item in
+                                Button {
+                                    openURL(item.url)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(AppColors.orange.opacity(0.15))
+                                                .frame(width: 64, height: 48)
+                                            Image(systemName: "play.rectangle.fill")
+                                                .foregroundColor(AppColors.orange)
+                                                .font(.system(size: 20, weight: .semibold))
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text(item.title)
+                                                .font(.headline)
+                                                .foregroundColor(AppColors.titleColor)
+                                                .lineLimit(2)
+                                            Text(item.subtitle)
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(2)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(AppColors.cardBackground)
+                                            .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                                    )
                                 }
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(item.title)
-                                        .font(.headline)
-                                        .foregroundColor(AppColors.titleColor)
-                                        .lineLimit(2)
-                                    Text(item.subtitle)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(2)
-                                }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(.secondary)
+                                .buttonStyle(.plain)
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(AppColors.cardBackground)
-                                    .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
-                            )
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.vertical, 4)
