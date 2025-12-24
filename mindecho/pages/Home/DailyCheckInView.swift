@@ -215,14 +215,14 @@ struct DailyCheckInView: View {
         calculatedScores = scores
         checkInManager.saveDailyCheckIn(scores: scores)
 
-        // 送出問卷回答並記錄 log（配合後端確認）
-        let answerTexts = answers.map { idx in
-            idx >= 0 && idx < moodOptions.count ? moodOptions[idx].label : ""
+        // 送出問卷回答（數字分數）並記錄 log（配合後端確認）
+        let answerValues = answers.map { idx in
+            idx >= 0 && idx < moodOptions.count ? moodOptions[idx].value : 0
         }
         print("🟢 DailyCheckIn: sending dailyQuestions payload")
         checkInManager.sendDailyQuestions(
             questions: questions.map { $0.title },
-            answers: answerTexts,
+            answers: answerValues,
             date: scores.date
         )
 

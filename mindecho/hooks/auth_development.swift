@@ -24,7 +24,7 @@ extension AuthViewModel {
             
             // 直接設定為已認證
             AuthService.shared.isAuthenticated = true
-            self.shouldShowDailyCheckIn = true
+            self.updateDailyCheckInVisibility()
             
             self.successMessage = "登錄成功！（開發模式）"
             self.errorMessage = ""
@@ -78,7 +78,7 @@ extension AuthViewModel {
             
             // 直接設定為已認證
             AuthService.shared.isAuthenticated = true
-            self.shouldShowDailyCheckIn = true
+            self.updateDailyCheckInVisibility()
             
             self.successMessage = "註冊成功！歡迎加入 MindEcho！（開發模式）"
             self.errorMessage = ""

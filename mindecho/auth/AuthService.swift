@@ -54,6 +54,9 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     
     // MARK: - 載入本地存儲的認證資訊
     fileprivate func loadStoredAuth() {
+        if AppConfig.skipStoredAuth {
+            return
+        }
         if let token = UserDefaults.standard.string(forKey: Keys.authToken),
            let userData = UserDefaults.standard.data(forKey: Keys.userData),
            let user = try? JSONDecoder().decode(User.self, from: userData) {

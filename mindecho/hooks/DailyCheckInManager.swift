@@ -183,7 +183,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
     }
 
     // MARK: - 上傳每日問卷答案
-    func sendDailyQuestions(questions: [String], answers: [String], date: Date = Date()) {
+    func sendDailyQuestions(questions: [String], answers: [Int], date: Date = Date()) {
         AuthService.shared.refreshStoredAuthIfNeeded()
         guard let user = AuthService.shared.currentUser else {
             print("⚠️ sendDailyQuestions: no user")

@@ -36,6 +36,7 @@ class AuthViewModel: ObservableObject {
                 guard let self else { return }
                 if isAuthenticated {
                     self.authState = .authenticated
+                    self.updateDailyCheckInVisibility()
                 } else {
                     self.authState = .unauthenticated
                     self.shouldShowDailyCheckIn = false
@@ -119,7 +120,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "註冊成功！歡迎加入 MindEcho！")
                         self?.authState = .authenticated
-                        self?.shouldShowDailyCheckIn = true
+                        self?.updateDailyCheckInVisibility()
                         self?.sendRegistrationSuccessNotification(message: response.message ?? "註冊成功！")
                     } else {
                         self?.showError(response.message ?? "註冊失敗，請重試")
@@ -169,7 +170,7 @@ class AuthViewModel: ObservableObject {
                     if response.success == true {
                         self?.showSuccess(response.message ?? "登錄成功！")
                         self?.authState = .authenticated
-                        self?.shouldShowDailyCheckIn = true
+                        self?.updateDailyCheckInVisibility()
                     } else {
                         self?.showError(response.message ?? "電子郵件或密碼錯誤")
                     }
@@ -243,6 +244,10 @@ class AuthViewModel: ObservableObject {
         if case .loading = authState {
             authState = .idle
         }
+    }
+
+    func updateDailyCheckInVisibility() {
+        shouldShowDailyCheckIn = !DailyCheckInManager.shared.hasCompletedToday
     }
     
     // MARK: - 實時表單驗證
