@@ -207,12 +207,6 @@ struct ModeIntroductionView: View {
                 "適合日常心情分享",
                 "友善溫暖的交流氛圍"
             ]
-        case .normal:
-            return [
-                "一般對話模式",
-                "適合日常心情分享",
-                "友善溫暖的交流氛圍"
-            ]
         case .cbtMode:
             return [
                 "識別負面思維模式",

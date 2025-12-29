@@ -411,6 +411,8 @@ struct NewChatView: View {
     @ObservedObject var chatHook: ChatHook
     let onChatCreated: (ChatSession) -> Void
     @State private var selectedMode: TherapyMode = .chatMode
+    @State private var showingTitlePrompt = false
+    @State private var pendingTitle = ""
     
     var body: some View {
         NavigationView {
@@ -444,12 +446,7 @@ struct NewChatView: View {
                 Spacer()
                 
                 Button(action: {
-                    Task {
-                        if let newSession = await chatHook.createNewSession(mode: selectedMode) {
-                            isPresented = false
-                            onChatCreated(newSession)
-                        }
-                    }
+                    showingTitlePrompt = true
                 }) {
                     Text(chatHook.isLoading ? "建立中..." : "開始對話")
                         .font(.headline)
@@ -480,6 +477,31 @@ struct NewChatView: View {
                 if let error = chatHook.error {
                     Text(error)
                 }
+            }
+            .alert("聊天室名稱", isPresented: $showingTitlePrompt) {
+                TextField("可選填", text: $pendingTitle)
+                Button("略過") {
+                    Task {
+                        if let newSession = await chatHook.createNewSession(mode: selectedMode, title: nil) {
+                            isPresented = false
+                            onChatCreated(newSession)
+                        }
+                    }
+                }
+                Button("確定") {
+                    Task {
+                        let title = pendingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let newSession = await chatHook.createNewSession(
+                            mode: selectedMode,
+                            title: title.isEmpty ? nil : title
+                        ) {
+                            isPresented = false
+                            onChatCreated(newSession)
+                        }
+                    }
+                }
+            } message: {
+                Text("請輸入聊天室名稱（可留空）")
             }
         }
     }

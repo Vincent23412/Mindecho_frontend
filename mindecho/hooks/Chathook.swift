@@ -39,14 +39,14 @@ class ChatHook: ObservableObject {
     // MARK: - 會話管理方法
     
     /// 建立新的聊天會話
-    func createNewSession(mode: TherapyMode) async -> ChatSession? {
+    func createNewSession(mode: TherapyMode, title: String? = nil) async -> ChatSession? {
         isLoading = true
         error = nil
         
         do {
             // 如果有真實後端，使用 API
             if let token = authToken {
-                let apiSessionInfo = try await chatAPI.createNewSession(mode: mode, token: token)
+                let apiSessionInfo = try await chatAPI.createNewSession(mode: mode, title: title, token: token)
                 
                 // 將 API 回應轉換為本地模型
                 let session = ChatSession(
@@ -259,8 +259,6 @@ class ChatHook: ObservableObject {
         guard let backendId = chatSessions.first(where: { $0.id == sessionId })?.backendId else {
             return
         }
-        
-        isLoading = true
         error = nil
         
         do {
@@ -280,22 +278,24 @@ class ChatHook: ObservableObject {
                 )
             }
             
-            messages[sessionId] = apiMessages
-            
-            // 更新會話信息
-            if let index = chatSessions.firstIndex(where: { $0.id == sessionId }) {
-                let lastUpdated = apiMessages.last?.timestamp ?? Date()
-                chatSessions[index].lastUpdated = lastUpdated
-                chatSessions[index].messageCount = apiMessages.count
-                chatSessions[index].lastMessage = apiMessages.last?.content ?? ""
+            if !apiMessages.isEmpty {
+                messages[sessionId] = apiMessages
+                
+                // 更新會話信息
+                if let index = chatSessions.firstIndex(where: { $0.id == sessionId }) {
+                    let lastUpdated = apiMessages.last?.timestamp ?? Date()
+                    chatSessions[index].lastUpdated = lastUpdated
+                    chatSessions[index].messageCount = apiMessages.count
+                    chatSessions[index].lastMessage = apiMessages.last?.content ?? ""
+                }
+            } else if messages[sessionId] == nil {
+                messages[sessionId] = []
             }
             
         } catch {
             self.error = error.localizedDescription
             showError = true
         }
-        
-        isLoading = false
     }
 
     /// 取得會話列表（後端）
@@ -306,9 +306,13 @@ class ChatHook: ObservableObject {
         
         do {
             let response = try await chatAPI.getSessions(token: token, limit: limit, offset: offset)
+            let existingIds: [String: UUID] = Dictionary(uniqueKeysWithValues: chatSessions.compactMap { session -> (String, UUID)? in
+                guard let backendId = session.backendId else { return nil }
+                return (backendId, session.id)
+            })
             let mapped = response.sessions.map { session in
                 ChatSession(
-                    id: UUID(),
+                    id: existingIds[session.id] ?? UUID(),
                     backendId: session.id,
                     title: session.title,
                     therapyMode: session.mode,

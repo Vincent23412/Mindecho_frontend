@@ -45,7 +45,6 @@ struct AppColors {
     static func colorForMode(_ mode: TherapyMode) -> Color {
         switch mode {
         case .chatMode: return chatModeColor
-        case .normal: return chatModeColor
         case .cbtMode: return cbtModeColor
         case .mbtMode: return mbtModeColor
         }

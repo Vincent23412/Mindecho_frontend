@@ -310,7 +310,7 @@ extension ChatAPI {
         let lowercaseMessage = message.lowercased()
         
         switch mode {
-        case .chatMode, .normal:
+        case .chatMode:
             if lowercaseMessage.contains("壓力") {
                 return "聽起來您最近壓力不小。能告訴我是什麼讓您感到有壓力嗎？"
             } else if lowercaseMessage.contains("開心") || lowercaseMessage.contains("高興") {
