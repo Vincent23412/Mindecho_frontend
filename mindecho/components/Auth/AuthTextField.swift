@@ -11,6 +11,8 @@ struct AuthTextField: View {
     let onEditingChanged: (Bool) -> Void
     let onCommit: () -> Void
     let placeholderOverride: String?
+    let showValidationIcon: Bool
+    let showPasswordStrength: Bool
     
     // MARK: - 內部狀態
     @State private var isSecureTextVisible = false
@@ -25,7 +27,9 @@ struct AuthTextField: View {
         errorMessage: String = "",
         onEditingChanged: @escaping (Bool) -> Void = { _ in },
         onCommit: @escaping () -> Void = {},
-        placeholderOverride: String? = nil
+        placeholderOverride: String? = nil,
+        showValidationIcon: Bool = true,
+        showPasswordStrength: Bool = true
     ) {
         self.field = field
         self._text = text
@@ -34,6 +38,8 @@ struct AuthTextField: View {
         self.onEditingChanged = onEditingChanged
         self.onCommit = onCommit
         self.placeholderOverride = placeholderOverride
+        self.showValidationIcon = showValidationIcon
+        self.showPasswordStrength = showPasswordStrength
     }
     
     var body: some View {
@@ -47,7 +53,7 @@ struct AuthTextField: View {
                 Spacer()
                 
                 // 密碼強度指示器（僅用於密碼字段）
-                if field == .password && !text.isEmpty {
+                if showPasswordStrength && field == .password && !text.isEmpty {
                     passwordStrengthIndicator
                 }
             }
@@ -154,7 +160,7 @@ private extension AuthTextField {
     // 驗證狀態圖標
     var validationIcon: some View {
         Group {
-            if !text.isEmpty {
+            if showValidationIcon && !text.isEmpty {
                 Image(systemName: isValid ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(isValid ? .green : .red)

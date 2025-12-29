@@ -161,10 +161,23 @@ struct EditPersonalInfoView: View {
 
 // MARK: - 支撐我的片刻 Modal
 private struct SupportReasonsModal: View {
-    let reasons: [SupportReason]
     let onClose: () -> Void
     
-    @State private var reminder: ReminderTime = .morning
+    @State private var showingAddReason = false
+    @State private var localReasons: [SupportReason]
+    @State private var editingReason: SupportReason?
+    @State private var errorMessage: String?
+    
+    private static let apiDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    
+    init(reasons: [SupportReason], onClose: @escaping () -> Void) {
+        self.onClose = onClose
+        _localReasons = State(initialValue: reasons)
+    }
     
     var body: some View {
         NavigationView {
@@ -172,14 +185,48 @@ private struct SupportReasonsModal: View {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     
-                    reasonsSection
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
                     
-                    reminderSection
+                    reasonsSection
                 }
-                .padding(20)
-                .background(AppColors.lightYellow.ignoresSafeArea())
+                .padding(28)
             }
+            .background(AppColors.lightYellow.ignoresSafeArea())
             .navigationBarHidden(true)
+        }
+        .task {
+            await loadReasons()
+        }
+        .sheet(isPresented: $showingAddReason) {
+            AddSupportReasonView(
+                onSave: { title, detail in
+                    Task {
+                        await createReason(title: title, detail: detail)
+                    }
+                },
+                onCancel: {
+                    showingAddReason = false
+                }
+            )
+        }
+        .sheet(item: $editingReason) { reason in
+            AddSupportReasonView(
+                titleText: "編輯理由",
+                initialTitle: reason.title,
+                initialDetail: reason.detail,
+                onSave: { title, detail in
+                    Task {
+                        await updateReason(reason, title: title, detail: detail)
+                    }
+                },
+                onCancel: {
+                    editingReason = nil
+                }
+            )
         }
     }
     
@@ -213,7 +260,7 @@ private struct SupportReasonsModal: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                Button(action: {}) {
+                Button(action: { showingAddReason = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
                         Text("新增理由")
@@ -228,46 +275,100 @@ private struct SupportReasonsModal: View {
             }
             
             VStack(spacing: 12) {
-                ForEach(reasons) { reason in
-                    ReasonCard(reason: reason)
+                ForEach(localReasons) { reason in
+                    ReasonCard(
+                        reason: reason,
+                        onEdit: { editingReason = reason },
+                        onDelete: { Task { await deleteReason(reason) } }
+                    )
                 }
             }
+            .padding(.horizontal, 6)
         }
     }
     
-    private var reminderSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("設定提醒")
-                .font(.headline)
-                .foregroundColor(AppColors.titleColor)
-            Text("選擇何時收到你收藏的理由提醒：")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            HStack(spacing: 10) {
-                ForEach(ReminderTime.allCases) { time in
-                    Button(action: { reminder = time }) {
-                        Text(time.label)
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .frame(width: 92)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(reminder == time ? AppColors.orange.opacity(0.8) : Color.white)
-                            )
-                            .foregroundColor(reminder == time ? .white : AppColors.titleColor)
-                            .shadow(color: .black.opacity(0.05), radius: 6, y: 3)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+    private func loadReasons() async {
+        guard AuthService.shared.authToken != nil else { return }
+        do {
+            let reasons = try await APIService.shared.getReasons()
+            localReasons = reasons.map(mapReason)
+            errorMessage = nil
+        } catch {
+            // 忽略載入失敗，避免在無資料時顯示錯誤
+            errorMessage = nil
         }
+    }
+    
+    private func createReason(title: String, detail: String) async {
+        do {
+            let reason = try await APIService.shared.createReason(
+                title: title,
+                content: detail,
+                date: Date()
+            )
+            localReasons.insert(mapReason(reason), at: 0)
+            showingAddReason = false
+            errorMessage = nil
+        } catch {
+            errorMessage = "新增理由失敗，請稍後再試"
+        }
+    }
+    
+    private func updateReason(_ reason: SupportReason, title: String, detail: String) async {
+        do {
+            let updated = try await APIService.shared.updateReason(
+                id: reason.id,
+                title: title,
+                content: detail,
+                date: reason.apiDate,
+                isDeleted: false
+            )
+            if let index = localReasons.firstIndex(where: { $0.id == reason.id }) {
+                localReasons[index] = mapReason(updated)
+            }
+            editingReason = nil
+            errorMessage = nil
+        } catch {
+            errorMessage = "更新理由失敗，請稍後再試"
+        }
+    }
+    
+    private func deleteReason(_ reason: SupportReason) async {
+        do {
+            _ = try await APIService.shared.deleteReason(id: reason.id)
+            localReasons.removeAll { $0.id == reason.id }
+            errorMessage = nil
+        } catch {
+            errorMessage = "刪除理由失敗，請稍後再試"
+        }
+    }
+    
+    private func mapReason(_ reason: ReasonItem) -> SupportReason {
+        let date = parseAPIDate(reason.date)
+        return SupportReason(
+            id: reason.id,
+            title: reason.title,
+            detail: reason.content,
+            date: SupportReason.displayDate(from: date),
+            isFavorite: false,
+            apiDate: date
+        )
+    }
+    
+    private func parseAPIDate(_ value: String) -> Date {
+        if let date = Self.apiDateFormatter.date(from: value) {
+            return date
+        }
+        let fallback = ISO8601DateFormatter()
+        fallback.formatOptions = [.withInternetDateTime]
+        return fallback.date(from: value) ?? Date()
     }
 }
 
 private struct ReasonCard: View {
     let reason: SupportReason
+    let onEdit: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -277,8 +378,6 @@ private struct ReasonCard: View {
                     .foregroundColor(AppColors.titleColor)
                 Spacer()
                 HStack(spacing: 12) {
-                    Image(systemName: reason.isFavorite ? "heart.fill" : "heart")
-                        .foregroundColor(AppColors.orange)
                     Image(systemName: "square.and.arrow.up")
                         .foregroundColor(AppColors.titleColor.opacity(0.7))
                 }
@@ -295,13 +394,18 @@ private struct ReasonCard: View {
                     .foregroundColor(.secondary)
                 Spacer()
                 HStack(spacing: 12) {
-                    Image(systemName: "square.and.pencil")
-                    Image(systemName: "trash")
+                    Button(action: onEdit) {
+                        Image(systemName: "square.and.pencil")
+                    }
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                    }
                 }
                 .foregroundColor(AppColors.titleColor.opacity(0.8))
+                .buttonStyle(.plain)
             }
         }
-        .padding(14)
+        .padding(22)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppColors.orange.opacity(0.12))
@@ -310,24 +414,128 @@ private struct ReasonCard: View {
 }
 
 private struct SupportReason: Identifiable {
-    let id = UUID()
+    let id: String
     let title: String
     let detail: String
     let date: String
     let isFavorite: Bool
+    let apiDate: Date
+    
+    private static let displayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter
+    }()
+    
+    static func displayDate(from date: Date) -> String {
+        displayFormatter.string(from: date)
+    }
+    
+    init(id: String = UUID().uuidString, title: String, detail: String, date: String, isFavorite: Bool, apiDate: Date? = nil) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.date = date
+        self.isFavorite = isFavorite
+        self.apiDate = apiDate ?? Self.displayFormatter.date(from: date) ?? Date()
+    }
 }
 
-private enum ReminderTime: String, CaseIterable, Identifiable {
-    case morning, noon, night, custom
+private struct AddSupportReasonView: View {
+    let titleText: String
+    let initialTitle: String
+    let initialDetail: String
+    let onSave: (String, String) -> Void
+    let onCancel: () -> Void
     
-    var id: String { rawValue }
+    @State private var title = ""
+    @State private var detail = ""
     
-    var label: String {
-        switch self {
-        case .morning: return "每天早上"
-        case .noon: return "每天中午"
-        case .night: return "睡前"
-        case .custom: return "自訂"
+    init(
+        titleText: String = "新增理由",
+        initialTitle: String = "",
+        initialDetail: String = "",
+        onSave: @escaping (String, String) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.titleText = titleText
+        self.initialTitle = initialTitle
+        self.initialDetail = initialDetail
+        self.onSave = onSave
+        self.onCancel = onCancel
+        _title = State(initialValue: initialTitle)
+        _detail = State(initialValue: initialDetail)
+    }
+    
+    private var isSaveDisabled: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(titleText)
+                    .font(.title2.weight(.bold))
+                    .foregroundColor(AppColors.titleColor)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("標題")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.titleColor)
+                    TextField("輸入標題", text: $title)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("內文")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.titleColor)
+                    TextEditor(text: $detail)
+                        .frame(minHeight: 140)
+                        .padding(8)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        )
+                }
+                
+                Button {
+                    onSave(title, detail)
+                } label: {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "paperplane.fill")
+                        Text("傳送")
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .padding(.vertical, 10)
+                    .background(AppColors.orange.opacity(0.9))
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .shadow(color: AppColors.orange.opacity(0.25), radius: 8, y: 4)
+                }
+                .disabled(isSaveDisabled)
+                
+                Spacer()
+            }
+            .padding(20)
+            .background(AppColors.lightYellow.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("儲存") {
+                        onSave(title, detail)
+                    }
+                    .disabled(isSaveDisabled)
+                }
+            }
         }
     }
 }
@@ -678,7 +886,7 @@ extension ProfileView {
             Text("情緒行李箱")
                 .font(.headline)
                 .foregroundColor(.brown)
-                .padding(.horizontal, 2)
+                .padding(.horizontal, 5)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -691,24 +899,12 @@ extension ProfileView {
                         showingSupportReasons = true
                     }
                 )
-//                    EmotionBoxCard(
-//                        title: "療癒語錄牆",
-//                        description: "收集那些曾經撫慰你的話語與詩句。",
-//                        buttonTitle: "前往查看",
-//                        color: .orange
-//                    )
-//                    EmotionBoxCard(
-//                        title: "心情樹洞",
-//                        description: "寫下你的心事，讓自己慢慢釋放。",
-//                        buttonTitle: "打開樹洞",
-//                        color: .orange
-//                    )
                 }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
 
     }
     
@@ -737,20 +933,23 @@ extension ProfileView {
                 EmergencyContactCard(
                     title: "24小時救援專線",
                     subtitle: "1925（依愛我）",
-                    buttonText: "立即撥打"
+                    buttonText: "立即撥打",
+                    phoneNumber: "1925"
                 )
                 EmergencyContactCard(
                     title: "我的支持者",
                     subtitle: "\(supportName)：\(supportInfo)",
-                    buttonText: "立即撥打"
+                    buttonText: "立即撥打",
+                    phoneNumber: supportInfo
                 )
             }
             
             EmergencyContactCard(
                 title: "我的家人",
                 subtitle: "\(familyName)：\(familyInfo)",
-                    buttonText: "立即撥打"
-                )
+                    buttonText: "立即撥打",
+                    phoneNumber: familyInfo
+            )
         }
         .padding()
         .background(cardBackground)

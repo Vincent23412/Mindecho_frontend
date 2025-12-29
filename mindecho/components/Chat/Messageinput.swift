@@ -21,18 +21,18 @@ struct ChatInputView: View {
     var placeholder: String {
         switch mode {
         case .chatMode: return "輸入訊息..."
+        case .normal: return "輸入訊息..."
         case .cbtMode:  return "分享您的想法或困擾..."
         case .mbtMode:  return "描述您的感受或人際困擾..."
-        case .mentalization: return "聊聊你當下的想法與感受..."
         }
     }
 
     var quickReplies: [String] {
         switch mode {
         case .chatMode: return ["我今天心情不錯", "有點累", "想聊聊", "最近怎麼樣？"]
+        case .normal: return ["我今天心情不錯", "有點累", "想聊聊", "最近怎麼樣？"]
         case .cbtMode:  return ["我感到很焦慮", "總是擔心", "覺得壓力很大", "想不通"]
         case .mbtMode:  return ["人際關係困擾", "不理解他人", "情緒複雜", "感受不明"]
-        case .mentalization: return ["我在想他們怎麼看我", "感覺有點複雜", "我不確定他的意圖", "想釐清自己的情緒"]
         }
     }
 

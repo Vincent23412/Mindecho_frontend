@@ -37,7 +37,6 @@
 		956E2A282E2F625A00DEC7A6 /* AuthButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A272E2F625A00DEC7A6 /* AuthButton.swift */; };
 		956E2A2A2E2F626A00DEC7A6 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A292E2F626A00DEC7A6 /* LoadingView.swift */; };
 		956E2A2C2E2F627800DEC7A6 /* ValidationMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A2B2E2F627800DEC7A6 /* ValidationMessage.swift */; };
-		956E2A352E2FB04500DEC7A6 /* auth_development.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956E2A342E2FB04500DEC7A6 /* auth_development.swift */; };
 		957684DD2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684DC2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift */; };
 		957684E32E544A8C00A13BD8 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684E22E544A8C00A13BD8 /* APIService.swift */; };
 		957684E52E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957684E42E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift */; };
@@ -128,7 +127,6 @@
 		956E2A292E2F626A00DEC7A6 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		956E2A2B2E2F627800DEC7A6 /* ValidationMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationMessage.swift; sourceTree = "<group>"; };
 		956E2A332E2F85FA00DEC7A6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		956E2A342E2FB04500DEC7A6 /* auth_development.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth_development.swift; sourceTree = "<group>"; };
 		957684DC2E53E3E100A13BD8 /* PersonalBiorhythmCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalBiorhythmCard.swift; sourceTree = "<group>"; };
 		957684E22E544A8C00A13BD8 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		957684E42E5B9C5900A13BD8 /* PersonalRhythmCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRhythmCalculator.swift; sourceTree = "<group>"; };
@@ -333,7 +331,6 @@
 			children = (
 				956E29FE2E2D3CBE00DEC7A6 /* Chathook.swift */,
 				956E2A1F2E2F61E900DEC7A6 /* useAuth.swift */,
-				956E2A342E2FB04500DEC7A6 /* auth_development.swift */,
 				957794252E421C88003DB25B /* DailyCheckInManager.swift */,
 				957684E62E5B9CAB00A13BD8 /* PersonalRhythmManager.swift */,
 				BFC2AA292F00000900ABCD01 /* ScaleSessionManager.swift */,
@@ -645,7 +642,6 @@
 				956E2A182E2F618B00DEC7A6 /* Validation.swift in Sources */,
 				957794242E421C78003DB25B /* MapDetailView.swift in Sources */,
 				956E29FD2E2D3CB400DEC7A6 /* ChatAPI.swift in Sources */,
-				956E2A352E2FB04500DEC7A6 /* auth_development.swift in Sources */,
 				957794042E421B93003DB25B /* PHQ9ResultView.swift in Sources */,
 				957684E32E544A8C00A13BD8 /* APIService.swift in Sources */,
 				957793F62E421B42003DB25B /* DailyCheckInResultView.swift in Sources */,

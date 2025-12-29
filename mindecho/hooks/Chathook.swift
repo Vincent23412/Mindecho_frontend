@@ -14,9 +14,6 @@ class ChatHook: ObservableObject {
     
     // MARK: - 私有屬性
     private let chatAPI = ChatAPI.shared
-    private let userDefaults = UserDefaults.standard
-    private let sessionsKey = "chatSessions"
-    private let messagesKey = "chatMessages"
     
     // 當前用戶信息（從 TokenManager 獲取）
     private var currentUserId: String {
@@ -25,14 +22,18 @@ class ChatHook: ObservableObject {
     }
     
     private var authToken: String? {
-        // 這裡應該從你的 TokenManager 獲取實際的 token
-        return "current_auth_token" // 暫時用固定值
+        AuthService.shared.authToken
     }
     
     // MARK: - 初始化
     init() {
-        loadLocalData()
-        createSampleDataIfNeeded()
+        // 不使用本地快取與預設聊天資料
+        filterLegacySessions()
+        Task { await loadSessions() }
+    }
+
+    private func filterLegacySessions() {
+        chatSessions.removeAll { $0.therapyMode.rawValue == "mentalization" }
     }
     
     // MARK: - 會話管理方法
@@ -49,10 +50,12 @@ class ChatHook: ObservableObject {
                 
                 // 將 API 回應轉換為本地模型
                 let session = ChatSession(
-                    id: UUID(uuidString: apiSessionInfo.id) ?? UUID(),
+                    id: UUID(),
+                    backendId: apiSessionInfo.id,
                     title: apiSessionInfo.title,
                     therapyMode: mode,
                     lastMessage: "",
+                    lastUpdated: parseAPIDate(apiSessionInfo.createdAt) ?? Date(),
                     tags: [mode.shortName]
                 )
                 
@@ -62,7 +65,6 @@ class ChatHook: ObservableObject {
                 // 添加歡迎訊息
                 await addWelcomeMessage(to: session.id, mode: mode)
                 
-                saveLocalData()
                 isLoading = false
                 return session
                 
@@ -74,7 +76,6 @@ class ChatHook: ObservableObject {
                 
                 await addWelcomeMessage(to: session.id, mode: mode)
                 
-                saveLocalData()
                 isLoading = false
                 return session
             }
@@ -94,15 +95,14 @@ class ChatHook: ObservableObject {
         
         do {
             // 如果有真實後端，先刪除遠端資料
-            if let token = authToken {
-                try await chatAPI.deleteSession(sessionId: sessionId.uuidString, token: token)
+            if let token = authToken,
+               let backendId = chatSessions.first(where: { $0.id == sessionId })?.backendId {
+                try await chatAPI.deleteSession(sessionId: backendId, token: token)
             }
             
             // 刪除本地資料
             chatSessions.removeAll { $0.id == sessionId }
             messages.removeValue(forKey: sessionId)
-            
-            saveLocalData()
             
         } catch {
             self.error = error.localizedDescription
@@ -126,7 +126,6 @@ class ChatHook: ObservableObject {
             isFromUser: false
         )
         
-        saveLocalData()
     }
     
     // MARK: - 訊息管理方法
@@ -152,12 +151,17 @@ class ChatHook: ObservableObject {
                 // 使用真實 API
                 let request = SendMessageRequest(
                     message: trimmedContent,
-                    userId: currentUserId,
-                    sessionId: sessionId.uuidString,
-                    therapyMode: session.therapyMode
+                    mode: session.therapyMode
                 )
-                
-                let response = try await chatAPI.sendMessage(request, token: token)
+
+                guard let backendId = session.backendId else {
+                    throw ChatAPIError.invalidResponse
+                }
+                let response = try await chatAPI.sendMessage(
+                    sessionId: backendId,
+                    request: request,
+                    token: token
+                )
                 aiResponse = response.reply
                 
             } else {
@@ -218,7 +222,6 @@ class ChatHook: ObservableObject {
         chatSessions.remove(at: sessionIndex)
         chatSessions.insert(updatedSession, at: 0)
         
-        saveLocalData()
     }
     
     /// 添加歡迎訊息
@@ -241,7 +244,6 @@ class ChatHook: ObservableObject {
             await addWelcomeMessage(to: sessionId, mode: mode)
         }
         
-        saveLocalData()
     }
     
     /// 獲取特定會話的訊息
@@ -254,13 +256,16 @@ class ChatHook: ObservableObject {
     /// 從伺服器載入聊天記錄
     func loadChatHistory(for sessionId: UUID) async {
         guard let token = authToken else { return }
+        guard let backendId = chatSessions.first(where: { $0.id == sessionId })?.backendId else {
+            return
+        }
         
         isLoading = true
         error = nil
         
         do {
             let historyResponse = try await chatAPI.getChatHistory(
-                sessionId: sessionId.uuidString,
+                sessionId: backendId,
                 token: token
             )
             
@@ -279,15 +284,11 @@ class ChatHook: ObservableObject {
             
             // 更新會話信息
             if let index = chatSessions.firstIndex(where: { $0.id == sessionId }) {
-                let sessionInfo = historyResponse.sessionInfo
-                chatSessions[index].title = sessionInfo.title
-                chatSessions[index].therapyMode = sessionInfo.mode
-                chatSessions[index].lastUpdated = ISO8601DateFormatter().date(from: sessionInfo.lastUpdated) ?? Date()
+                let lastUpdated = apiMessages.last?.timestamp ?? Date()
+                chatSessions[index].lastUpdated = lastUpdated
                 chatSessions[index].messageCount = apiMessages.count
                 chatSessions[index].lastMessage = apiMessages.last?.content ?? ""
             }
-            
-            saveLocalData()
             
         } catch {
             self.error = error.localizedDescription
@@ -296,36 +297,46 @@ class ChatHook: ObservableObject {
         
         isLoading = false
     }
-    
-    // MARK: - 本地資料管理
-    
-    /// 儲存資料到本地
-    private func saveLocalData() {
-        // 保存會話
-        if let sessionsData = try? JSONEncoder().encode(chatSessions) {
-            userDefaults.set(sessionsData, forKey: sessionsKey)
+
+    /// 取得會話列表（後端）
+    func loadSessions(limit: Int = 20, offset: Int = 0) async {
+        guard let token = authToken else { return }
+        isLoading = true
+        error = nil
+        
+        do {
+            let response = try await chatAPI.getSessions(token: token, limit: limit, offset: offset)
+            let mapped = response.sessions.map { session in
+                ChatSession(
+                    id: UUID(),
+                    backendId: session.id,
+                    title: session.title,
+                    therapyMode: session.mode,
+                    lastMessage: "",
+                    lastUpdated: parseAPIDate(session.createdAt) ?? Date(),
+                    tags: [session.mode.shortName]
+                )
+            }
+            chatSessions = mapped
+        } catch {
+            self.error = error.localizedDescription
+            showError = true
         }
         
-        // 保存訊息
-        if let messagesData = try? JSONEncoder().encode(messages) {
-            userDefaults.set(messagesData, forKey: messagesKey)
+        isLoading = false
+    }
+
+    private func parseAPIDate(_ value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: value) {
+            return date
         }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
     }
     
-    /// 從本地載入資料
-    private func loadLocalData() {
-        // 載入會話
-        if let sessionsData = userDefaults.data(forKey: sessionsKey),
-           let sessions = try? JSONDecoder().decode([ChatSession].self, from: sessionsData) {
-            chatSessions = sessions
-        }
-        
-        // 載入訊息
-        if let messagesData = userDefaults.data(forKey: messagesKey),
-           let loadedMessages = try? JSONDecoder().decode([UUID: [ChatMessage]].self, from: messagesData) {
-            messages = loadedMessages
-        }
-    }
+    // 不使用本地快取
     
     /// 建立本地會話（離線模式）
     private func createLocalSession(mode: TherapyMode) -> ChatSession {
@@ -344,77 +355,7 @@ class ChatHook: ObservableObject {
     // MARK: - 示例資料（開發用）
     
     /// 建立示例資料（僅在沒有本地資料時使用）
-    private func createSampleDataIfNeeded() {
-        guard chatSessions.isEmpty else { return }
-        
-        let sampleSessions = [
-            ChatSession(
-                title: "工作壓力",
-                therapyMode: .cbtMode,
-                lastMessage: "讓我們分析一下這些想法",
-                lastUpdated: Calendar.current.date(byAdding: .hour, value: -3, to: Date()) ?? Date(),
-                tags: ["CBT", "工作"],
-                messageCount: 5
-            ),
-            ChatSession(
-                title: "人際關係困擾",
-                therapyMode: .mbtMode,
-                lastMessage: "我們一起探索這個關係",
-                lastUpdated: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
-                tags: ["MBT", "人際"],
-                messageCount: 3
-            ),
-            ChatSession(
-                title: "週末計畫",
-                therapyMode: .chatMode,
-                lastMessage: "聽起來很不錯！",
-                lastUpdated: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date(),
-                tags: ["聊天", "生活"],
-                messageCount: 7
-            )
-        ]
-        
-        chatSessions = sampleSessions
-        
-        // 為每個會話創建示例訊息
-        for session in sampleSessions {
-            let sampleMessages = createSampleMessages(for: session)
-            messages[session.id] = sampleMessages
-        }
-        
-        saveLocalData()
-    }
-    
-    /// 建立示例訊息
-    private func createSampleMessages(for session: ChatSession) -> [ChatMessage] {
-        switch session.therapyMode {
-        case .cbtMode:
-            return [
-                ChatMessage(content: session.therapyMode.welcomeMessage, isFromUser: false, mode: .cbtMode),
-                ChatMessage(content: "我最近工作壓力很大，總是擔心做不好", isFromUser: true, mode: .cbtMode),
-                ChatMessage(content: "我理解您的擔憂。讓我們用CBT的方式來分析這個問題。當您說「總是擔心做不好」時，這是一個怎樣的想法模式？", isFromUser: false, mode: .cbtMode),
-                ChatMessage(content: "就是覺得自己能力不夠，可能會犯錯", isFromUser: true, mode: .cbtMode)
-            ]
-        case .mbtMode:
-            return [
-                ChatMessage(content: session.therapyMode.welcomeMessage, isFromUser: false, mode: .mbtMode),
-                ChatMessage(content: "和同事相處有些困難，不知道他們在想什麼", isFromUser: true, mode: .mbtMode),
-                ChatMessage(content: "人際關係確實複雜。讓我們用心智化的角度來看，您能具體描述一下是什麼樣的互動讓您感到困惑嗎？", isFromUser: false, mode: .mbtMode)
-            ]
-        case .mentalization:
-            return [
-                ChatMessage(content: session.therapyMode.welcomeMessage, isFromUser: false, mode: .mentalization),
-                ChatMessage(content: "最近和朋友誤會很多，不知道彼此在想什麼", isFromUser: true, mode: .mentalization),
-                ChatMessage(content: "我們可以一起拆解這些互動。當時你怎麼理解對方的意圖？你自己的情緒又是什麼呢？", isFromUser: false, mode: .mentalization)
-            ]
-        case .chatMode:
-            return [
-                ChatMessage(content: session.therapyMode.welcomeMessage, isFromUser: false, mode: .chatMode),
-                ChatMessage(content: "這個週末想做點什麼放鬆的事情", isFromUser: true, mode: .chatMode),
-                ChatMessage(content: "聽起來您需要好好休息一下！有什麼特別想做的嗎？戶外活動、看電影，還是其他的興趣愛好？", isFromUser: false, mode: .chatMode)
-            ]
-        }
-    }
+    // 移除示例資料
     
     // MARK: - 清理方法（測試用）
     
@@ -422,7 +363,5 @@ class ChatHook: ObservableObject {
     func clearAllData() {
         chatSessions.removeAll()
         messages.removeAll()
-        userDefaults.removeObject(forKey: sessionsKey)
-        userDefaults.removeObject(forKey: messagesKey)
     }
 }

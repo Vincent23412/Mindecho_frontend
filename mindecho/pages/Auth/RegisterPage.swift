@@ -25,7 +25,6 @@ struct RegisterPage: View {
     @State private var selectedGender: String = ""
     @State private var selectedEducationLevel: Int = 0
     @State private var showDatePicker = false
-    @State private var showLoginPage = false
     @State private var agreeToTerms = false
     @State private var showSuccessAlert = false
 
@@ -77,17 +76,12 @@ struct RegisterPage: View {
                     keyboardHeight = 0
                 }
             }
-            .onChange(of: viewModel.authState) { _, state in
-                if case .authenticated = state {
+            .onChange(of: viewModel.successMessage) { _, newValue in
+                guard !newValue.isEmpty else { return }
+                if !showSuccessAlert {
                     showSuccessAlert = true
                 }
             }
-            .onChange(of: viewModel.successMessage) { _, newValue in
-                showSuccessAlert = !newValue.isEmpty
-            }
-        }
-        .fullScreenCover(isPresented: $showLoginPage) {
-            LoginPage()
         }
         .sheet(isPresented: $showDatePicker) {
             DatePickerSheet(
@@ -99,7 +93,10 @@ struct RegisterPage: View {
         .alert("註冊成功", isPresented: $showSuccessAlert) {
             Button("好的") {
                 resetFormToStart()
-                showLoginPage = true
+                viewModel.successMessage = ""
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    dismiss()
+                }
             }
         } message: {
             Text(viewModel.successMessage.isEmpty ? "註冊成功！歡迎加入 MindEcho！" : viewModel.successMessage)
@@ -138,7 +135,7 @@ struct RegisterPage: View {
                     .foregroundColor(AppColors.mediumBrown)
 
                 Button("立即登錄") {
-                    showLoginPage = true
+                    dismiss()
                 }
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(AppColors.orange)
@@ -258,7 +255,7 @@ private extension RegisterPage {
                       nameField: FormField,
                       infoField: FormField,
                       namePlaceholder: String = "姓名或稱呼方式",
-                      infoPlaceholder: String = "電話或 Email") -> some View {
+                      infoPlaceholder: String = "電話") -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 14, weight: .medium))
@@ -285,7 +282,7 @@ private extension RegisterPage {
                 field: infoField,
                 text: info,
                 isValid: !info.wrappedValue.isEmpty,
-                errorMessage: info.wrappedValue.isEmpty ? "請填寫聯絡方式" : "",
+                errorMessage: info.wrappedValue.isEmpty ? "請填寫電話" : "",
                 onEditingChanged: { isFocused in
                     if isFocused {
                         focusedField = infoField
@@ -295,6 +292,12 @@ private extension RegisterPage {
                 placeholderOverride: infoPlaceholder
             )
             .focused($focusedField, equals: infoField)
+            .onChange(of: info.wrappedValue) { _, newValue in
+                let filtered = newValue.filter { $0.isNumber }
+                if filtered != newValue {
+                    info.wrappedValue = filtered
+                }
+            }
         }
     }
 }
@@ -850,11 +853,11 @@ private extension RegisterPage {
             return
         }
         guard !supportContactName.isEmpty, !supportContactInfo.isEmpty else {
-            viewModel.errorMessage = "請填寫緊急聯絡人（朋友/支援者）姓名與聯絡方式"
+            viewModel.errorMessage = "請填寫緊急聯絡人（朋友/支援者）姓名與電話"
             return
         }
         guard !familyContactName.isEmpty, !familyContactInfo.isEmpty else {
-            viewModel.errorMessage = "請填寫緊急聯絡人（親人）姓名與聯絡方式"
+            viewModel.errorMessage = "請填寫緊急聯絡人（親人）姓名與電話"
             return
         }
 

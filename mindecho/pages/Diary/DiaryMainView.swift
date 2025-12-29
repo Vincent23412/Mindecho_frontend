@@ -29,7 +29,6 @@ struct DiaryMainView: View {
                 Text("健康數據").tag(0)
                 Text("心情日記").tag(1)
                 Text("量表追蹤").tag(2)
-                Text("AI情緒分析").tag(3)
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding()
@@ -48,7 +47,6 @@ struct DiaryMainView: View {
                     .background(AppColors.lightYellow)
                 }
                 .tag(2)
-                NavigationView { EmotionAnalysisView() }.tag(3)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .indexViewStyle(.page(backgroundDisplayMode: .never))

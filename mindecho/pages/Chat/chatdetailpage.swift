@@ -4,7 +4,7 @@ struct ChatDetailPage: View {
     let session: ChatSession
     
     // MARK: - Hook 狀態管理
-    @StateObject private var chatHook = ChatHook()
+    @ObservedObject var chatHook: ChatHook
     
     // MARK: - UI 狀態
     @State private var messageText = ""
@@ -14,8 +14,9 @@ struct ChatDetailPage: View {
     @State private var showingClearChatAlert = false
     @Environment(\.presentationMode) var presentationMode
     
-    init(session: ChatSession) {
+    init(session: ChatSession, chatHook: ChatHook) {
         self.session = session
+        self.chatHook = chatHook
         self._selectedMode = State(initialValue: session.therapyMode)
     }
     
@@ -335,6 +336,6 @@ struct ChatHeaderView: View {
             therapyMode: .chatMode,
             lastMessage: "最後一條消息",
             tags: ["測試"]
-        ))
+        ), chatHook: ChatHook())
     }
 }

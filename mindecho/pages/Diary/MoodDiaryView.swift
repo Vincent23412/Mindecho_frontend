@@ -11,8 +11,11 @@ struct MoodDiaryView: View {
     @State private var selectedMood: String? = nil
     @State private var diaryText: String = ""   // 用來存放日記內容
     @State private var isSaving = false
+    @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
+    @State private var entriesByDay: [Date: DiaryEntryViewData] = [:]
+    @State private var loadedMonthStart: Date?
     
     let moods = [
         ("VERY_BAD", "😫", "很差"),
@@ -24,9 +27,9 @@ struct MoodDiaryView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 16) {
                 
-                // 📅 日曆卡片
+                // 📅 日曆卡片（內建）
                 VStack(alignment: .leading, spacing: 10) {
                     Text("選擇日期")
                         .font(.headline)
@@ -42,6 +45,41 @@ struct MoodDiaryView: View {
                         .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
                 )
                 .padding(.horizontal)
+
+                // 📌 本月紀錄
+                if !monthlyEntries.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("本月紀錄")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(AppColors.titleColor)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(monthlyEntries) { entry in
+                                    Button {
+                                        selectedDate = entry.entryDate
+                                    } label: {
+                                        VStack(spacing: 4) {
+                                            Text(entry.dayText)
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundColor(AppColors.titleColor)
+                                            Text(entry.moodEmoji)
+                                                .font(.caption)
+                                        }
+                                        .frame(width: 36, height: 44)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                .fill(Color.white)
+                                                .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
                 
                 // 😊 心情選擇
                 VStack(alignment: .leading, spacing: 12) {
@@ -98,6 +136,13 @@ struct MoodDiaryView: View {
                     Text("日記")
                         .font(.headline)
                         .foregroundColor(AppColors.titleColor)
+                    
+                    if isLoading {
+                        Text("載入中...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
                     TextEditor(text: $diaryText)
                         .frame(height: 160)
                         .padding(10)
@@ -158,20 +203,128 @@ struct MoodDiaryView: View {
             .padding(.vertical, 12)
         }
         .background(AppColors.lightYellow.ignoresSafeArea())
+        .onAppear {
+            Task { await loadEntries(for: selectedDate) }
+        }
+        .onChange(of: selectedDate) { _, newValue in
+            applyEntry(for: newValue)
+            Task { await loadEntriesIfMonthChanged(for: newValue) }
+        }
+    }
+    
+    private struct DiaryEntryViewData: Identifiable {
+        let id: String
+        let content: String
+        let mood: String
+        let entryDate: Date
+    }
+
+    private struct MonthlyEntryItem: Identifiable {
+        let id: String
+        let entryDate: Date
+        let moodEmoji: String
+        let dayText: String
+    }
+
+    private var monthlyEntries: [MonthlyEntryItem] {
+        let calendar = Calendar.current
+        return entriesByDay.values
+            .sorted { $0.entryDate < $1.entryDate }
+            .map { entry in
+                MonthlyEntryItem(
+                    id: entry.id,
+                    entryDate: entry.entryDate,
+                    moodEmoji: moodEmoji(for: entry.mood),
+                    dayText: "\(calendar.component(.day, from: entry.entryDate))"
+                )
+            }
     }
     
     private func displayName(for moodCode: String) -> String {
         moods.first(where: { $0.0 == moodCode })?.2 ?? moodCode
+    }
+
+    private func moodEmoji(for moodCode: String) -> String {
+        moods.first(where: { $0.0 == moodCode })?.1 ?? "•"
+    }
+    
+    private func normalizeDay(_ date: Date) -> Date {
+        Calendar.current.startOfDay(for: date)
+    }
+    
+    private func applyEntry(for date: Date) {
+        let day = normalizeDay(date)
+        if let entry = entriesByDay[day] {
+            selectedMood = entry.mood
+            diaryText = entry.content
+        } else {
+            selectedMood = nil
+            diaryText = ""
+        }
+    }
+    
+    private func monthRange(for date: Date) -> (Date, Date) {
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
+        let nextMonth = calendar.date(byAdding: DateComponents(month: 1), to: start) ?? date
+        let end = calendar.date(byAdding: DateComponents(second: -1), to: nextMonth) ?? date
+        return (start, end)
+    }
+
+    private func loadEntriesIfMonthChanged(for date: Date) async {
+        let calendar = Calendar.current
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
+        if loadedMonthStart != monthStart {
+            await loadEntries(for: date)
+        }
+    }
+    
+    private func parseEntryDate(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: value) {
+            return date
+        }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
+    }
+    
+    private func loadEntries(for date: Date) async {
+        isLoading = true
+        errorMessage = nil
+        let range = monthRange(for: date)
+        do {
+            let entries = try await APIService.shared.getDiaryEntries(
+                startDate: range.0,
+                endDate: range.1
+            )
+            var updated: [Date: DiaryEntryViewData] = [:]
+            for entry in entries {
+                guard let entryDate = parseEntryDate(entry.entryDate),
+                      let mood = entry.mood,
+                      let content = entry.content else { continue }
+                let day = normalizeDay(entryDate)
+                updated[day] = DiaryEntryViewData(
+                    id: entry.id,
+                    content: content,
+                    mood: mood,
+                    entryDate: entryDate
+                )
+            }
+            entriesByDay = updated
+            loadedMonthStart = Calendar.current.startOfDay(for: range.0)
+            applyEntry(for: selectedDate)
+        } catch {
+            errorMessage = "載入日記失敗，請稍後再試"
+        }
+        isLoading = false
     }
     
     private func saveDiaryEntry() async {
         errorMessage = nil
         successMessage = nil
         
-        guard let userId = AuthService.shared.currentUser?.primaryId, !userId.isEmpty else {
-            errorMessage = "找不到使用者資訊"
-            return
-        }
         guard let mood = selectedMood else {
             errorMessage = "請選擇心情"
             return
@@ -184,14 +337,36 @@ struct MoodDiaryView: View {
         
         isSaving = true
         do {
-            _ = try await APIService.shared.submitDiaryEntry(
-                userId: userId,
-                mood: mood,
-                content: content,
-                entryDate: selectedDate
-            )
+            let day = normalizeDay(selectedDate)
+            if let existing = entriesByDay[day] {
+                let updated = try await APIService.shared.updateDiaryEntry(
+                    id: existing.id,
+                    content: content,
+                    mood: mood,
+                    entryDate: selectedDate
+                )
+                let entryDate = parseEntryDate(updated.entryDate) ?? selectedDate
+                entriesByDay[day] = DiaryEntryViewData(
+                    id: updated.id,
+                    content: content,
+                    mood: mood,
+                    entryDate: entryDate
+                )
+            } else {
+                let created = try await APIService.shared.createDiaryEntry(
+                    content: content,
+                    mood: mood,
+                    entryDate: selectedDate
+                )
+                let entryDate = parseEntryDate(created.entryDate) ?? selectedDate
+                entriesByDay[day] = DiaryEntryViewData(
+                    id: created.id,
+                    content: content,
+                    mood: mood,
+                    entryDate: entryDate
+                )
+            }
             successMessage = "已儲存日記"
-            diaryText = ""
         } catch {
             errorMessage = "儲存失敗，請稍後再試"
         }

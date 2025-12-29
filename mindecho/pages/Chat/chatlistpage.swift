@@ -40,7 +40,8 @@ struct ChatListPage: View {
                     filteredChats: filteredChats,
                     isLoading: chatHook.isLoading,
                     onNewChat: { showingNewChat = true },
-                    onDeleteSession: deleteSession
+                    onDeleteSession: deleteSession,
+                    chatHook: chatHook
                 )
                 
                 Spacer()
@@ -49,6 +50,7 @@ struct ChatListPage: View {
             .sheet(isPresented: $showingNewChat) {
                 NewChatView(
                     isPresented: $showingNewChat,
+                    chatHook: chatHook,
                     onChatCreated: { session in
                         newChatSession = session
                         navigateToNewChat = true
@@ -60,7 +62,7 @@ struct ChatListPage: View {
                 NavigationLink(
                     destination: Group {
                         if let session = newChatSession {
-                            ChatDetailPage(session: session)
+                            ChatDetailPage(session: session, chatHook: chatHook)
                         } else {
                             EmptyView()
                         }
@@ -172,6 +174,7 @@ struct ChatListContent: View {
     let isLoading: Bool
     let onNewChat: () -> Void
     let onDeleteSession: (ChatSession) -> Void
+    let chatHook: ChatHook
     
     var body: some View {
         Group {
@@ -182,6 +185,7 @@ struct ChatListContent: View {
             } else {
                 ChatSessionsList(
                     sessions: filteredChats,
+                    chatHook: chatHook,
                     onDeleteSession: onDeleteSession
                 )
             }
@@ -192,13 +196,14 @@ struct ChatListContent: View {
 // MARK: - 聊天會話列表
 struct ChatSessionsList: View {
     let sessions: [ChatSession]
+    let chatHook: ChatHook
     let onDeleteSession: (ChatSession) -> Void
     
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(sessions) { session in
-                    NavigationLink(destination: ChatDetailPage(session: session)) {
+                    NavigationLink(destination: ChatDetailPage(session: session, chatHook: chatHook)) {
                         ChatListItemView(session: session)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -403,9 +408,9 @@ struct EmptyChatState: View {
 // MARK: - 新對話視圖（重構版）
 struct NewChatView: View {
     @Binding var isPresented: Bool
+    @ObservedObject var chatHook: ChatHook
     let onChatCreated: (ChatSession) -> Void
     @State private var selectedMode: TherapyMode = .chatMode
-    @StateObject private var chatHook = ChatHook()
     
     var body: some View {
         NavigationView {

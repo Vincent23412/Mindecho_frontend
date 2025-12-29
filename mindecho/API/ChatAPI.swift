@@ -3,9 +3,7 @@ import Foundation
 // MARK: - API 請求/回應模型
 struct SendMessageRequest: Codable {
     let message: String
-    let userId: String
-    let sessionId: String
-    let therapyMode: TherapyMode
+    let mode: TherapyMode
 }
 
 struct ChatAPIResponse: Codable {
@@ -14,9 +12,8 @@ struct ChatAPIResponse: Codable {
     let timestamp: String
 }
 
-struct ChatHistoryResponse: Codable {
+struct ChatMessagesResponse: Codable {
     let messages: [APIMessage]
-    let sessionInfo: APISessionInfo
 }
 
 struct APIMessage: Codable {
@@ -31,7 +28,15 @@ struct APISessionInfo: Codable {
     let id: String
     let title: String
     let mode: TherapyMode
-    let lastUpdated: String
+    let createdAt: String
+}
+
+struct ChatSessionResponse: Codable {
+    let session: APISessionInfo
+}
+
+struct ChatSessionsResponse: Codable {
+    let sessions: [APISessionInfo]
 }
 
 // MARK: - API 錯誤類型
@@ -56,17 +61,39 @@ enum ChatAPIError: Error, LocalizedError {
 }
 
 // MARK: - 聊天 API 服務
-class ChatAPI {
+class ChatAPI: NSObject, URLSessionDelegate {
     static let shared = ChatAPI()
     
-    private let baseURL = "https://your-backend-url.com/api" // 替換成你的實際 API URL
-    private let session = URLSession.shared
+    private let baseURL = "https://localhost/dev-api"
+    private let allowInsecureSelfSigned = true
+    private lazy var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30.0
+        return URLSession(
+            configuration: config,
+            delegate: allowInsecureSelfSigned ? self : nil,
+            delegateQueue: nil
+        )
+    }()
     
-    private init() {}
+    private override init() {
+        super.init()
+    }
+
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard allowInsecureSelfSigned,
+              challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, URLCredential(trust: trust))
+    }
     
     // MARK: - 發送訊息
-    func sendMessage(_ request: SendMessageRequest, token: String) async throws -> ChatAPIResponse {
-        guard let url = URL(string: "\(baseURL)/chat/send") else {
+    func sendMessage(sessionId: String, request: SendMessageRequest, token: String) async throws -> ChatAPIResponse {
+        guard let url = URL(string: "\(baseURL)/chat/sessions/\(sessionId)/messages") else {
             throw ChatAPIError.networkError("無效的 URL")
         }
         
@@ -104,8 +131,14 @@ class ChatAPI {
     }
     
     // MARK: - 獲取聊天記錄
-    func getChatHistory(sessionId: String, token: String) async throws -> ChatHistoryResponse {
-        guard let url = URL(string: "\(baseURL)/chat/history/\(sessionId)") else {
+    func getChatHistory(sessionId: String, token: String, limit: Int = 50, before: String? = nil) async throws -> ChatMessagesResponse {
+        var components = URLComponents(string: "\(baseURL)/chat/sessions/\(sessionId)/messages")
+        var queryItems: [URLQueryItem] = [URLQueryItem(name: "limit", value: String(limit))]
+        if let before {
+            queryItems.append(URLQueryItem(name: "before", value: before))
+        }
+        components?.queryItems = queryItems
+        guard let url = components?.url else {
             throw ChatAPIError.networkError("無效的 URL")
         }
         
@@ -128,7 +161,48 @@ class ChatAPI {
                 }
             }
             
-            return try JSONDecoder().decode(ChatHistoryResponse.self, from: data)
+            return try JSONDecoder().decode(ChatMessagesResponse.self, from: data)
+            
+        } catch {
+            if error is ChatAPIError {
+                throw error
+            } else {
+                throw ChatAPIError.networkError(error.localizedDescription)
+            }
+        }
+    }
+
+    // MARK: - 取得會話列表
+    func getSessions(token: String, limit: Int = 20, offset: Int = 0) async throws -> ChatSessionsResponse {
+        var components = URLComponents(string: "\(baseURL)/chat/sessions")
+        components?.queryItems = [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "offset", value: String(offset))
+        ]
+        guard let url = components?.url else {
+            throw ChatAPIError.networkError("無效的 URL")
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, response) = try await session.data(for: urlRequest)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                switch httpResponse.statusCode {
+                case 200...299:
+                    break
+                case 401:
+                    throw ChatAPIError.unauthorized
+                default:
+                    throw ChatAPIError.serverError(httpResponse.statusCode)
+                }
+            }
+            
+            return try JSONDecoder().decode(ChatSessionsResponse.self, from: data)
             
         } catch {
             if error is ChatAPIError {
@@ -140,12 +214,15 @@ class ChatAPI {
     }
     
     // MARK: - 建立新會話
-    func createNewSession(mode: TherapyMode, token: String) async throws -> APISessionInfo {
-        guard let url = URL(string: "\(baseURL)/chat/session/new") else {
+    func createNewSession(mode: TherapyMode, title: String? = nil, token: String) async throws -> APISessionInfo {
+        guard let url = URL(string: "\(baseURL)/chat/sessions") else {
             throw ChatAPIError.networkError("無效的 URL")
         }
         
-        let requestBody = ["therapyMode": mode.rawValue]
+        var requestBody: [String: String] = ["mode": mode.rawValue]
+        if let title, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            requestBody["title"] = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -168,7 +245,8 @@ class ChatAPI {
                 }
             }
             
-            return try JSONDecoder().decode(APISessionInfo.self, from: data)
+            let payload = try JSONDecoder().decode(ChatSessionResponse.self, from: data)
+            return payload.session
             
         } catch {
             if error is ChatAPIError {
@@ -181,7 +259,7 @@ class ChatAPI {
     
     // MARK: - 刪除會話
     func deleteSession(sessionId: String, token: String) async throws {
-        guard let url = URL(string: "\(baseURL)/chat/session/\(sessionId)") else {
+        guard let url = URL(string: "\(baseURL)/chat/sessions/\(sessionId)") else {
             throw ChatAPIError.networkError("無效的 URL")
         }
         
@@ -232,7 +310,7 @@ extension ChatAPI {
         let lowercaseMessage = message.lowercased()
         
         switch mode {
-        case .chatMode:
+        case .chatMode, .normal:
             if lowercaseMessage.contains("壓力") {
                 return "聽起來您最近壓力不小。能告訴我是什麼讓您感到有壓力嗎？"
             } else if lowercaseMessage.contains("開心") || lowercaseMessage.contains("高興") {
@@ -256,17 +334,6 @@ extension ChatAPI {
                 return "焦慮和擔心是很常見的情緒。讓我們用CBT的方式來分析這些想法，看看哪些是基於事實的。"
             } else {
                 return "讓我們用認知行為療法的方式來分析這個問題。首先，我們可以識別一些可能影響您情緒的想法模式。"
-            }
-            
-        case .mentalization:
-            if lowercaseMessage.contains("誤會") || lowercaseMessage.contains("不理解") {
-                return "聽起來彼此有些誤解。我們可以試著從對方角度想想，他/她可能在意的是什麼？"
-            } else if lowercaseMessage.contains("情緒") || lowercaseMessage.contains("感覺") {
-                return "留意自己的情緒很重要。此刻你的感覺是什麼？你覺得對方可能感受到什麼呢？"
-            } else if lowercaseMessage.contains("關係") || lowercaseMessage.contains("互動") {
-                return "人際互動往往有多層含義。我們一起推敲每個人的想法與意圖，看看是否有其他解讀。"
-            } else {
-                return "我們可以一起練習心智化：你如何解讀對方的想法與情緒？這些推測有沒有其他可能的解讀？"
             }
             
         case .mbtMode:

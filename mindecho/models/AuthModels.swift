@@ -244,11 +244,11 @@ enum FormField: CaseIterable {
         case .supportContactName:
             return "朋友/支援者姓名"
         case .supportContactInfo:
-            return "朋友/支援者聯絡方式"
+            return "朋友/支援者電話"
         case .familyContactName:
             return "親人姓名"
         case .familyContactInfo:
-            return "親人聯絡方式"
+            return "親人電話"
         }
     }
     

@@ -12,7 +12,7 @@ class RelaxTimerViewModel: ObservableObject {
     enum Mode: String, CaseIterable, Identifiable {
         case breath = "呼吸放鬆"
         case mindfulness = "正念呼吸"
-        case progressive = "漸進式放鬆"
+        case progressive = "漸進式"
         case meditation = "冥想"
         
         var id: String { rawValue }
@@ -80,7 +80,7 @@ class RelaxTimerViewModel: ObservableObject {
             ]
         ),
         VideoSection(
-            title: "漸進式放鬆",
+            title: "漸進式",
             items: [
                 VideoItem(
                     title: "漸進式放鬆法 1",

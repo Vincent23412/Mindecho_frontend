@@ -71,19 +71,20 @@ struct HealthDataView: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    suggestionRow(
-                        icon: "bolt.fill",
-                        iconColor: .yellow,
-                        title: "提高 HRV",
-                        detail: "每天 10 分鐘深呼吸或冥想，幫助降低壓力、穩定心率變異性。"
-                    )
-                    
-                    suggestionRow(
-                        icon: "moon.fill",
-                        iconColor: .purple,
-                        title: "改善睡眠質量",
-                        detail: "睡前一小時避免藍光，保持臥室 18–20°C，幫助延長深度睡眠。"
-                    )
+                    if !hasMetrics {
+                        Text("無數據")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(staticAdviceItems) { item in
+                            suggestionRow(
+                                icon: item.icon,
+                                iconColor: item.iconColor,
+                                title: item.title,
+                                detail: item.detail
+                            )
+                        }
+                    }
                 }
                 .padding(.vertical, 14)
                 .padding(.horizontal, 16)
@@ -131,6 +132,82 @@ struct HealthDataView: View {
     private func formatValue(_ value: Double?, decimals: Int) -> String {
         guard let value else { return "無資料" }
         return String(format: "%.\(decimals)f", value)
+    }
+
+    private var hasMetrics: Bool {
+        healthKitManager.hrvMs != nil ||
+        healthKitManager.sleepHours != nil ||
+        healthKitManager.steps != nil ||
+        healthKitManager.weightKg != nil
+    }
+    
+    private struct StaticAdviceItem: Identifiable {
+        let id = UUID()
+        let icon: String
+        let iconColor: Color
+        let title: String
+        let detail: String
+    }
+    
+    private var staticAdviceItems: [StaticAdviceItem] {
+        var items: [StaticAdviceItem] = []
+        
+        if let hrv = healthKitManager.hrvMs, hrv < 35 {
+            items.append(
+                StaticAdviceItem(
+                    icon: "bolt.fill",
+                    iconColor: .yellow,
+                    title: "提高 HRV",
+                    detail: "HRV 偏低時，建議每天 10 分鐘深呼吸或冥想，幫助降低壓力。"
+                )
+            )
+        }
+        
+        if let sleep = healthKitManager.sleepHours, sleep < 6 {
+            items.append(
+                StaticAdviceItem(
+                    icon: "moon.fill",
+                    iconColor: .purple,
+                    title: "改善睡眠質量",
+                    detail: "睡眠不足時，睡前一小時避免藍光，保持臥室 18–20°C。"
+                )
+            )
+        }
+        
+        if let steps = healthKitManager.steps, steps < 5000 {
+            items.append(
+                StaticAdviceItem(
+                    icon: "figure.walk",
+                    iconColor: .teal,
+                    title: "增加活動量",
+                    detail: "今日活動量偏少，建議分段散步或拉伸，讓身體動起來。"
+                )
+            )
+        }
+        
+        if let weight = healthKitManager.weightKg, weight > 0 {
+            items.append(
+                StaticAdviceItem(
+                    icon: "scalemass",
+                    iconColor: .blue,
+                    title: "體重維持",
+                    detail: "維持規律飲食與穩定運動，有助於長期體重管理。"
+                )
+            )
+        }
+        
+        if items.isEmpty {
+            items.append(
+                StaticAdviceItem(
+                    icon: "sparkles",
+                    iconColor: .green,
+                    title: "狀態良好",
+                    detail: "目前指標落在穩定區間，持續保持規律作息與活動。"
+                )
+            )
+        }
+        
+        return items
     }
     
     @ViewBuilder

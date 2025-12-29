@@ -168,24 +168,19 @@ private extension LoginPage {
                 AuthTextField(
                     field: .email,
                     text: $email,
-                    isValid: !viewModel.hasError(for: .email),
-                    errorMessage: viewModel.getErrorMessage(for: .email),
+                    isValid: true,
+                    errorMessage: "",
                     onEditingChanged: { isFocused in
                         if isFocused {
                             focusedField = .email
                         }
-                        if !isFocused && !email.isEmpty {
-                            viewModel.validateFieldRealTime(field: .email, value: email)
-                        }
                     },
                     onCommit: {
                         focusedField = .password
-                    }
+                    },
+                    showValidationIcon: false
                 )
                 .focused($focusedField, equals: .email)
-                .onChange(of: email) { _, newValue in
-                    viewModel.validateFieldRealTime(field: .email, value: newValue)
-                }
                 
                 // 密碼輸入框
                 AuthTextField(
@@ -197,22 +192,14 @@ private extension LoginPage {
                         if isFocused {
                             focusedField = .password
                         }
-                        if !isFocused {
-                            viewModel.formValidator.passwordState.text = password
-                            viewModel.formValidator.passwordState.isValid = !password.isEmpty
-                        }
                     },
                     onCommit: {
-                        if viewModel.isLoginFormValid {
-                            performLogin()
-                        }
-                    }
+                        performLogin()
+                    },
+                    showValidationIcon: false,
+                    showPasswordStrength: false
                 )
                 .focused($focusedField, equals: .password)
-                .onChange(of: password) { _, newValue in
-                    viewModel.formValidator.passwordState.text = newValue
-                    viewModel.formValidator.passwordState.isValid = !newValue.isEmpty
-                }
             }
             
             // 忘記密碼鏈接
@@ -238,7 +225,7 @@ private extension LoginPage {
             LoadingButton(
                 title: "登錄",
                 isLoading: viewModel.isLoading,
-                isDisabled: !viewModel.isLoginFormValid || viewModel.isLoading
+                isDisabled: viewModel.isLoading
             ) {
                 performLogin()
             }

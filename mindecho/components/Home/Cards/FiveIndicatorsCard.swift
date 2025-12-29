@@ -97,22 +97,24 @@ struct FiveIndicatorsCard: View {
                     let height = geometry.size.height
                     let dataLabels = checkInManager.getDateLabelsForPeriod(selectedTimePeriod)
                     let dayCount = dataLabels.count
-                    let horizontalInset: CGFloat = 12
-                    let dayWidth = dayCount > 1 ? (width - horizontalInset) / CGFloat(dayCount - 1) : (width - horizontalInset)
+                    let leftInset: CGFloat = 32
+                    let rightInset: CGFloat = 25
+                    let plotWidth = max(0, width - leftInset - rightInset)
+                    let dayWidth = dayCount > 1 ? plotWidth / CGFloat(dayCount - 1) : plotWidth
 
-                    ZStack {
+                    ZStack(alignment: .leading) {
                         // 背景網格線
                         Path { path in
                             for i in 0..<5 {
                                 let y = height * CGFloat(i) / 4
-                                path.move(to: CGPoint(x: 0, y: y))
-                                path.addLine(to: CGPoint(x: width, y: y))
+                                path.move(to: CGPoint(x: leftInset, y: y))
+                                path.addLine(to: CGPoint(x: leftInset + plotWidth, y: y))
                             }
                         }
                         .stroke(Color.gray.opacity(0.1), lineWidth: 0.5)
                         
                         // Y軸刻度標籤
-                        VStack {
+                        VStack(alignment: .leading) {
                             ForEach(0..<5, id: \.self) { i in
                                 HStack {
                                     Text("\(5 - i)")
@@ -123,7 +125,7 @@ struct FiveIndicatorsCard: View {
                                 if i < 4 { Spacer() }
                             }
                         }
-                        .padding(.trailing, width - 30)
+                        .frame(width: leftInset, height: height, alignment: .leading)
                         
                         // 根據選擇顯示指標線條
                         if let selected = selectedIndicator {
@@ -133,7 +135,9 @@ struct FiveIndicatorsCard: View {
                                 color: selected.color,
                                 width: width,
                                 height: height,
+                                xOffset: leftInset,
                                 dayWidth: dayWidth,
+                                plotWidth: plotWidth,
                                 lineWidth: 3,
                                 showValueLabels: true
                             )
@@ -145,7 +149,9 @@ struct FiveIndicatorsCard: View {
                                     color: indicator.color,
                                     width: width,
                                     height: height,
+                                    xOffset: leftInset,
                                     dayWidth: dayWidth,
+                                    plotWidth: plotWidth,
                                     lineWidth: 2,
                                     showValueLabels: false
                                 )
@@ -229,7 +235,9 @@ struct FiveIndicatorsCard: View {
         color: Color,
         width: CGFloat,
         height: CGFloat,
+        xOffset: CGFloat,
         dayWidth: CGFloat,
+        plotWidth: CGFloat,
         lineWidth: CGFloat = 2,
         showValueLabels: Bool = false
     ) -> some View {
@@ -239,7 +247,7 @@ struct FiveIndicatorsCard: View {
                 var hasStarted = false
                 for i in 0..<data.count {
                     if data[i] > 0 {
-                        let x = CGFloat(i) * dayWidth
+                        let x = xOffset + CGFloat(i) * dayWidth
                         let normalizedValue = CGFloat(data[i] - 1) / 4.0
                         let y = height - (normalizedValue * height)
 
@@ -257,7 +265,7 @@ struct FiveIndicatorsCard: View {
             // 數據點
             ForEach(Array(data.enumerated()), id: \.offset) { i, value in
                 if value > 0 {
-                    let x = CGFloat(i) * dayWidth
+                    let x = xOffset + CGFloat(i) * dayWidth
                     let y = height - (CGFloat(value - 1) / 4.0 * height)
                     Circle()
                         .fill(color)

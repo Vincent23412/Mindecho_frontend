@@ -125,8 +125,7 @@ class AuthViewModel: ObservableObject {
                 receiveValue: { [weak self] response in
                     if response.success == true {
                         self?.showSuccess(response.message ?? "註冊成功！歡迎加入 MindEcho！")
-                        self?.authState = .authenticated
-                        self?.showDailyCheckInAfterLogin()
+                        self?.shouldShowDailyCheckIn = false
                         self?.sendRegistrationSuccessNotification(message: response.message ?? "註冊成功！")
                     } else {
                         self?.showError(response.message ?? "註冊失敗，請重試")

@@ -47,8 +47,8 @@ struct EmotionBoxCard: View {
                     .fill(Color.white.opacity(0.18))
                     .frame(height: 4)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
             .background(headerGradient)
             
@@ -78,8 +78,8 @@ struct EmotionBoxCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
                 LinearGradient(
@@ -92,7 +92,7 @@ struct EmotionBoxCard: View {
                 )
             )
         }
-        .frame(width: 170, height: 150)
+        .frame(width: 170, height: 160)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.white)

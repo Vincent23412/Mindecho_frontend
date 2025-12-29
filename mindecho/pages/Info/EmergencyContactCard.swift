@@ -10,6 +10,13 @@ struct EmergencyContactCard: View {
     let title: String
     let subtitle: String
     let buttonText: String
+    let phoneNumber: String
+    
+    @Environment(\.openURL) private var openURL
+    
+    private var dialableNumber: String {
+        phoneNumber.filter { $0.isNumber || $0 == "+" }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -36,7 +43,13 @@ struct EmergencyContactCard: View {
             
             Spacer(minLength: 0)
             
-            Button(action: {}) {
+            Button(action: {
+                guard !dialableNumber.isEmpty,
+                      let url = URL(string: "tel://\(dialableNumber)") else {
+                    return
+                }
+                openURL(url)
+            }) {
                 HStack {
                     Image(systemName: "phone.fill")
                     Text(buttonText)
@@ -76,5 +89,10 @@ struct EmergencyContactCard: View {
 }
 
 #Preview{
-    EmergencyContactCard(title: "title", subtitle: "subtitle", buttonText: "button")
+    EmergencyContactCard(
+        title: "title",
+        subtitle: "subtitle",
+        buttonText: "button",
+        phoneNumber: "0912345678"
+    )
 }

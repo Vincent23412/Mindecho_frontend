@@ -207,6 +207,12 @@ struct ModeIntroductionView: View {
                 "適合日常心情分享",
                 "友善溫暖的交流氛圍"
             ]
+        case .normal:
+            return [
+                "一般對話模式",
+                "適合日常心情分享",
+                "友善溫暖的交流氛圍"
+            ]
         case .cbtMode:
             return [
                 "識別負面思維模式",
@@ -218,12 +224,6 @@ struct ModeIntroductionView: View {
                 "增強情感覺察能力",
                 "改善人際關係理解",
                 "提升心智化水平"
-            ]
-        case .mentalization:
-            return [
-                "辨識自我與他人情緒、意圖",
-                "在衝突中保持清晰與彈性",
-                "練習同理與心智化思維"
             ]
         }
     }
