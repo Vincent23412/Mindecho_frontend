@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct ProfileView: View {
     @State private var showingSupportReasons = false
@@ -203,9 +205,9 @@ private struct SupportReasonsModal: View {
         }
         .sheet(isPresented: $showingAddReason) {
             AddSupportReasonView(
-                onSave: { title, detail in
+                onSave: { title, detail, imageData in
                     Task {
-                        await createReason(title: title, detail: detail)
+                        await createReason(title: title, detail: detail, imageData: imageData)
                     }
                 },
                 onCancel: {
@@ -218,9 +220,10 @@ private struct SupportReasonsModal: View {
                 titleText: "編輯理由",
                 initialTitle: reason.title,
                 initialDetail: reason.detail,
-                onSave: { title, detail in
+                initialImageData: reason.imageData,
+                onSave: { title, detail, imageData in
                     Task {
-                        await updateReason(reason, title: title, detail: detail)
+                        await updateReason(reason, title: title, detail: detail, imageData: imageData)
                     }
                 },
                 onCancel: {
@@ -255,7 +258,7 @@ private struct SupportReasonsModal: View {
                     Text("我的理由珍藏")
                         .font(.headline)
                         .foregroundColor(AppColors.titleColor)
-                    Text("這些是值得你繼續前行的理由")
+                    Text("在陽光燦爛的日子，為雨天存一點光。邀請你在這裡存下那些值得留住的瞬間，讓它們在困難時刻給你溫暖，陪伴你找回前行的力量。")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -299,13 +302,16 @@ private struct SupportReasonsModal: View {
         }
     }
     
-    private func createReason(title: String, detail: String) async {
+    private func createReason(title: String, detail: String, imageData: Data?) async {
         do {
             let reason = try await APIService.shared.createReason(
                 title: title,
                 content: detail,
                 date: Date()
             )
+            if let imageData {
+                SupportReasonImageStore.saveImageData(imageData, for: reason.id)
+            }
             localReasons.insert(mapReason(reason), at: 0)
             showingAddReason = false
             errorMessage = nil
@@ -314,7 +320,7 @@ private struct SupportReasonsModal: View {
         }
     }
     
-    private func updateReason(_ reason: SupportReason, title: String, detail: String) async {
+    private func updateReason(_ reason: SupportReason, title: String, detail: String, imageData: Data?) async {
         do {
             let updated = try await APIService.shared.updateReason(
                 id: reason.id,
@@ -323,6 +329,9 @@ private struct SupportReasonsModal: View {
                 date: reason.apiDate,
                 isDeleted: false
             )
+            if let imageData {
+                SupportReasonImageStore.saveImageData(imageData, for: updated.id)
+            }
             if let index = localReasons.firstIndex(where: { $0.id == reason.id }) {
                 localReasons[index] = mapReason(updated)
             }
@@ -336,6 +345,7 @@ private struct SupportReasonsModal: View {
     private func deleteReason(_ reason: SupportReason) async {
         do {
             _ = try await APIService.shared.deleteReason(id: reason.id)
+            SupportReasonImageStore.deleteImageData(for: reason.id)
             localReasons.removeAll { $0.id == reason.id }
             errorMessage = nil
         } catch {
@@ -351,7 +361,8 @@ private struct SupportReasonsModal: View {
             detail: reason.content,
             date: SupportReason.displayDate(from: date),
             isFavorite: false,
-            apiDate: date
+            apiDate: date,
+            imageData: SupportReasonImageStore.loadImageData(for: reason.id)
         )
     }
     
@@ -372,6 +383,14 @@ private struct ReasonCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let data = reason.imageData, let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 140)
+                    .clipped()
+                    .cornerRadius(10)
+            }
             HStack {
                 Text(reason.title)
                     .font(.subheadline.weight(.semibold))
@@ -420,6 +439,7 @@ private struct SupportReason: Identifiable {
     let date: String
     let isFavorite: Bool
     let apiDate: Date
+    let imageData: Data?
     
     private static let displayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -431,13 +451,52 @@ private struct SupportReason: Identifiable {
         displayFormatter.string(from: date)
     }
     
-    init(id: String = UUID().uuidString, title: String, detail: String, date: String, isFavorite: Bool, apiDate: Date? = nil) {
+    init(
+        id: String = UUID().uuidString,
+        title: String,
+        detail: String,
+        date: String,
+        isFavorite: Bool,
+        apiDate: Date? = nil,
+        imageData: Data? = nil
+    ) {
         self.id = id
         self.title = title
         self.detail = detail
         self.date = date
         self.isFavorite = isFavorite
         self.apiDate = apiDate ?? Self.displayFormatter.date(from: date) ?? Date()
+        self.imageData = imageData
+    }
+}
+
+private enum SupportReasonImageStore {
+    private static let folderName = "support_reason_images"
+    
+    static func loadImageData(for id: String) -> Data? {
+        guard let url = imageURL(for: id) else { return nil }
+        return try? Data(contentsOf: url)
+    }
+    
+    static func saveImageData(_ data: Data, for id: String) {
+        guard let url = imageURL(for: id) else { return }
+        try? data.write(to: url, options: [.atomic])
+    }
+    
+    static func deleteImageData(for id: String) {
+        guard let url = imageURL(for: id) else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+    
+    private static func imageURL(for id: String) -> URL? {
+        guard let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let folderURL = base.appendingPathComponent(folderName, isDirectory: true)
+        if !FileManager.default.fileExists(atPath: folderURL.path) {
+            try? FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+        }
+        return folderURL.appendingPathComponent("\(id).jpg")
     }
 }
 
@@ -445,26 +504,32 @@ private struct AddSupportReasonView: View {
     let titleText: String
     let initialTitle: String
     let initialDetail: String
-    let onSave: (String, String) -> Void
+    let initialImageData: Data?
+    let onSave: (String, String, Data?) -> Void
     let onCancel: () -> Void
     
     @State private var title = ""
     @State private var detail = ""
+    @State private var imageData: Data?
+    @State private var selectedPhotoItem: PhotosPickerItem?
     
     init(
         titleText: String = "新增理由",
         initialTitle: String = "",
         initialDetail: String = "",
-        onSave: @escaping (String, String) -> Void,
+        initialImageData: Data? = nil,
+        onSave: @escaping (String, String, Data?) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.titleText = titleText
         self.initialTitle = initialTitle
         self.initialDetail = initialDetail
+        self.initialImageData = initialImageData
         self.onSave = onSave
         self.onCancel = onCancel
         _title = State(initialValue: initialTitle)
         _detail = State(initialValue: initialDetail)
+        _imageData = State(initialValue: initialImageData)
     }
     
     private var isSaveDisabled: Bool {
@@ -502,23 +567,33 @@ private struct AddSupportReasonView: View {
                         )
                 }
                 
-                Button {
-                    onSave(title, detail)
-                } label: {
-                    HStack {
-                        Spacer()
-                        Image(systemName: "paperplane.fill")
-                        Text("傳送")
-                            .fontWeight(.semibold)
-                        Spacer()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("圖片")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.titleColor)
+                    
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                            Text(imageData == nil ? "新增圖片" : "更換圖片")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(AppColors.orange.opacity(0.2))
+                        .foregroundColor(AppColors.titleColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .padding(.vertical, 10)
-                    .background(AppColors.orange.opacity(0.9))
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .shadow(color: AppColors.orange.opacity(0.25), radius: 8, y: 4)
+                    
+                    if let imageData, let image = UIImage(data: imageData) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 160)
+                            .clipped()
+                            .cornerRadius(12)
+                    }
                 }
-                .disabled(isSaveDisabled)
                 
                 Spacer()
             }
@@ -531,9 +606,19 @@ private struct AddSupportReasonView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("儲存") {
-                        onSave(title, detail)
+                        onSave(title, detail, imageData)
                     }
                     .disabled(isSaveDisabled)
+                }
+            }
+        }
+        .onChange(of: selectedPhotoItem) { _, newValue in
+            guard let newValue else { return }
+            Task {
+                if let data = try? await newValue.loadTransferable(type: Data.self) {
+                    await MainActor.run {
+                        imageData = data
+                    }
                 }
             }
         }
@@ -892,7 +977,7 @@ extension ProfileView {
                 HStack(spacing: 12) {
                 EmotionBoxCard(
                     title: "支撐我的片刻",
-                    description: "記下那些讓你有動力繼續向前的理由。",
+                    description: "在陽光燦爛的日子，為雨天存一點光。",
                     buttonTitle: "查看我的理由",
                     color: .orange,
                     onButtonTap: {

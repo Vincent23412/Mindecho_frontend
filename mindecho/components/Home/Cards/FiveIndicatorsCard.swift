@@ -103,6 +103,18 @@ struct FiveIndicatorsCard: View {
                     let dayWidth = dayCount > 1 ? plotWidth / CGFloat(dayCount - 1) : plotWidth
 
                     ZStack(alignment: .leading) {
+                        let hasData: Bool = {
+                            if let selected = selectedIndicator {
+                                return checkInManager
+                                    .getDataForPeriod(selectedTimePeriod, indicator: selected)
+                                    .contains(where: { $0 > 0 })
+                            }
+                            return activeIndicators.contains { indicator in
+                                checkInManager
+                                    .getDataForPeriod(selectedTimePeriod, indicator: indicator)
+                                    .contains(where: { $0 > 0 })
+                            }
+                        }()
                         // 背景網格線
                         Path { path in
                             for i in 0..<5 {
@@ -159,7 +171,7 @@ struct FiveIndicatorsCard: View {
                         }
                         
                         // 如果沒有數據，顯示提示
-                        if checkInManager.weeklyScores.isEmpty {
+                        if !hasData {
                             VStack(spacing: 8) {
                                 Image(systemName: "chart.line.uptrend.xyaxis")
                                     .font(.system(size: 40))
@@ -180,19 +192,18 @@ struct FiveIndicatorsCard: View {
                 // 日期標籤 - 雙行顯示
                 HStack(spacing: 0) {
                     ForEach(Array(checkInManager.getDateLabelsForPeriod(selectedTimePeriod).enumerated()), id: \.offset) { index, day in
-                        if selectedTimePeriod == "本月" && !day.isEmpty {
-                            // 本月：雙行顯示（月份和日期分開）
-                            let parts = day.components(separatedBy: "|")
-                            VStack(spacing: 1) {
-                                Text(parts.first ?? "")
-                                    .font(.caption2)
-                                    .foregroundColor(AppColors.titleColor.opacity(0.6))
-                                Text(parts.last ?? "")
-                                    .font(.caption2)
-                                    .foregroundColor(AppColors.titleColor)
-                                    .fontWeight(.medium)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 24)
+                        if selectedTimePeriod == "最近七月" && !day.isEmpty {
+                            Text(day)
+                                .font(.caption2)
+                                .foregroundColor(AppColors.titleColor)
+                                .frame(maxWidth: .infinity, minHeight: 24)
+                                .lineLimit(1)
+                        } else if selectedTimePeriod == "最近七週" && !day.isEmpty {
+                            Text(day)
+                                .font(.caption2)
+                                .foregroundColor(AppColors.titleColor)
+                                .frame(maxWidth: .infinity, minHeight: 24)
+                                .lineLimit(1)
                         } else {
                             // 本週：單行顯示
                             Text(day)

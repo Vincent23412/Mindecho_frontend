@@ -296,43 +296,96 @@ class DailyCheckInManager: NSObject, ObservableObject {
         let calendar = Calendar.current
         var data: [Int] = []
         var dayCount: Int
-        
+
         switch period {
         case "本週":
             dayCount = 7
-        case "本月":
-            dayCount = 30
+        case "最近七週":
+            dayCount = 7
+        case "最近七月":
+            dayCount = 7
         default:
             dayCount = 7
         }
-        
-        for i in (0..<dayCount).reversed() {
-            let date = calendar.date(byAdding: .day, value: -i, to: Date()) ?? Date()
-            let dayStart = calendar.startOfDay(for: date)
-            
-            if let dayScore = weeklyScores.first(where: {
-                calendar.startOfDay(for: $0.date) == dayStart
-            }) {
-                switch indicator {
-                case .physical:
-                    data.append(dayScore.physical)
-                case .mental:
-                    data.append(dayScore.mental)
-                case .emotional:
-                    data.append(dayScore.emotional)
-                case .sleep:
-                    data.append(dayScore.sleep)
-                case .appetite:
-                    data.append(dayScore.appetite)
-                case .overall:
-                    data.append(dayScore.overall)
+
+        switch period {
+        case "最近七月":
+            let calendar = Calendar.current
+            for offset in (0..<dayCount).reversed() {
+                guard let targetMonth = calendar.date(byAdding: .month, value: -offset, to: Date()) else {
+                    data.append(0)
+                    continue
                 }
-            } else {
-                data.append(0)
+                let monthScores = weeklyScores.filter { score in
+                    let components = calendar.dateComponents([.year, .month], from: score.date)
+                    let targetComponents = calendar.dateComponents([.year, .month], from: targetMonth)
+                    return components.year == targetComponents.year && components.month == targetComponents.month
+                }
+                let values = monthScores.map { score -> Int in
+                    switch indicator {
+                    case .physical: return score.physical
+                    case .mental: return score.mental
+                    case .emotional: return score.emotional
+                    case .sleep: return score.sleep
+                    case .appetite: return score.appetite
+                    case .overall: return score.overall
+                    }
+                }
+                data.append(values.isEmpty ? 0 : values.reduce(0, +) / values.count)
             }
+            return data
+        case "最近七週":
+            for offset in (0..<dayCount).reversed() {
+                guard let weekStart = calendar.date(byAdding: .day, value: -(offset * 7), to: calendar.startOfDay(for: Date())) else {
+                    data.append(0)
+                    continue
+                }
+                let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+                let weekScores = weeklyScores.filter { score in
+                    let day = calendar.startOfDay(for: score.date)
+                    return day >= weekStart && day <= weekEnd
+                }
+                let values = weekScores.map { score -> Int in
+                    switch indicator {
+                    case .physical: return score.physical
+                    case .mental: return score.mental
+                    case .emotional: return score.emotional
+                    case .sleep: return score.sleep
+                    case .appetite: return score.appetite
+                    case .overall: return score.overall
+                    }
+                }
+                data.append(values.isEmpty ? 0 : values.reduce(0, +) / values.count)
+            }
+            return data
+        default:
+            for i in (0..<dayCount).reversed() {
+                let date = calendar.date(byAdding: .day, value: -i, to: Date()) ?? Date()
+                let dayStart = calendar.startOfDay(for: date)
+                
+                if let dayScore = weeklyScores.first(where: {
+                    calendar.startOfDay(for: $0.date) == dayStart
+                }) {
+                    switch indicator {
+                    case .physical:
+                        data.append(dayScore.physical)
+                    case .mental:
+                        data.append(dayScore.mental)
+                    case .emotional:
+                        data.append(dayScore.emotional)
+                    case .sleep:
+                        data.append(dayScore.sleep)
+                    case .appetite:
+                        data.append(dayScore.appetite)
+                    case .overall:
+                        data.append(dayScore.overall)
+                    }
+                } else {
+                    data.append(0)
+                }
+            }
+            return data
         }
-        
-        return data
     }
     
     func getDateLabelsForPeriod(_ period: String) -> [String] {
@@ -353,19 +406,26 @@ class DailyCheckInManager: NSObject, ObservableObject {
                 labels.append(shortDay)
             }
             
-        case "本月":
-            dayCount = 30
-            
-            for i in (0..<dayCount).reversed() {
-                let date = calendar.date(byAdding: .day, value: -i, to: Date()) ?? Date()
-                
-                if i % 5 == 0 {
+        case "最近七月":
+            dayCount = 7
+            for offset in (0..<dayCount).reversed() {
+                if let date = calendar.date(byAdding: .month, value: -offset, to: Date()) {
                     let month = calendar.component(.month, from: date)
-                    let day = calendar.component(.day, from: date)
-                    labels.append("\(month)|\(day)")
+                    labels.append("\(month)月")
                 } else {
                     labels.append("")
                 }
+            }
+        case "最近七週":
+            dayCount = 7
+            let formatter = DateFormatter()
+            formatter.dateFormat = "M/d"
+            for offset in (0..<dayCount).reversed() {
+                guard let weekStart = calendar.date(byAdding: .day, value: -(offset * 7), to: calendar.startOfDay(for: Date())) else {
+                    labels.append("")
+                    continue
+                }
+                labels.append(formatter.string(from: weekStart))
             }
             
         default:

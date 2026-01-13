@@ -5,41 +5,42 @@ struct ChatListPage: View {
     @StateObject private var chatHook = ChatHook()
     
     // MARK: - UI 狀態
-    @State private var searchText = ""
-    @State private var showingNewChat = false
     @State private var navigateToNewChat = false
     @State private var newChatSession: ChatSession?
     @State private var showingDeleteAlert = false
     @State private var sessionToDelete: ChatSession?
+    @State private var selectedMode: TherapyMode = .chatMode
+    @State private var showingTitlePrompt = false
+    @State private var pendingTitle = ""
     
     // MARK: - 計算屬性
     var filteredChats: [ChatSession] {
-        if searchText.isEmpty {
-            return chatHook.chatSessions
-        } else {
-            return chatHook.chatSessions.filter { session in
-                session.title.localizedCaseInsensitiveContains(searchText) ||
-                session.lastMessage.localizedCaseInsensitiveContains(searchText)
-            }
-        }
+        chatHook.chatSessions
     }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // 標題區域
-                HeaderView(onNewChat: {
-                    showingNewChat = true
-                })
+                HeaderView()
                 
-                // 搜尋框
-                SearchBar(searchText: $searchText)
+                // 模式卡片
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(modeCards) { card in
+                            TherapyModeResourceCard(card: card) {
+                                startNewChat(for: card.mode)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+                .padding(.top, 16)
                 
                 // 聊天列表內容
                 ChatListContent(
                     filteredChats: filteredChats,
                     isLoading: chatHook.isLoading,
-                    onNewChat: { showingNewChat = true },
                     onDeleteSession: deleteSession,
                     chatHook: chatHook
                 )
@@ -47,16 +48,6 @@ struct ChatListPage: View {
                 Spacer()
             }
             .background(Color.yellow.opacity(0.1).ignoresSafeArea())
-            .sheet(isPresented: $showingNewChat) {
-                NewChatView(
-                    isPresented: $showingNewChat,
-                    chatHook: chatHook,
-                    onChatCreated: { session in
-                        newChatSession = session
-                        navigateToNewChat = true
-                    }
-                )
-            }
             .background(
                 // 隱藏的 NavigationLink，用於程式化導航
                 NavigationLink(
@@ -99,6 +90,31 @@ struct ChatListPage: View {
                     Text(error)
                 }
             }
+            .alert("聊天室名稱", isPresented: $showingTitlePrompt) {
+                TextField("可選填", text: $pendingTitle)
+                Button("略過") {
+                    Task {
+                        if let newSession = await chatHook.createNewSession(mode: selectedMode, title: nil) {
+                            newChatSession = newSession
+                            navigateToNewChat = true
+                        }
+                    }
+                }
+                Button("確定") {
+                    Task {
+                        let title = pendingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let newSession = await chatHook.createNewSession(
+                            mode: selectedMode,
+                            title: title.isEmpty ? nil : title
+                        ) {
+                            newChatSession = newSession
+                            navigateToNewChat = true
+                        }
+                    }
+                }
+            } message: {
+                Text("請輸入聊天室名稱（可留空）")
+            }
         }
     }
     
@@ -116,12 +132,40 @@ struct ChatListPage: View {
             }
         }
     }
+    
+    private func startNewChat(for mode: TherapyMode) {
+        guard !chatHook.isLoading else { return }
+        selectedMode = mode
+        pendingTitle = ""
+        showingTitlePrompt = true
+    }
+    
+    private var modeCards: [TherapyModeCard] {
+        [
+            TherapyModeCard(
+                mode: .chatMode,
+                title: "聊天",
+                subtitle: "輕鬆自在的日常對話",
+                icon: "bubble.left.and.bubble.right"
+            ),
+            TherapyModeCard(
+                mode: .cbtMode,
+                title: "CBT",
+                subtitle: "釐清想法與情緒，調整負向思維",
+                icon: "brain.head.profile"
+            ),
+            TherapyModeCard(
+                mode: .mbtMode,
+                title: "MBT",
+                subtitle: "理解自己與他人感受，增進關係",
+                icon: "person.2.fill"
+            )
+        ]
+    }
 }
 
 // MARK: - 標題區域元件
 struct HeaderView: View {
-    let onNewChat: () -> Void
-    
     var body: some View {
         HStack {
             Text("聊天紀錄")
@@ -130,39 +174,7 @@ struct HeaderView: View {
                 .foregroundColor(AppColors.titleColor)
             
             Spacer()
-            
-            Button(action: onNewChat) {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title3)
-                    Text("新對話")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                .foregroundColor(AppColors.chatModeColor)
-            }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-    }
-}
-
-// MARK: - 搜尋框元件
-struct SearchBar: View {
-    @Binding var searchText: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
-            
-            TextField("搜尋對話...", text: $searchText)
-                .textFieldStyle(PlainTextFieldStyle())
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(AppColors.chatBackground)
-        .cornerRadius(12)
         .padding(.horizontal, 20)
         .padding(.top, 16)
     }
@@ -172,7 +184,6 @@ struct SearchBar: View {
 struct ChatListContent: View {
     let filteredChats: [ChatSession]
     let isLoading: Bool
-    let onNewChat: () -> Void
     let onDeleteSession: (ChatSession) -> Void
     let chatHook: ChatHook
     
@@ -181,7 +192,7 @@ struct ChatListContent: View {
             if isLoading {
                 LoadingView()
             } else if filteredChats.isEmpty {
-                EmptyChatState(onNewChat: onNewChat)
+                EmptyChatState()
             } else {
                 ChatSessionsList(
                     sessions: filteredChats,
@@ -367,8 +378,6 @@ struct ChatListItemView: View {
 
 // MARK: - 空狀態視圖（保持原樣）
 struct EmptyChatState: View {
-    let onNewChat: () -> Void
-    
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -387,123 +396,73 @@ struct EmptyChatState: View {
                     .foregroundColor(.gray.opacity(0.8))
             }
             
-            Button(action: onNewChat) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                    Text("開始新對話")
-                }
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(AppColors.chatModeColor)
-                .cornerRadius(25)
-            }
-            
             Spacer()
         }
     }
 }
 
-// MARK: - 新對話視圖（重構版）
-struct NewChatView: View {
-    @Binding var isPresented: Bool
-    @ObservedObject var chatHook: ChatHook
-    let onChatCreated: (ChatSession) -> Void
-    @State private var selectedMode: TherapyMode = .chatMode
-    @State private var showingTitlePrompt = false
-    @State private var pendingTitle = ""
+private struct TherapyModeCard: Identifiable {
+    let mode: TherapyMode
+    let title: String
+    let subtitle: String
+    let icon: String
+    
+    var id: String { mode.rawValue }
+}
+
+private struct TherapyModeResourceCard: View {
+    let card: TherapyModeCard
+    let onTap: () -> Void
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                VStack(spacing: 16) {
-                    Text("選擇對話模式")
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: card.icon)
                         .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(AppColors.titleColor)
-                    
-                    Text("選擇最適合您當前需求的對話方式")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
+                        .foregroundColor(AppColors.darkBrown)
+                    Spacer()
                 }
-                .padding(.top, 32)
-                
-                VStack(spacing: 16) {
-                    ForEach(TherapyMode.allCases, id: \.self) { mode in
-                        TherapyModeSelectionCard(
-                            mode: mode,
-                            isSelected: selectedMode == mode,
-                            onSelect: {
-                                selectedMode = mode
-                            }
-                        )
-                    }
-                }
-                .padding(.horizontal, 20)
                 
                 Spacer()
                 
-                Button(action: {
-                    showingTitlePrompt = true
-                }) {
-                    Text(chatHook.isLoading ? "建立中..." : "開始對話")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(card.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppColors.darkBrown)
+                    
+                    Text(card.subtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.darkBrown.opacity(0.7))
+                        .lineLimit(2)
+                    
+                    Text("建立聊天室")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(chatHook.isLoading ? Color.gray : AppColors.chatModeColor)
-                        .cornerRadius(12)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(AppColors.darkBrown)
+                        .cornerRadius(8)
+                        .padding(.top, 4)
                 }
-                .disabled(chatHook.isLoading)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
             }
-            .background(AppColors.chatBackground)
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("取消") {
-                    isPresented = false
-                }
-                .disabled(chatHook.isLoading)
+            .padding(16)
+            .frame(width: 160, height: 150)
+            .background(
+                LinearGradient(
+                    colors: [
+                        AppColors.resourceCardYellow,
+                        AppColors.resourceCardOrange,
+                        AppColors.orange.opacity(0.8)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
-            .alert("錯誤", isPresented: $chatHook.showError) {
-                Button("確定", role: .cancel) {
-                    chatHook.error = nil
-                }
-            } message: {
-                if let error = chatHook.error {
-                    Text(error)
-                }
-            }
-            .alert("聊天室名稱", isPresented: $showingTitlePrompt) {
-                TextField("可選填", text: $pendingTitle)
-                Button("略過") {
-                    Task {
-                        if let newSession = await chatHook.createNewSession(mode: selectedMode, title: nil) {
-                            isPresented = false
-                            onChatCreated(newSession)
-                        }
-                    }
-                }
-                Button("確定") {
-                    Task {
-                        let title = pendingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if let newSession = await chatHook.createNewSession(
-                            mode: selectedMode,
-                            title: title.isEmpty ? nil : title
-                        ) {
-                            isPresented = false
-                            onChatCreated(newSession)
-                        }
-                    }
-                }
-            } message: {
-                Text("請輸入聊天室名稱（可留空）")
-            }
+            .cornerRadius(HomeConstants.Charts.cardCornerRadius)
+            .shadow(color: .black.opacity(0.1), radius: HomeConstants.Charts.cardShadowRadius)
         }
+        .buttonStyle(.plain)
     }
 }
 
