@@ -184,8 +184,18 @@ class ChatHook: ObservableObject {
             
         } catch {
             isTyping = false
-            self.error = error.localizedDescription
-            showError = true
+            if let chatError = error as? ChatAPIError, case .rateLimited = chatError {
+                await addMessage(
+                    to: sessionId,
+                    content: "免費額度已用完，請稍後再試或升級方案。",
+                    isFromUser: false
+                )
+                self.error = nil
+                showError = false
+            } else {
+                self.error = error.localizedDescription
+                showError = true
+            }
         }
     }
     
@@ -310,7 +320,7 @@ class ChatHook: ObservableObject {
                 guard let backendId = session.backendId else { return nil }
                 return (backendId, session.id)
             })
-            let mapped = response.sessions.map { session in
+            var mapped: [ChatSession] = response.sessions.map { session in
                 ChatSession(
                     id: existingIds[session.id] ?? UUID(),
                     backendId: session.id,
@@ -321,7 +331,52 @@ class ChatHook: ObservableObject {
                     tags: [session.mode.shortName]
                 )
             }
-            chatSessions = mapped
+            
+            await withTaskGroup(of: (String, String?).self) { group in
+                for session in mapped {
+                    guard let backendId = session.backendId else { continue }
+                    group.addTask { [token, chatAPI] in
+                        do {
+                            let response = try await chatAPI.getChatHistory(
+                                sessionId: backendId,
+                                token: token,
+                                limit: 1
+                            )
+                            let lastMessage = response.messages.last?.content
+                            return (backendId, lastMessage)
+                        } catch {
+                            return (backendId, nil)
+                        }
+                    }
+                }
+                
+                var lastMessageMap: [String: String] = [:]
+                var emptyBackendIds: [String] = []
+                for await (backendId, message) in group {
+                    if let message, !message.isEmpty {
+                        lastMessageMap[backendId] = message
+                    } else {
+                        emptyBackendIds.append(backendId)
+                    }
+                }
+                
+                for index in mapped.indices {
+                    guard let backendId = mapped[index].backendId else { continue }
+                    if let message = lastMessageMap[backendId] {
+                        mapped[index].lastMessage = message
+                    }
+                }
+                
+                for backendId in emptyBackendIds {
+                    do {
+                        try await chatAPI.deleteSession(sessionId: backendId, token: token)
+                    } catch {
+                        print("ChatHook: delete empty session failed \(backendId): \(error)")
+                    }
+                }
+            }
+            
+            chatSessions = mapped.filter { !$0.lastMessage.isEmpty }
         } catch {
             self.error = error.localizedDescription
             showError = true

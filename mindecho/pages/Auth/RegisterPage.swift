@@ -597,6 +597,7 @@ private extension RegisterPage {
                 
                 // 緊急聯絡人
                 emergencyContactSection
+                
             }
             
             // 服務條款同意

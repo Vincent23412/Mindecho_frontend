@@ -45,6 +45,7 @@ enum ChatAPIError: Error, LocalizedError {
     case invalidResponse
     case serverError(Int)
     case unauthorized
+    case rateLimited
     
     var errorDescription: String? {
         switch self {
@@ -56,6 +57,8 @@ enum ChatAPIError: Error, LocalizedError {
             return "伺服器錯誤 (\(code))"
         case .unauthorized:
             return "未授權，請重新登入"
+        case .rateLimited:
+            return "免費額度已用完"
         }
     }
 }
@@ -114,6 +117,8 @@ class ChatAPI: NSObject, URLSessionDelegate {
                     break // 成功
                 case 401:
                     throw ChatAPIError.unauthorized
+                case 429:
+                    throw ChatAPIError.rateLimited
                 default:
                     throw ChatAPIError.serverError(httpResponse.statusCode)
                 }

@@ -48,6 +48,9 @@ struct ChatListPage: View {
                 Spacer()
             }
             .background(Color.yellow.opacity(0.1).ignoresSafeArea())
+            .task {
+                await chatHook.loadSessions()
+            }
             .background(
                 // 隱藏的 NavigationLink，用於程式化導航
                 NavigationLink(
@@ -195,7 +198,7 @@ struct ChatListContent: View {
                 EmptyChatState()
             } else {
                 ChatSessionsList(
-                    sessions: filteredChats,
+                    sessions: filteredChats.filter { !$0.lastMessage.isEmpty },
                     chatHook: chatHook,
                     onDeleteSession: onDeleteSession
                 )
