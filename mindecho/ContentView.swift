@@ -20,6 +20,9 @@ struct ContentView: View {
                 WelcomePage()
             }
         }
+        .task {
+            authViewModel.attemptAutoLoginOnLaunch()
+        }
         .fullScreenCover(isPresented: $authViewModel.shouldShowDailyCheckIn) {
             DailyCheckInView(isPresented: $authViewModel.shouldShowDailyCheckIn)
         }

@@ -13,7 +13,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     @Published var authToken: String?
     
     // MARK: - 私有屬性
-    private let baseURL = "https://mindechoserver.com"
+    private let baseURL = "https://localhost/dev-api"
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = AuthConstants.Network.requestTimeout
@@ -33,6 +33,25 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
         static let authToken = AuthConstants.UserDefaultsKeys.authToken
         static let refreshToken = AuthConstants.UserDefaultsKeys.refreshToken
         static let userData = AuthConstants.UserDefaultsKeys.userData
+        static let loginDate = AuthConstants.UserDefaultsKeys.loginDate
+    }
+
+    var hasStoredAuth: Bool {
+        if AppConfig.skipStoredAuth {
+            return false
+        }
+        let token = UserDefaults.standard.string(forKey: Keys.authToken)
+        let userData = UserDefaults.standard.data(forKey: Keys.userData)
+        let loginDate = UserDefaults.standard.double(forKey: Keys.loginDate)
+        return token != nil && userData != nil && loginDate > 0
+    }
+
+    func isStoredAuthValid(maxAgeDays: Int = 30) -> Bool {
+        guard hasStoredAuth else { return false }
+        let loginDateValue = UserDefaults.standard.double(forKey: Keys.loginDate)
+        let loginDate = Date(timeIntervalSince1970: loginDateValue)
+        let maxAgeSeconds = TimeInterval(maxAgeDays * 24 * 60 * 60)
+        return Date().timeIntervalSince(loginDate) <= maxAgeSeconds
     }
     
     private override init() {
@@ -70,14 +89,15 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     // MARK: - 儲存認證資訊到本地
     private func saveAuth(user: User, token: String, refreshToken: String? = nil) {
         UserDefaults.standard.set(token, forKey: Keys.authToken)
-        
+
         if let refreshToken = refreshToken {
             UserDefaults.standard.set(refreshToken, forKey: Keys.refreshToken)
         }
-        
+
         if let userData = try? JSONEncoder().encode(user) {
             UserDefaults.standard.set(userData, forKey: Keys.userData)
         }
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Keys.loginDate)
         
         DispatchQueue.main.async {
             self.authToken = token
@@ -101,6 +121,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
         UserDefaults.standard.removeObject(forKey: Keys.authToken)
         UserDefaults.standard.removeObject(forKey: Keys.refreshToken)
         UserDefaults.standard.removeObject(forKey: Keys.userData)
+        UserDefaults.standard.removeObject(forKey: Keys.loginDate)
         
         DispatchQueue.main.async {
             self.authToken = nil
@@ -317,11 +338,19 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
         urlRequest.setValue("Bearer \(refreshToken)", forHTTPHeaderField: "Authorization")
         
         return session.dataTaskPublisher(for: urlRequest)
+            .handleEvents(receiveOutput: { data, response in
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Auth refresh: status \(httpResponse.statusCode)")
+                }
+                if let body = String(data: data, encoding: .utf8) {
+                    print("Auth refresh: response body \(body)")
+                }
+            })
             .map(\.data)
             .decode(type: AuthResponse.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .handleEvents(receiveOutput: { [weak self] response in
-                if response.success!,
+                if response.success == true,
                    let user = response.user,
                    let token = response.token {
                     self?.saveAuth(user: user, token: token, refreshToken: response.refreshToken)

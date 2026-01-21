@@ -36,7 +36,7 @@ struct ProfileView: View {
                 }
                 .hidden()
                 
-                // MARK: - 情緒行李箱
+                // MARK: - 時光藏寶盒
                 emotionBoxSection
                 
                 // MARK: - 緊急聯繫
@@ -965,10 +965,10 @@ extension ProfileView {
     }
     
     
-    // 情緒行李箱
+    // 時光藏寶盒
     private var emotionBoxSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("情緒行李箱")
+            Text("時光藏寶盒")
                 .font(.headline)
                 .foregroundColor(.brown)
                 .padding(.horizontal, 5)

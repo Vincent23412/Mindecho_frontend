@@ -163,7 +163,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
             "entryDate": dateFormatter.string(from: scores.date)  // 🎯 使用新的格式
         ]
         
-        print("🚀 Requesting: https://mindechoserver.com/api/main/updateMetrics")
+        print("🚀 Requesting: https://localhost/dev-api/api/main/updateMetrics")
         print("📦 Parameters: \(requestData)")
         print("🕒 entryDate: \(dateFormatter.string(from: scores.date))")
 

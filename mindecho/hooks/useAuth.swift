@@ -21,6 +21,7 @@ class AuthViewModel: ObservableObject {
     private let authService: AuthService
     private var cancellables = Set<AnyCancellable>()
     private var forceDailyCheckInOnAuth = false
+    private var hasAttemptedAutoLogin = false
     
     // MARK: - 初始化
     init(authService: AuthService = AuthService.shared) {
@@ -193,6 +194,26 @@ class AuthViewModel: ObservableObject {
         DailyCheckInManager.shared.clearAllData()
         clearMessages()
     }
+
+    // MARK: - App 啟動自動登入
+    func attemptAutoLoginOnLaunch() {
+        guard !hasAttemptedAutoLogin else { return }
+        hasAttemptedAutoLogin = true
+
+        authService.refreshStoredAuthIfNeeded()
+        guard authService.hasStoredAuth else {
+            print("AutoLogin: no stored auth, logging out")
+            authService.logout()
+            return
+        }
+        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
+            print("AutoLogin: stored auth expired, logging out")
+            handleAutoLoginFailure()
+            return
+        }
+        print("AutoLogin: stored auth still valid")
+        clearMessages()
+    }
     
     // MARK: - 重置密碼功能
     func resetPassword(email: String) {
@@ -251,6 +272,14 @@ class AuthViewModel: ObservableObject {
         if case .loading = authState {
             authState = .idle
         }
+    }
+
+    private func handleAutoLoginFailure() {
+        authService.logout()
+        authState = .unauthenticated
+        shouldShowDailyCheckIn = false
+        forceDailyCheckInOnAuth = false
+        clearMessages()
     }
 
     func showDailyCheckInAfterLogin() {

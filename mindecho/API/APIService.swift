@@ -4,7 +4,7 @@ import Combine
 class APIService: NSObject, ObservableObject, URLSessionDelegate {
     static let shared = APIService()
     
-    private let baseURL = "http://localhost/dev-api"
+    private let baseURL = "https://localhost/dev-api"
     private let reasonBaseURL = "https://localhost/dev-api/reason"
     private let diaryBaseURL = "https://localhost/dev-api/diary"
     private let healthAdviceURL = "https://localhost/dev-api/health/advice"

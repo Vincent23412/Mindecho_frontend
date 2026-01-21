@@ -6,7 +6,7 @@ struct AuthConstants {
     // MARK: - API 端點
     struct API {
         // 基礎 URL - 請替換為你的實際 API URL
-        static let baseURL = "https://mindechoserver.com"
+        static let baseURL = "https://localhost/dev-api"
         
         // 認證端點
         static let register = "/api/auth/register"
@@ -22,6 +22,7 @@ struct AuthConstants {
         static let refreshToken = "mindecho_refresh_token"
         static let userData = "mindecho_user_data"
         static let isFirstLaunch = "mindecho_is_first_launch"
+        static let loginDate = "mindecho_login_date"
     }
     
     // MARK: - 表單驗證規則
@@ -89,11 +90,11 @@ enum AppEnvironment {
     var apiBaseURL: String {
         switch self {
         case .development:
-            return "https://dev-api.mindecho.com"
+            return "https://localhost/dev-api"
         case .staging:
-            return "https://staging-api.mindecho.com"
+            return "https://localhost/dev-api"
         case .production:
-            return "https://api.mindecho.com"
+            return "https://localhost/dev-api"
         }
     }
     

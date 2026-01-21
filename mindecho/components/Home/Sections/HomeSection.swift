@@ -128,7 +128,7 @@ struct QuickAccessSection: View {
             destination: .chat
         ),
         QuickAccessItem(
-            title: "情緒行李箱",
+            title: "時光藏寶盒",
             subtitle: "整理情緒與收集力量",
             icon: "suitcase.fill",
             buttonText: "前往查看",
