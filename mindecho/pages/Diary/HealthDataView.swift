@@ -64,6 +64,14 @@ struct HealthDataView: View {
                     )
                 }
                 .padding(.horizontal)
+
+                if !hasMetrics {
+                    Text("尚未連接apple運動")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                        .padding(.top, 6)
+                }
                 
                 // 💡 健康建議
                 VStack(alignment: .leading, spacing: 14) {
@@ -118,14 +126,6 @@ struct HealthDataView: View {
                     .foregroundColor(AppColors.titleColor)
                     .padding(.leading, 2)
             }
-#if DEBUG
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("填入模擬") {
-                    healthKitManager.loadMockData()
-                }
-                .font(.subheadline)
-            }
-#endif
         }
     }
     
@@ -136,7 +136,7 @@ struct HealthDataView: View {
 
     private var hasMetrics: Bool {
         healthKitManager.hrvMs != nil ||
-        healthKitManager.sleepHours != nil ||
+        (healthKitManager.sleepHours ?? 0) > 0 ||
         healthKitManager.steps != nil ||
         healthKitManager.weightKg != nil
     }

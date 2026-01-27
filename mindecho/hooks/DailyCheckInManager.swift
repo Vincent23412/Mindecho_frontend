@@ -163,7 +163,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
             "entryDate": dateFormatter.string(from: scores.date)  // 🎯 使用新的格式
         ]
         
-        print("🚀 Requesting: https://localhost/dev-api/api/main/updateMetrics")
+        print("🚀 Requesting: https://mindechoserver.com:8443/api/main/updateMetrics")
         print("📦 Parameters: \(requestData)")
         print("🕒 entryDate: \(dateFormatter.string(from: scores.date))")
 
@@ -213,7 +213,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
             "entryDate": entryDate
         ]
 
-        guard let url = URL(string: "https://localhost/dev-api/main/dailyQuestions") else {
+        guard let url = URL(string: "https://mindechoserver.com:8443/api/main/dailyQuestions") else {
             print("❌ sendDailyQuestions: bad URL")
             return
         }

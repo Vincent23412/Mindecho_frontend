@@ -4,11 +4,11 @@ import Combine
 class APIService: NSObject, ObservableObject, URLSessionDelegate {
     static let shared = APIService()
     
-    private let baseURL = "https://localhost/dev-api"
-    private let reasonBaseURL = "https://localhost/dev-api/reason"
-    private let diaryBaseURL = "https://localhost/dev-api/diary"
-    private let healthAdviceURL = "https://localhost/dev-api/health/advice"
-    private let emotionAnalysisURL = "https://localhost/dev-api/emotion/analysis"
+    private let baseURL = "https://mindechoserver.com:8443/api"
+    private let reasonBaseURL = "https://mindechoserver.com:8443/api/reason"
+    private let diaryBaseURL = "https://mindechoserver.com:8443/api/diary"
+    private let healthAdviceURL = "https://mindechoserver.com:8443/api/health/advice"
+    private let emotionAnalysisURL = "https://mindechoserver.com:8443/api/emotion/analysis"
     private static let reasonDateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -47,7 +47,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     }
     
     func updateMetrics(data: [String: Any]) -> AnyPublisher<Bool, Error> {
-        guard let url = URL(string: "\(baseURL)/api/main/updateMetrics"),
+        guard let url = URL(string: "\(baseURL)/main/updateMetrics"),
               let token = AuthService.shared.authToken else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
@@ -191,7 +191,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     }
 
     func getScaleSessions(userId: String) async throws -> [ScaleSessionScale] {
-        var components = URLComponents(string: "https://localhost/dev-api/main/scales/sessions")
+        var components = URLComponents(string: "\(baseURL)/main/scales/sessions")
         components?.queryItems = [URLQueryItem(name: "userId", value: userId)]
         guard let url = components?.url else {
             throw URLError(.badURL)

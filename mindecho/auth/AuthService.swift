@@ -13,7 +13,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     @Published var authToken: String?
     
     // MARK: - 私有屬性
-    private let baseURL = "https://localhost/dev-api"
+    private let baseURL = "https://mindechoserver.com:8443/api"
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = AuthConstants.Network.requestTimeout
@@ -134,7 +134,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     func register(request: RegisterRequest) -> AnyPublisher<AuthResponse, Error> {
      
         // 指向本機 dev API（若在模擬器/實機測試請視需求改成 127.0.0.1 或區網 IP）
-        guard let url = URL(string: "https://localhost/dev-api/auth/register") else {
+        guard let url = URL(string: "\(baseURL)/auth/register") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
@@ -228,7 +228,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     func login(request: LoginRequest) -> AnyPublisher<AuthResponse, Error> {
 
         // 本地反向代理登入端點
-        guard let url = URL(string: "https://localhost/dev-api/auth/login") else {
+        guard let url = URL(string: "\(baseURL)/auth/login") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
