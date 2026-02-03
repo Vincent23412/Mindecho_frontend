@@ -20,7 +20,7 @@ struct DailyReminderCard: View {
             
             Text(reminder.content)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppColors.titleColor)
                 .lineLimit(5)
                 .minimumScaleFactor(0.95)
                 .padding(.bottom, 4)

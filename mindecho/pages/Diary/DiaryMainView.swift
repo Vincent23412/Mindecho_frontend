@@ -17,7 +17,7 @@ struct DiaryMainView: View {
             VStack(spacing: 4) {
                 Text("追蹤")
                     .font(.title2.bold())
-                    .foregroundColor(.brown)
+                    .foregroundColor(AppColors.titleColor)
                 Text("查看你的健康數據與情緒變化")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -31,6 +31,7 @@ struct DiaryMainView: View {
                 Text("量表追蹤").tag(2)
             }
             .pickerStyle(SegmentedPickerStyle())
+            .tint(AppColors.titleColor)
             .padding()
             
             // 對應的子頁面

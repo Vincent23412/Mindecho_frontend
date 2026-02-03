@@ -24,6 +24,9 @@ struct MoodDiaryView: View {
         ("GOOD", "😃", "良好"),
         ("HAPPY", "🤩", "極佳")
     ]
+
+    private let pageBackground = AppColors.lightYellow
+    private let cardBackground = Color(red: 0.985, green: 0.965, blue: 0.94)
     
     var body: some View {
         ScrollView {
@@ -37,11 +40,12 @@ struct MoodDiaryView: View {
                     DatePicker("", selection: $selectedDate, displayedComponents: [.date])
                         .datePickerStyle(.graphical)
                         .labelsHidden()
+                        .tint(AppColors.titleColor)
                 }
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white)
+                        .fill(cardBackground)
                         .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
                 )
                 .padding(.horizontal)
@@ -68,7 +72,7 @@ struct MoodDiaryView: View {
                                         .frame(width: 36, height: 44)
                                         .background(
                                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                .fill(Color.white)
+                                                .fill(cardBackground)
                                                 .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
                                         )
                                     }
@@ -110,7 +114,7 @@ struct MoodDiaryView: View {
                                     .frame(width: 90, height: 100)
                                     .background(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(Color.white)
+                                            .fill(cardBackground)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                                                     .stroke(
@@ -146,14 +150,14 @@ struct MoodDiaryView: View {
                     TextEditor(text: $diaryText)
                         .frame(height: 160)
                         .padding(10)
+                        .foregroundColor(AppColors.titleColor)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.white)
+                                .fill(pageBackground)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
-                                .shadow(color: .black.opacity(0.05), radius: 6, y: 4)
                         )
                 }
                 .padding(.horizontal)
@@ -179,7 +183,7 @@ struct MoodDiaryView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white)
+                        .fill(cardBackground)
                         .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
                 )
                 .padding(.horizontal)
@@ -202,7 +206,7 @@ struct MoodDiaryView: View {
             }
             .padding(.vertical, 12)
         }
-        .background(AppColors.lightYellow.ignoresSafeArea())
+        .background(pageBackground.ignoresSafeArea())
         .onAppear {
             Task { await loadEntries(for: selectedDate) }
         }

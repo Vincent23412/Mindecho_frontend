@@ -47,7 +47,7 @@ struct ChatListPage: View {
                 
                 Spacer()
             }
-            .background(Color.yellow.opacity(0.1).ignoresSafeArea())
+            .background(AppColors.lightYellow.ignoresSafeArea())
             .task {
                 await chatHook.loadSessions()
             }

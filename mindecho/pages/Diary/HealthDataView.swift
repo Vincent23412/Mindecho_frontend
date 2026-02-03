@@ -18,10 +18,10 @@ struct HealthDataView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("數據概覽")
                         .font(.title3.weight(.semibold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.titleColor)
                     Text("追蹤你的身體節奏與日常狀態")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.titleColor)
                 }
                 .padding(.horizontal)
                 
@@ -77,12 +77,12 @@ struct HealthDataView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("健康建議")
                         .font(.headline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.titleColor)
                     
                     if !hasMetrics {
                         Text("無數據")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppColors.titleColor)
                     } else {
                         ForEach(staticAdviceItems) { item in
                             suggestionRow(
@@ -225,10 +225,10 @@ struct HealthDataView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppColors.titleColor)
                 Text(detail)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppColors.titleColor)
                     .lineSpacing(2)
             }
         }
@@ -268,9 +268,10 @@ struct HealthDataCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.titleColor)
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.titleColor)
                 }
             }
             
@@ -282,7 +283,7 @@ struct HealthDataCard: View {
                     .foregroundColor(color)
                 Text(unit)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppColors.titleColor)
             }
             
             // Decorative progress bar

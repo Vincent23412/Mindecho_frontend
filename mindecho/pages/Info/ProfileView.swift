@@ -52,7 +52,7 @@ struct ProfileView: View {
                 }
             }
         }
-        .background(Color.yellow.opacity(0.1).ignoresSafeArea())
+        .background(AppColors.lightYellow.ignoresSafeArea())
         .navigationTitle("個人檔案")
         .task {
             await refreshUserProfile()

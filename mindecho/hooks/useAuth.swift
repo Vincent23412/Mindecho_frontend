@@ -200,26 +200,18 @@ class AuthViewModel: ObservableObject {
         guard !hasAttemptedAutoLogin else { return }
         hasAttemptedAutoLogin = true
 
-        // 暫時停用自動登入（保留原流程，之後可恢復）
-//        authService.refreshStoredAuthIfNeeded()
-//        guard authService.hasStoredAuth else {
-//            print("AutoLogin: no stored auth, logging out")
-//            authService.logout()
-//            return
-//        }
-//        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
-//            print("AutoLogin: stored auth expired, logging out")
-//            handleAutoLoginFailure()
-//            return
-//        }
-//        print("AutoLogin: stored auth still valid")
-//        clearMessages()
-
-        print("AutoLogin: disabled, forcing login")
-        authService.logout()
-        authState = .unauthenticated
-        shouldShowDailyCheckIn = false
-        forceDailyCheckInOnAuth = false
+        authService.refreshStoredAuthIfNeeded()
+        guard authService.hasStoredAuth else {
+            print("AutoLogin: no stored auth, logging out")
+            authService.logout()
+            return
+        }
+        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
+            print("AutoLogin: stored auth expired, logging out")
+            handleAutoLoginFailure()
+            return
+        }
+        print("AutoLogin: stored auth still valid")
         clearMessages()
     }
     
