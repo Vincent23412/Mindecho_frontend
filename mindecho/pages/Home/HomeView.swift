@@ -15,10 +15,26 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
+                    // 五項指標追蹤
+                    VStack {
+                        FiveIndicatorsCard(selectedTimePeriod: $selectedTimePeriod)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                        
+                        DailyScoresTableCard(
+                            scores: checkInManager.weeklyScores,
+                            selectedTimePeriod: selectedTimePeriod
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        
+                        Spacer()
+                    }
+                    
                     // 今日提醒
                     DailyReminderCard()
                         .padding(.horizontal, 16)
-                        .padding(.top, 8)
+                        .padding(.top, 16)
                     
                     // 每日檢測提醒（如果還沒完成）
                     if !checkInManager.hasCompletedToday {
@@ -39,25 +55,6 @@ struct HomeView: View {
                     
                     Spacer().frame(height: 24)
                     
-                    VStack {
-                        FiveIndicatorsCard(selectedTimePeriod: $selectedTimePeriod)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 8)
-                        
-                        DailyScoresTableCard(
-                            scores: checkInManager.weeklyScores,
-                            selectedTimePeriod: selectedTimePeriod
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        
-                        Spacer()
-                    }
-                    
-                    // 心理健康資源區塊
-                    MentalHealthResourcesSection()
-                        .padding(.top, 20)
-                    
                     // 心理測驗區塊
                     PsychologicalTestsSection()
                         .padding(.top, 20)
@@ -66,6 +63,10 @@ struct HomeView: View {
                     QuickAccessSection()
                         .padding(.top, 20)
                         .padding(.bottom, 20)
+                    
+                    // 心理健康資源區塊
+                    MentalHealthResourcesSection()
+                        .padding(.top, 20)
                 }
             }
             .background(AppColors.lightYellow)

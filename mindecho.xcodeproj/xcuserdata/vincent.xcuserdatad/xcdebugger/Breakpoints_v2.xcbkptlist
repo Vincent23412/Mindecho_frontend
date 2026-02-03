@@ -8,7 +8,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "5C756641-A36D-4BFA-B3E9-96453F7320EE"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "mindecho/pages/Auth/WelcomePage.swift"

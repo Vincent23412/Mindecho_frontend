@@ -200,19 +200,29 @@ class AuthViewModel: ObservableObject {
         guard !hasAttemptedAutoLogin else { return }
         hasAttemptedAutoLogin = true
 
-        authService.refreshStoredAuthIfNeeded()
-        guard authService.hasStoredAuth else {
-            print("AutoLogin: no stored auth, logging out")
-            authService.logout()
-            return
-        }
-        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
-            print("AutoLogin: stored auth expired, logging out")
-            handleAutoLoginFailure()
-            return
-        }
-        print("AutoLogin: stored auth still valid")
+        // DEBUG: 強制每次都進登入頁（暫時用來測試登入流程）
+        // 要改回自動登入：移除下面的強制登出區塊，並恢復 AutoLogin 流程
+        print("AutoLogin: forced logout (debug)")
+        authService.logout()
+        authState = .unauthenticated
+        shouldShowDailyCheckIn = false
+        forceDailyCheckInOnAuth = false
         clearMessages()
+
+        // AutoLogin（正式用）
+//        authService.refreshStoredAuthIfNeeded()
+//        guard authService.hasStoredAuth else {
+//            print("AutoLogin: no stored auth, logging out")
+//            authService.logout()
+//            return
+//        }
+//        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
+//            print("AutoLogin: stored auth expired, logging out")
+//            handleAutoLoginFailure()
+//            return
+//        }
+//        print("AutoLogin: stored auth still valid")
+//        clearMessages()
     }
     
     // MARK: - 重置密碼功能

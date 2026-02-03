@@ -221,7 +221,7 @@ struct WelcomePageView: View {
             textContent
         }
         .padding(.horizontal, 32)
-        .onChange(of: isActive) { active in
+        .onChange(of: isActive) { _, active in
             if active {
                 animateContent()
             }
@@ -316,7 +316,7 @@ struct WelcomePageData {
         ),
         WelcomePageItem(
             title: "個性化體驗",
-            description: "AI 會學習您的偏好和需求，為您量身定制最適合的療程方案和對話風格",
+            description: "AI 會學習您的偏好和需求，為您量身定制最適合的諮商方案和對話風格",
             systemImageName: "person.circle.fill",
             accentColor: AppColors.orange
         )

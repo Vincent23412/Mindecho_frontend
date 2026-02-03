@@ -7,8 +7,10 @@
 import SwiftUI
 
 struct DiaryMainView: View {
-    @State private var selectedTab = 0 // 預設顯示「健康數據」
+    @State private var selectedTab = 0 // 預設顯示「五項指標追蹤」
+    @State private var selectedTimePeriod = "本週"
     @StateObject private var scaleSessionManager = ScaleSessionManager.shared
+    @ObservedObject private var checkInManager = DailyCheckInManager.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -26,9 +28,9 @@ struct DiaryMainView: View {
             
             // 上方 Segmented Control
             Picker("選項", selection: $selectedTab) {
-                Text("健康數據").tag(0)
                 Text("心情日記").tag(1)
                 Text("量表追蹤").tag(2)
+                Text("五項指標追蹤").tag(0)
             }
             .pickerStyle(SegmentedPickerStyle())
             .tint(AppColors.titleColor)
@@ -36,7 +38,26 @@ struct DiaryMainView: View {
             
             // 對應的子頁面
             TabView(selection: $selectedTab) {
-                NavigationView { HealthDataView() }.tag(0)
+                NavigationView {
+                    ScrollView {
+                        VStack {
+                            FiveIndicatorsCard(selectedTimePeriod: $selectedTimePeriod)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                            
+                            DailyScoresTableCard(
+                                scores: checkInManager.weeklyScores,
+                                selectedTimePeriod: selectedTimePeriod
+                            )
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                            
+                            Spacer(minLength: 20)
+                        }
+                    }
+                    .background(AppColors.lightYellow)
+                }
+                .tag(0)
                 NavigationView { MoodDiaryView() }.tag(1)
                 NavigationView {
                     ScrollView {
@@ -60,6 +81,7 @@ struct DiaryMainView: View {
         .background(AppColors.lightYellow)
         .onAppear {
             scaleSessionManager.loadSessions()
+            checkInManager.loadDataFromAPI()
         }
     }
 }

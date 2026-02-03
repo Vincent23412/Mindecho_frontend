@@ -1,6 +1,8 @@
 import SwiftUI
 import PhotosUI
 import UIKit
+import AVKit
+import AVFoundation
 
 struct ProfileView: View {
     @State private var showingSupportReasons = false
@@ -169,6 +171,9 @@ private struct SupportReasonsModal: View {
     @State private var localReasons: [SupportReason]
     @State private var editingReason: SupportReason?
     @State private var errorMessage: String?
+    @State private var supportVideos: [SupportVideo] = []
+    @State private var selectedVideoItem: PhotosPickerItem?
+    @State private var activeVideo: SupportVideo?
     
     private static let apiDateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -202,6 +207,7 @@ private struct SupportReasonsModal: View {
         }
         .task {
             await loadReasons()
+            supportVideos = SupportReasonVideoStore.loadVideos()
         }
         .sheet(isPresented: $showingAddReason) {
             AddSupportReasonView(
@@ -231,6 +237,24 @@ private struct SupportReasonsModal: View {
                 }
             )
         }
+        .onChange(of: selectedVideoItem) { _, newValue in
+            guard let newValue else { return }
+            Task {
+                if let data = try? await newValue.loadTransferable(type: Data.self),
+                   let video = SupportReasonVideoStore.saveVideoData(data) {
+                    await MainActor.run {
+                        supportVideos.insert(video, at: 0)
+                    }
+                }
+            }
+        }
+        .fullScreenCover(item: $activeVideo) { video in
+            VideoPlayer(player: AVPlayer(url: video.url))
+                .ignoresSafeArea()
+                .onDisappear {
+                    activeVideo = nil
+                }
+        }
     }
     
     private var header: some View {
@@ -252,7 +276,10 @@ private struct SupportReasonsModal: View {
     }
     
     private var reasonsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let textOnlyReasons = localReasons.filter { $0.imageData == nil }
+        let imageReasons = localReasons.filter { $0.imageData != nil }
+        
+        return VStack(alignment: .leading, spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("我的理由珍藏")
@@ -266,7 +293,7 @@ private struct SupportReasonsModal: View {
                 Button(action: { showingAddReason = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
-                        Text("新增理由")
+                        Text("新增內容")
                     }
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 12)
@@ -277,17 +304,86 @@ private struct SupportReasonsModal: View {
                 }
             }
             
-            VStack(spacing: 12) {
-                ForEach(localReasons) { reason in
-                    ReasonCard(
-                        reason: reason,
-                        onEdit: { editingReason = reason },
-                        onDelete: { Task { await deleteReason(reason) } }
-                    )
+            sectionHeader("文字")
+            if textOnlyReasons.isEmpty {
+                emptySectionHint("尚未新增文字內容")
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(textOnlyReasons) { reason in
+                        TextReasonCard(
+                            reason: reason,
+                            onEdit: { editingReason = reason },
+                            onDelete: { Task { await deleteReason(reason) } }
+                        )
+                    }
+                }
+                .padding(.horizontal, 6)
+            }
+            
+            sectionHeader("圖片")
+            if imageReasons.isEmpty {
+                emptySectionHint("尚未新增圖片內容")
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    ForEach(imageReasons) { reason in
+                        ImageReasonCard(
+                            reason: reason,
+                            onEdit: { editingReason = reason },
+                            onDelete: { Task { await deleteReason(reason) } }
+                        )
+                    }
                 }
             }
-            .padding(.horizontal, 6)
+            
+            HStack {
+                sectionHeader("影片")
+                Spacer()
+                PhotosPicker(selection: $selectedVideoItem, matching: .videos) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("新增影片")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(AppColors.orange.opacity(0.2))
+                    .foregroundColor(AppColors.titleColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            if supportVideos.isEmpty {
+                emptySectionHint("尚未新增影片內容")
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    ForEach(supportVideos) { video in
+                        VideoReasonCard(
+                            video: video,
+                            onPlay: { activeVideo = video },
+                            onDelete: { deleteVideo(video) }
+                        )
+                    }
+                }
+            }
         }
+    }
+    
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.subheadline.weight(.semibold))
+            .foregroundColor(AppColors.titleColor)
+    }
+    
+    private func emptySectionHint(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundColor(AppColors.titleColor.opacity(0.6))
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 8)
+    }
+    
+    private func deleteVideo(_ video: SupportVideo) {
+        SupportReasonVideoStore.deleteVideo(with: video.id)
+        supportVideos.removeAll { $0.id == video.id }
     }
     
     private func loadReasons() async {
@@ -376,21 +472,13 @@ private struct SupportReasonsModal: View {
     }
 }
 
-private struct ReasonCard: View {
+private struct TextReasonCard: View {
     let reason: SupportReason
     let onEdit: () -> Void
     let onDelete: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let data = reason.imageData, let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 140)
-                    .clipped()
-                    .cornerRadius(10)
-            }
             HStack {
                 Text(reason.title)
                     .font(.subheadline.weight(.semibold))
@@ -425,6 +513,87 @@ private struct ReasonCard: View {
             }
         }
         .padding(22)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(AppColors.orange.opacity(0.12))
+        )
+    }
+}
+
+private struct ImageReasonCard: View {
+    let reason: SupportReason
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let data = reason.imageData, let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 140)
+                    .clipped()
+                    .cornerRadius(10)
+            }
+            
+            HStack {
+                Text(reason.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppColors.titleColor)
+                Spacer()
+                HStack(spacing: 12) {
+                    Button(action: onEdit) {
+                        Image(systemName: "square.and.pencil")
+                    }
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                    }
+                }
+                .foregroundColor(AppColors.titleColor.opacity(0.8))
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(AppColors.orange.opacity(0.12))
+        )
+    }
+}
+
+private struct VideoReasonCard: View {
+    let video: SupportVideo
+    let onPlay: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: onPlay) {
+                ZStack {
+                    VideoThumbnailView(url: video.url)
+                        .frame(height: 140)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 36))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+            }
+            .buttonStyle(.plain)
+            
+            HStack {
+                Text(video.displayDate)
+                    .font(.caption)
+                    .foregroundColor(AppColors.titleColor.opacity(0.7))
+                Spacer()
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                }
+                .foregroundColor(AppColors.titleColor.opacity(0.8))
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppColors.orange.opacity(0.12))
@@ -470,6 +639,22 @@ private struct SupportReason: Identifiable {
     }
 }
 
+private struct SupportVideo: Identifiable, Codable {
+    let id: String
+    let createdAt: Date
+    let fileName: String
+    
+    var url: URL {
+        SupportReasonVideoStore.videoURL(for: fileName)
+    }
+    
+    var displayDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter.string(from: createdAt)
+    }
+}
+
 private enum SupportReasonImageStore {
     private static let folderName = "support_reason_images"
     
@@ -497,6 +682,100 @@ private enum SupportReasonImageStore {
             try? FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
         }
         return folderURL.appendingPathComponent("\(id).jpg")
+    }
+}
+
+private enum SupportReasonVideoStore {
+    private static let folderName = "support_reason_videos"
+    private static let metadataKey = "support_reason_videos_meta"
+    
+    static func loadVideos() -> [SupportVideo] {
+        guard let data = UserDefaults.standard.data(forKey: metadataKey),
+              let videos = try? JSONDecoder().decode([SupportVideo].self, from: data) else {
+            return []
+        }
+        return videos.filter { FileManager.default.fileExists(atPath: $0.url.path) }
+    }
+    
+    static func saveVideoData(_ data: Data) -> SupportVideo? {
+        let id = UUID().uuidString
+        let fileName = "\(id).mp4"
+        let url = videoURL(for: fileName)
+        do {
+            try data.write(to: url, options: [.atomic])
+        } catch {
+            return nil
+        }
+        let video = SupportVideo(id: id, createdAt: Date(), fileName: fileName)
+        var current = loadVideos()
+        current.insert(video, at: 0)
+        persist(current)
+        return video
+    }
+    
+    static func deleteVideo(with id: String) {
+        var current = loadVideos()
+        guard let video = current.first(where: { $0.id == id }) else { return }
+        try? FileManager.default.removeItem(at: video.url)
+        current.removeAll { $0.id == id }
+        persist(current)
+    }
+    
+    static func videoURL(for fileName: String) -> URL {
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let folderURL = base.appendingPathComponent(folderName, isDirectory: true)
+        if !FileManager.default.fileExists(atPath: folderURL.path) {
+            try? FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+        }
+        return folderURL.appendingPathComponent(fileName)
+    }
+    
+    private static func persist(_ videos: [SupportVideo]) {
+        if let data = try? JSONEncoder().encode(videos) {
+            UserDefaults.standard.set(data, forKey: metadataKey)
+        }
+    }
+}
+
+private struct VideoThumbnailView: View {
+    let url: URL
+    @State private var image: UIImage?
+    
+    var body: some View {
+        ZStack {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Rectangle()
+                    .fill(AppColors.orange.opacity(0.12))
+                    .overlay(
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: AppColors.titleColor))
+                    )
+            }
+        }
+        .onAppear {
+            if image == nil {
+                loadThumbnail()
+            }
+        }
+    }
+    
+    private func loadThumbnail() {
+        let asset = AVAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        let time = CMTime(seconds: 0.5, preferredTimescale: 600)
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let cgImage = try? generator.copyCGImage(at: time, actualTime: nil) {
+                let uiImage = UIImage(cgImage: cgImage)
+                DispatchQueue.main.async {
+                    image = uiImage
+                }
+            }
+        }
     }
 }
 

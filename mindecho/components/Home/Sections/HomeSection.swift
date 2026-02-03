@@ -71,7 +71,7 @@ struct PsychologicalTestsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("心理測驗")
+                Text("進一步瞭解自己")
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.titleColor)
@@ -114,20 +114,6 @@ struct QuickAccessSection: View {
     
     private let items: [QuickAccessItem] = [
         QuickAccessItem(
-            title: "放鬆",
-            subtitle: "呼吸與音樂放鬆練習",
-            icon: "leaf.fill",
-            buttonText: "開始放鬆",
-            destination: .relax
-        ),
-        QuickAccessItem(
-            title: "聊天",
-            subtitle: "選擇模式開始對話",
-            icon: "bubble.left.and.bubble.right.fill",
-            buttonText: "開始聊天",
-            destination: .chat
-        ),
-        QuickAccessItem(
             title: "時光藏寶盒",
             subtitle: "整理情緒與收集力量",
             icon: "suitcase.fill",
@@ -139,7 +125,7 @@ struct QuickAccessSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("快捷入口")
+                Text("我的重要時刻")
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.titleColor)
