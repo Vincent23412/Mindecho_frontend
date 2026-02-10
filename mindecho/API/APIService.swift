@@ -4,7 +4,7 @@ import Combine
 class APIService: NSObject, ObservableObject, URLSessionDelegate {
     static let shared = APIService()
     
-    private let baseURL = "https://mindechoserver.com:8443/api"
+    private let baseURL = "https://localhost/dev-api"
     private let reasonBaseURL = "https://mindechoserver.com:8443/api/reason"
     private let diaryBaseURL = "https://mindechoserver.com:8443/api/diary"
     private let healthAdviceURL = "https://mindechoserver.com:8443/api/health/advice"
@@ -395,7 +395,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     }
 
     func getUserProfile() async throws -> User {
-        guard let url = URL(string: "\(baseURL)/api/users/profile") else {
+        guard let url = URL(string: "\(baseURL)/user/profile") else {
             throw URLError(.badURL)
         }
         
@@ -424,7 +424,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     }
 
     func updateUserProfile(userId: String, email: String, firstName: String, lastName: String) async throws -> User {
-        guard let url = URL(string: "\(baseURL)/api/users/profile") else {
+        guard let url = URL(string: "\(baseURL)/user/profile") else {
             throw URLError(.badURL)
         }
         

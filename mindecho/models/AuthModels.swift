@@ -9,17 +9,24 @@ struct User: Codable, Identifiable {
     let email: String
     let firstName: String
     let lastName: String
+    let nickname: String?
+    let avatar: String?
     let dateOfBirth: String?
     let gender: String?
     let educationLevel: Int?
+    let emergencyContactName: String?
+    let emergencyContactPhone: String?
     let supportContactName: String?
     let supportContactInfo: String?
     let familyContactName: String?
     let familyContactInfo: String?
     let isActive: Bool?
+    let lastLoginAt: String?
     let preferences: [String: String]?
+    let emergencyContacts: [EmergencyContact]?
     let createdAt: String?
     let updatedAt: String?
+    let continuousLoginDays: Int?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -27,17 +34,24 @@ struct User: Codable, Identifiable {
         case email
         case firstName
         case lastName
+        case nickname
+        case avatar
         case dateOfBirth
         case gender
         case educationLevel
+        case emergencyContactName
+        case emergencyContactPhone
         case supportContactName
         case supportContactInfo
         case familyContactName
         case familyContactInfo
         case isActive
+        case lastLoginAt
         case preferences
+        case emergencyContacts
         case createdAt
         case updatedAt
+        case continuousLoginDays
     }
 
     /// 取後端的 userId 為主，若沒有則使用 id
@@ -56,6 +70,16 @@ struct User: Codable, Identifiable {
     }
 }
 
+struct EmergencyContact: Codable, Identifiable {
+    let id: String
+    let name: String
+    let relation: String
+    let contactInfo: String
+    let sortOrder: Int?
+    let createdAt: String?
+    let updatedAt: String?
+}
+
 // MARK: - 註冊請求數據模型
 struct RegisterRequest: Codable {
     let email: String
@@ -63,12 +87,14 @@ struct RegisterRequest: Codable {
     let firstName: String
     let lastName: String
     let dateOfBirth: String
+    let nickname: String?
+    let emergencyContacts: [EmergencyContactPayload]
     let gender: String
     let educationLevel: Int
-    let supportContactName: String
-    let supportContactInfo: String
-    let familyContactName: String
-    let familyContactInfo: String
+    let supportContactName: String?
+    let supportContactInfo: String?
+    let familyContactName: String?
+    let familyContactInfo: String?
     
     func toDictionary() -> [String: Any] {
         return [
@@ -77,12 +103,28 @@ struct RegisterRequest: Codable {
             "firstName": firstName,
             "lastName": lastName,
             "dateOfBirth": dateOfBirth,
+            "nickname": nickname as Any,
+            "emergencyContacts": emergencyContacts.map { $0.toDictionary() },
             "gender": gender,
             "educationLevel": educationLevel,
-            "supportContactName": supportContactName,
-            "supportContactInfo": supportContactInfo,
-            "familyContactName": familyContactName,
-            "familyContactInfo": familyContactInfo
+            "supportContactName": supportContactName as Any,
+            "supportContactInfo": supportContactInfo as Any,
+            "familyContactName": familyContactName as Any,
+            "familyContactInfo": familyContactInfo as Any
+        ]
+    }
+}
+
+struct EmergencyContactPayload: Codable {
+    let name: String
+    let relation: String
+    let contactInfo: String
+    
+    func toDictionary() -> [String: Any] {
+        return [
+            "name": name,
+            "relation": relation,
+            "contactInfo": contactInfo
         ]
     }
 }

@@ -66,11 +66,11 @@ struct ProfileView: View {
 struct EditPersonalInfoView: View {
     @ObservedObject private var authService = AuthService.shared
     @State private var email: String = ""
-    @State private var firstName: String = ""
-    @State private var lastName: String = ""
+    @State private var fullName: String = ""
     @State private var birthDate: Date = Date(timeIntervalSince1970: 1036003200) // 2002-10-30
     @State private var errorMessage: String?
     @State private var isSaving = false
+    @State private var showBirthPicker = false
     
     var body: some View {
         Form {
@@ -78,9 +78,18 @@ struct EditPersonalInfoView: View {
                 TextField("Email", text: $email)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
-                TextField("名", text: $firstName)
-                TextField("姓", text: $lastName)
-                DatePicker("生日", selection: $birthDate, displayedComponents: .date)
+                TextField("姓名", text: $fullName)
+                Button {
+                    showBirthPicker = true
+                } label: {
+                    HStack {
+                        Text("生日")
+                        Spacer()
+                        Text(birthMonthDisplay)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
             }
             
             if let errorMessage = errorMessage {
@@ -110,13 +119,15 @@ struct EditPersonalInfoView: View {
         .onAppear {
             hydrateUser()
         }
+        .sheet(isPresented: $showBirthPicker) {
+            MonthYearPickerSheet(selectedDate: $birthDate, isPresented: $showBirthPicker)
+        }
     }
     
     private func hydrateUser() {
         guard let user = authService.currentUser else { return }
         email = user.email
-        firstName = user.firstName
-        lastName = user.lastName
+        fullName = buildFullName(user)
         if let date = parseBirthDate(user.dateOfBirth) {
             birthDate = date
         }
@@ -134,6 +145,12 @@ struct EditPersonalInfoView: View {
         return fallback.date(from: value)
     }
     
+    private var birthMonthDisplay: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        return formatter.string(from: birthDate)
+    }
+    
     private func saveProfile() async {
         errorMessage = nil
         isSaving = true
@@ -146,11 +163,12 @@ struct EditPersonalInfoView: View {
                 }
                 return
             }
+            let parts = splitFullName(fullName)
             let user = try await APIService.shared.updateUserProfile(
                 userId: userId,
                 email: email,
-                firstName: firstName,
-                lastName: lastName
+                firstName: parts.firstName,
+                lastName: parts.lastName
             )
             await MainActor.run {
                 authService.updateProfile(user)
@@ -161,16 +179,193 @@ struct EditPersonalInfoView: View {
             }
         }
     }
+    
+    private func splitFullName(_ value: String) -> (firstName: String, lastName: String) {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return ("", "")
+        }
+        
+        if containsCJK(trimmed) {
+            let compact = String(trimmed.filter { !$0.isWhitespace })
+            guard let firstChar = compact.first else {
+                return ("", "")
+            }
+            let lastName = String(firstChar)
+            let firstName = String(compact.dropFirst())
+            return (firstName, lastName)
+        }
+        
+        let parts = trimmed.split(whereSeparator: { $0.isWhitespace })
+        guard let firstPart = parts.first else {
+            return ("", "")
+        }
+        let lastName = String(firstPart)
+        let firstName = parts.dropFirst().joined(separator: " ")
+        return (firstName, lastName)
+    }
+    
+    private func containsCJK(_ value: String) -> Bool {
+        for scalar in value.unicodeScalars {
+            switch scalar.value {
+            case 0x4E00...0x9FFF, 0x3400...0x4DBF, 0xF900...0xFAFF, 0x2F800...0x2FA1F:
+                return true
+            default:
+                continue
+            }
+        }
+        return false
+    }
+    
+    private func buildFullName(_ user: User) -> String {
+        let parts = [user.lastName, user.firstName].filter { !$0.isEmpty }
+        if !parts.isEmpty {
+            return parts.joined(separator: " ")
+        }
+        return user.fullName
+    }
+}
+
+private struct MonthYearPickerSheet: View {
+    @Binding var selectedDate: Date
+    @Binding var isPresented: Bool
+    
+    @State private var selectedYear: Int
+    @State private var selectedMonth: Int
+    
+    private var minimumDate: Date {
+        Calendar.current.date(byAdding: .year, value: -150, to: Date()) ?? Date()
+    }
+    
+    private var maximumDate: Date {
+        Date()
+    }
+    
+    private var years: [Int] {
+        let calendar = Calendar.current
+        let minYear = calendar.component(.year, from: minimumDate)
+        let maxYear = calendar.component(.year, from: maximumDate)
+        return Array(minYear...maxYear).reversed()
+    }
+    
+    private var months: [Int] {
+        Array(1...12)
+    }
+    
+    init(selectedDate: Binding<Date>, isPresented: Binding<Bool>) {
+        _selectedDate = selectedDate
+        _isPresented = isPresented
+        let calendar = Calendar.current
+        let date = selectedDate.wrappedValue
+        _selectedYear = State(initialValue: calendar.component(.year, from: date))
+        _selectedMonth = State(initialValue: calendar.component(.month, from: date))
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("選擇出生年月")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(AppColors.darkBrown)
+                    .padding(.top, 20)
+                
+                HStack(spacing: 0) {
+                    Picker("年", selection: $selectedYear) {
+                        ForEach(years, id: \.self) { year in
+                            Text("\(year)年").tag(year)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(maxWidth: .infinity)
+                    
+                    Picker("月", selection: $selectedMonth) {
+                        ForEach(months, id: \.self) { month in
+                            Text("\(month)月").tag(month)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(maxWidth: .infinity)
+                }
+                .frame(height: 180)
+                .padding(.horizontal, 20)
+                
+                Spacer()
+                
+                Button("確認") {
+                    selectedDate = clampedDate()
+                    isPresented = false
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(AppColors.orange)
+                .cornerRadius(12)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [AppColors.lightYellow, Color.white]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("取消") {
+                        isPresented = false
+                    }
+                    .foregroundColor(AppColors.orange)
+                }
+            }
+        }
+        .onChange(of: selectedYear) { _, _ in
+            selectedDate = clampedDate()
+        }
+        .onChange(of: selectedMonth) { _, _ in
+            selectedDate = clampedDate()
+        }
+    }
+    
+    private func clampedDate() -> Date {
+        let calendar = Calendar.current
+        let maxYear = calendar.component(.year, from: maximumDate)
+        let maxMonth = calendar.component(.month, from: maximumDate)
+        let minYear = calendar.component(.year, from: minimumDate)
+        let minMonth = calendar.component(.month, from: minimumDate)
+        
+        var year = selectedYear
+        var month = selectedMonth
+        
+        if year > maxYear {
+            year = maxYear
+        } else if year == maxYear, month > maxMonth {
+            month = maxMonth
+        }
+        
+        if year < minYear {
+            year = minYear
+        } else if year == minYear, month < minMonth {
+            month = minMonth
+        }
+        
+        let components = DateComponents(year: year, month: month, day: 1)
+        return calendar.date(from: components) ?? Date()
+    }
 }
 
 // MARK: - 支撐我的片刻 Modal
 private struct SupportReasonsModal: View {
     let onClose: () -> Void
     
-    @State private var showingAddReason = false
+    @State private var showingAddText = false
     @State private var localReasons: [SupportReason]
     @State private var editingReason: SupportReason?
     @State private var errorMessage: String?
+    @State private var supportImages: [SupportImage] = []
+    @State private var selectedImageItem: PhotosPickerItem?
     @State private var supportVideos: [SupportVideo] = []
     @State private var selectedVideoItem: PhotosPickerItem?
     @State private var activeVideo: SupportVideo?
@@ -207,35 +402,46 @@ private struct SupportReasonsModal: View {
         }
         .task {
             await loadReasons()
+            supportImages = SupportReasonImageStore.loadImages()
             supportVideos = SupportReasonVideoStore.loadVideos()
         }
-        .sheet(isPresented: $showingAddReason) {
-            AddSupportReasonView(
-                onSave: { title, detail, imageData in
+        .sheet(isPresented: $showingAddText) {
+            AddSupportTextView(
+                onSave: { title, detail in
                     Task {
-                        await createReason(title: title, detail: detail, imageData: imageData)
+                        await createReason(title: title, detail: detail)
                     }
                 },
                 onCancel: {
-                    showingAddReason = false
+                    showingAddText = false
                 }
             )
         }
         .sheet(item: $editingReason) { reason in
-            AddSupportReasonView(
-                titleText: "編輯理由",
+            AddSupportTextView(
+                titleText: "編輯文字",
                 initialTitle: reason.title,
                 initialDetail: reason.detail,
-                initialImageData: reason.imageData,
-                onSave: { title, detail, imageData in
+                onSave: { title, detail in
                     Task {
-                        await updateReason(reason, title: title, detail: detail, imageData: imageData)
+                        await updateReason(reason, title: title, detail: detail)
                     }
                 },
                 onCancel: {
                     editingReason = nil
                 }
             )
+        }
+        .onChange(of: selectedImageItem) { _, newValue in
+            guard let newValue else { return }
+            Task {
+                if let data = try? await newValue.loadTransferable(type: Data.self),
+                   let image = SupportReasonImageStore.saveImageData(data) {
+                    await MainActor.run {
+                        supportImages.insert(image, at: 0)
+                    }
+                }
+            }
         }
         .onChange(of: selectedVideoItem) { _, newValue in
             guard let newValue else { return }
@@ -276,9 +482,6 @@ private struct SupportReasonsModal: View {
     }
     
     private var reasonsSection: some View {
-        let textOnlyReasons = localReasons.filter { $0.imageData == nil }
-        let imageReasons = localReasons.filter { $0.imageData != nil }
-        
         return VStack(alignment: .leading, spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -290,10 +493,15 @@ private struct SupportReasonsModal: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                Button(action: { showingAddReason = true }) {
+            }
+            
+            HStack {
+                sectionHeader("文字")
+                Spacer()
+                Button(action: { showingAddText = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
-                        Text("新增內容")
+                        Text("新增文字")
                     }
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 12)
@@ -303,13 +511,11 @@ private struct SupportReasonsModal: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
             }
-            
-            sectionHeader("文字")
-            if textOnlyReasons.isEmpty {
+            if localReasons.isEmpty {
                 emptySectionHint("尚未新增文字內容")
             } else {
                 VStack(spacing: 12) {
-                    ForEach(textOnlyReasons) { reason in
+                    ForEach(localReasons) { reason in
                         TextReasonCard(
                             reason: reason,
                             onEdit: { editingReason = reason },
@@ -320,19 +526,34 @@ private struct SupportReasonsModal: View {
                 .padding(.horizontal, 6)
             }
             
-            sectionHeader("圖片")
-            if imageReasons.isEmpty {
+            HStack {
+                sectionHeader("圖片")
+                Spacer()
+                PhotosPicker(selection: $selectedImageItem, matching: .images) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("新增圖片")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(AppColors.orange.opacity(0.2))
+                    .foregroundColor(AppColors.titleColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            if supportImages.isEmpty {
                 emptySectionHint("尚未新增圖片內容")
             } else {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
-                    ForEach(imageReasons) { reason in
-                        ImageReasonCard(
-                            reason: reason,
-                            onEdit: { editingReason = reason },
-                            onDelete: { Task { await deleteReason(reason) } }
+                VStack(spacing: 12) {
+                    ForEach(supportImages) { image in
+                        ImageSupportCard(
+                            image: image,
+                            onDelete: { deleteImage(image) }
                         )
                     }
                 }
+                .padding(.horizontal, 6)
             }
             
             HStack {
@@ -354,7 +575,7 @@ private struct SupportReasonsModal: View {
             if supportVideos.isEmpty {
                 emptySectionHint("尚未新增影片內容")
             } else {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                VStack(spacing: 12) {
                     ForEach(supportVideos) { video in
                         VideoReasonCard(
                             video: video,
@@ -363,6 +584,7 @@ private struct SupportReasonsModal: View {
                         )
                     }
                 }
+                .padding(.horizontal, 6)
             }
         }
     }
@@ -398,25 +620,22 @@ private struct SupportReasonsModal: View {
         }
     }
     
-    private func createReason(title: String, detail: String, imageData: Data?) async {
+    private func createReason(title: String, detail: String) async {
         do {
             let reason = try await APIService.shared.createReason(
                 title: title,
                 content: detail,
                 date: Date()
             )
-            if let imageData {
-                SupportReasonImageStore.saveImageData(imageData, for: reason.id)
-            }
             localReasons.insert(mapReason(reason), at: 0)
-            showingAddReason = false
+            showingAddText = false
             errorMessage = nil
         } catch {
-            errorMessage = "新增理由失敗，請稍後再試"
+            errorMessage = "新增文字失敗，請稍後再試"
         }
     }
     
-    private func updateReason(_ reason: SupportReason, title: String, detail: String, imageData: Data?) async {
+    private func updateReason(_ reason: SupportReason, title: String, detail: String) async {
         do {
             let updated = try await APIService.shared.updateReason(
                 id: reason.id,
@@ -425,28 +644,29 @@ private struct SupportReasonsModal: View {
                 date: reason.apiDate,
                 isDeleted: false
             )
-            if let imageData {
-                SupportReasonImageStore.saveImageData(imageData, for: updated.id)
-            }
             if let index = localReasons.firstIndex(where: { $0.id == reason.id }) {
                 localReasons[index] = mapReason(updated)
             }
             editingReason = nil
             errorMessage = nil
         } catch {
-            errorMessage = "更新理由失敗，請稍後再試"
+            errorMessage = "更新文字失敗，請稍後再試"
         }
     }
     
     private func deleteReason(_ reason: SupportReason) async {
         do {
             _ = try await APIService.shared.deleteReason(id: reason.id)
-            SupportReasonImageStore.deleteImageData(for: reason.id)
             localReasons.removeAll { $0.id == reason.id }
             errorMessage = nil
         } catch {
-            errorMessage = "刪除理由失敗，請稍後再試"
+            errorMessage = "刪除文字失敗，請稍後再試"
         }
+    }
+    
+    private func deleteImage(_ image: SupportImage) {
+        SupportReasonImageStore.deleteImage(with: image.id)
+        supportImages.removeAll { $0.id == image.id }
     }
     
     private func mapReason(_ reason: ReasonItem) -> SupportReason {
@@ -457,8 +677,7 @@ private struct SupportReasonsModal: View {
             detail: reason.content,
             date: SupportReason.displayDate(from: date),
             isFavorite: false,
-            apiDate: date,
-            imageData: SupportReasonImageStore.loadImageData(for: reason.id)
+            apiDate: date
         )
     }
     
@@ -520,15 +739,16 @@ private struct TextReasonCard: View {
     }
 }
 
-private struct ImageReasonCard: View {
-    let reason: SupportReason
-    let onEdit: () -> Void
+private struct ImageSupportCard: View {
+    let image: SupportImage
     let onDelete: () -> Void
+    
+    @State private var uiImage: UIImage?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let data = reason.imageData, let image = UIImage(data: data) {
-                Image(uiImage: image)
+            if let uiImage {
+                Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
                     .frame(height: 140)
@@ -537,27 +757,30 @@ private struct ImageReasonCard: View {
             }
             
             HStack {
-                Text(reason.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(AppColors.titleColor)
+                Text(image.displayDate)
+                    .font(.caption)
+                    .foregroundColor(AppColors.titleColor.opacity(0.7))
                 Spacer()
-                HStack(spacing: 12) {
-                    Button(action: onEdit) {
-                        Image(systemName: "square.and.pencil")
-                    }
-                    Button(action: onDelete) {
-                        Image(systemName: "trash")
-                    }
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
                 }
                 .foregroundColor(AppColors.titleColor.opacity(0.8))
                 .buttonStyle(.plain)
             }
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppColors.orange.opacity(0.12))
         )
+        .onAppear {
+            if uiImage == nil,
+               let data = try? Data(contentsOf: image.url),
+               let image = UIImage(data: data) {
+                uiImage = image
+            }
+        }
     }
 }
 
@@ -594,6 +817,7 @@ private struct VideoReasonCard: View {
             }
         }
         .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppColors.orange.opacity(0.12))
@@ -608,7 +832,6 @@ private struct SupportReason: Identifiable {
     let date: String
     let isFavorite: Bool
     let apiDate: Date
-    let imageData: Data?
     
     private static let displayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -626,8 +849,7 @@ private struct SupportReason: Identifiable {
         detail: String,
         date: String,
         isFavorite: Bool,
-        apiDate: Date? = nil,
-        imageData: Data? = nil
+        apiDate: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -635,7 +857,22 @@ private struct SupportReason: Identifiable {
         self.date = date
         self.isFavorite = isFavorite
         self.apiDate = apiDate ?? Self.displayFormatter.date(from: date) ?? Date()
-        self.imageData = imageData
+    }
+}
+
+private struct SupportImage: Identifiable, Codable {
+    let id: String
+    let createdAt: Date
+    let fileName: String
+    
+    var url: URL {
+        SupportReasonImageStore.imageURL(for: fileName)
+    }
+    
+    var displayDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter.string(from: createdAt)
     }
 }
 
@@ -657,31 +894,53 @@ private struct SupportVideo: Identifiable, Codable {
 
 private enum SupportReasonImageStore {
     private static let folderName = "support_reason_images"
+    private static let metadataKey = "support_reason_images_meta"
     
-    static func loadImageData(for id: String) -> Data? {
-        guard let url = imageURL(for: id) else { return nil }
-        return try? Data(contentsOf: url)
+    static func loadImages() -> [SupportImage] {
+        guard let data = UserDefaults.standard.data(forKey: metadataKey),
+              let images = try? JSONDecoder().decode([SupportImage].self, from: data) else {
+            return []
+        }
+        return images.filter { FileManager.default.fileExists(atPath: $0.url.path) }
     }
     
-    static func saveImageData(_ data: Data, for id: String) {
-        guard let url = imageURL(for: id) else { return }
-        try? data.write(to: url, options: [.atomic])
-    }
-    
-    static func deleteImageData(for id: String) {
-        guard let url = imageURL(for: id) else { return }
-        try? FileManager.default.removeItem(at: url)
-    }
-    
-    private static func imageURL(for id: String) -> URL? {
-        guard let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+    static func saveImageData(_ data: Data) -> SupportImage? {
+        let id = UUID().uuidString
+        let fileName = "\(id).jpg"
+        let url = imageURL(for: fileName)
+        do {
+            try data.write(to: url, options: [.atomic])
+        } catch {
             return nil
         }
+        let image = SupportImage(id: id, createdAt: Date(), fileName: fileName)
+        var current = loadImages()
+        current.insert(image, at: 0)
+        persist(current)
+        return image
+    }
+    
+    static func deleteImage(with id: String) {
+        var current = loadImages()
+        guard let image = current.first(where: { $0.id == id }) else { return }
+        try? FileManager.default.removeItem(at: image.url)
+        current.removeAll { $0.id == id }
+        persist(current)
+    }
+    
+    static func imageURL(for fileName: String) -> URL {
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let folderURL = base.appendingPathComponent(folderName, isDirectory: true)
         if !FileManager.default.fileExists(atPath: folderURL.path) {
             try? FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
         }
-        return folderURL.appendingPathComponent("\(id).jpg")
+        return folderURL.appendingPathComponent(fileName)
+    }
+    
+    private static func persist(_ images: [SupportImage]) {
+        if let data = try? JSONEncoder().encode(images) {
+            UserDefaults.standard.set(data, forKey: metadataKey)
+        }
     }
 }
 
@@ -779,36 +1038,30 @@ private struct VideoThumbnailView: View {
     }
 }
 
-private struct AddSupportReasonView: View {
+private struct AddSupportTextView: View {
     let titleText: String
     let initialTitle: String
     let initialDetail: String
-    let initialImageData: Data?
-    let onSave: (String, String, Data?) -> Void
+    let onSave: (String, String) -> Void
     let onCancel: () -> Void
     
     @State private var title = ""
     @State private var detail = ""
-    @State private var imageData: Data?
-    @State private var selectedPhotoItem: PhotosPickerItem?
     
     init(
-        titleText: String = "新增理由",
+        titleText: String = "新增文字",
         initialTitle: String = "",
         initialDetail: String = "",
-        initialImageData: Data? = nil,
-        onSave: @escaping (String, String, Data?) -> Void,
+        onSave: @escaping (String, String) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.titleText = titleText
         self.initialTitle = initialTitle
         self.initialDetail = initialDetail
-        self.initialImageData = initialImageData
         self.onSave = onSave
         self.onCancel = onCancel
         _title = State(initialValue: initialTitle)
         _detail = State(initialValue: initialDetail)
-        _imageData = State(initialValue: initialImageData)
     }
     
     private var isSaveDisabled: Bool {
@@ -846,34 +1099,6 @@ private struct AddSupportReasonView: View {
                         )
                 }
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("圖片")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(AppColors.titleColor)
-                    
-                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "photo.on.rectangle.angled")
-                            Text(imageData == nil ? "新增圖片" : "更換圖片")
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AppColors.orange.opacity(0.2))
-                        .foregroundColor(AppColors.titleColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                    
-                    if let imageData, let image = UIImage(data: imageData) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 160)
-                            .clipped()
-                            .cornerRadius(12)
-                    }
-                }
-                
                 Spacer()
             }
             .padding(20)
@@ -885,19 +1110,9 @@ private struct AddSupportReasonView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("儲存") {
-                        onSave(title, detail, imageData)
+                        onSave(title, detail)
                     }
                     .disabled(isSaveDisabled)
-                }
-            }
-        }
-        .onChange(of: selectedPhotoItem) { _, newValue in
-            guard let newValue else { return }
-            Task {
-                if let data = try? await newValue.loadTransferable(type: Data.self) {
-                    await MainActor.run {
-                        imageData = data
-                    }
                 }
             }
         }
@@ -1199,12 +1414,8 @@ extension ProfileView {
     
     // 使用者卡片
     private var userInfoCard: some View {
-        let displayName = authService.currentUser?.firstName.isEmpty == false
-            ? authService.currentUser?.firstName ?? "使用者"
-            : "使用者"
-        let initials = authService.currentUser?.initials.isEmpty == false
-            ? authService.currentUser?.initials ?? "ME"
-            : "ME"
+        let displayName = profileDisplayName(authService.currentUser)
+        let initials = profileInitials(authService.currentUser)
 
         return HStack(spacing: 16) {
             Button {
@@ -1275,18 +1486,7 @@ extension ProfileView {
     
     // 緊急聯繫
     private var emergencySection: some View {
-        let supportName = authService.currentUser?.supportContactName?.isEmpty == false
-            ? authService.currentUser?.supportContactName ?? "支持者"
-            : "支持者"
-        let supportInfo = authService.currentUser?.supportContactInfo?.isEmpty == false
-            ? authService.currentUser?.supportContactInfo ?? "無資料"
-            : "無資料"
-        let familyName = authService.currentUser?.familyContactName?.isEmpty == false
-            ? authService.currentUser?.familyContactName ?? "家人"
-            : "家人"
-        let familyInfo = authService.currentUser?.familyContactInfo?.isEmpty == false
-            ? authService.currentUser?.familyContactInfo ?? "無資料"
-            : "無資料"
+        let emergencyContacts = emergencyContactsForDisplay()
 
         return VStack(alignment: .leading, spacing: 16) {
             Text("緊急聯繫")
@@ -1300,20 +1500,23 @@ extension ProfileView {
                     buttonText: "立即撥打",
                     phoneNumber: "1925"
                 )
+                if let first = emergencyContacts.first {
+                    EmergencyContactCard(
+                        title: first.title,
+                        subtitle: "\(first.name)（\(first.title)）：\(first.contactInfo)",
+                        buttonText: "立即撥打",
+                        phoneNumber: first.contactInfo
+                    )
+                }
+            }
+            ForEach(emergencyContacts.dropFirst()) { contact in
                 EmergencyContactCard(
-                    title: "我的支持者",
-                    subtitle: "\(supportName)：\(supportInfo)",
+                    title: contact.title,
+                    subtitle: "\(contact.name)（\(contact.title)）：\(contact.contactInfo)",
                     buttonText: "立即撥打",
-                    phoneNumber: supportInfo
+                    phoneNumber: contact.contactInfo
                 )
             }
-            
-            EmergencyContactCard(
-                title: "我的家人",
-                subtitle: "\(familyName)：\(familyInfo)",
-                    buttonText: "立即撥打",
-                    phoneNumber: familyInfo
-            )
         }
         .padding()
         .background(cardBackground)
@@ -1325,6 +1528,90 @@ extension ProfileView {
         RoundedRectangle(cornerRadius: 16)
             .fill(Color.white)
             .shadow(color: .gray.opacity(0.15), radius: 4, x: 0, y: 2)
+    }
+    
+    private func profileDisplayName(_ user: User?) -> String {
+        guard let user else { return "使用者" }
+        if let nickname = user.nickname, !nickname.isEmpty {
+            return nickname
+        }
+        let parts = [user.lastName, user.firstName].filter { !$0.isEmpty }
+        if !parts.isEmpty {
+            return parts.joined(separator: " ")
+        }
+        return user.fullName.isEmpty ? "使用者" : user.fullName
+    }
+    
+    private func profileInitials(_ user: User?) -> String {
+        guard let user else { return "ME" }
+        let lastInitial = user.lastName.first?.uppercased() ?? ""
+        let firstInitial = user.firstName.first?.uppercased() ?? ""
+        let combined = "\(lastInitial)\(firstInitial)"
+        if !combined.isEmpty {
+            return combined
+        }
+        let fallback = user.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let first = fallback.first {
+            return String(first).uppercased()
+        }
+        return "ME"
+    }
+    
+    private struct EmergencyDisplayContact: Identifiable {
+        let id: String
+        let title: String
+        let name: String
+        let contactInfo: String
+    }
+    
+    private func emergencyContactsForDisplay() -> [EmergencyDisplayContact] {
+        guard let user = authService.currentUser else { return [] }
+        if let contacts = user.emergencyContacts, !contacts.isEmpty {
+            let sorted = contacts.sorted { ($0.sortOrder ?? 0) < ($1.sortOrder ?? 0) }
+            return sorted.map { contact in
+                EmergencyDisplayContact(
+                    id: contact.id,
+                    title: contact.relation.isEmpty ? "緊急聯絡人" : contact.relation,
+                    name: contact.name,
+                    contactInfo: contact.contactInfo
+                )
+            }
+        }
+        var fallback: [EmergencyDisplayContact] = []
+        if let name = user.supportContactName, let info = user.supportContactInfo,
+           !name.isEmpty, !info.isEmpty {
+            fallback.append(
+                EmergencyDisplayContact(
+                    id: "support",
+                    title: "緊急聯絡人",
+                    name: name,
+                    contactInfo: info
+                )
+            )
+        }
+        if let name = user.familyContactName, let info = user.familyContactInfo,
+           !name.isEmpty, !info.isEmpty {
+            fallback.append(
+                EmergencyDisplayContact(
+                    id: "family",
+                    title: "緊急聯絡人",
+                    name: name,
+                    contactInfo: info
+                )
+            )
+        }
+        if let name = user.emergencyContactName, let info = user.emergencyContactPhone,
+           !name.isEmpty, !info.isEmpty {
+            fallback.append(
+                EmergencyDisplayContact(
+                    id: "legacy",
+                    title: "緊急聯絡人",
+                    name: name,
+                    contactInfo: info
+                )
+            )
+        }
+        return fallback
     }
 }
 
@@ -1358,7 +1645,7 @@ struct PersonalInfoView: View {
 
     var body: some View {
         let initials = user?.initials.isEmpty == false ? user?.initials ?? "ME" : "ME"
-        let fullName = user?.fullName.isEmpty == false ? user?.fullName ?? "使用者" : "使用者"
+        let fullName = formattedFullName(user)
         let email = user?.email.isEmpty == false ? user?.email ?? "-" : "-"
         let birthday = formatBirthDate(user?.dateOfBirth)
 
@@ -1474,9 +1761,22 @@ struct PersonalInfoView: View {
         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = isoFormatter.date(from: value) ?? ISO8601DateFormatter().date(from: value) {
             let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.dateFormat = "yyyy-MM"
             return formatter.string(from: date)
         }
+        if value.count >= 7 {
+            return String(value.prefix(7))
+        }
         return value
+    }
+    
+    private func formattedFullName(_ user: User?) -> String {
+        guard let user else { return "使用者" }
+        if !user.lastName.isEmpty || !user.firstName.isEmpty {
+            let parts = [user.lastName, user.firstName].filter { !$0.isEmpty }
+            let combined = parts.joined(separator: " ")
+            return combined.isEmpty ? "使用者" : combined
+        }
+        return user.fullName.isEmpty ? "使用者" : user.fullName
     }
 }

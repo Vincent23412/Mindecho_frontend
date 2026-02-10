@@ -67,7 +67,7 @@ enum ChatAPIError: Error, LocalizedError {
 class ChatAPI: NSObject, URLSessionDelegate {
     static let shared = ChatAPI()
     
-    private let baseURL = "https://mindechoserver.com:8443/api"
+    private let baseURL = "https://localhost/dev-api"
     private let allowInsecureSelfSigned = true
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default

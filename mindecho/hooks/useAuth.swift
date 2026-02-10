@@ -60,12 +60,14 @@ class AuthViewModel: ObservableObject {
         firstName: String,
         lastName: String,
         dateOfBirth: String,
+        nickname: String?,
+        emergencyContacts: [EmergencyContactPayload],
         gender: String,
         educationLevel: Int,
-        supportContactName: String,
-        supportContactInfo: String,
-        familyContactName: String,
-        familyContactInfo: String
+        supportContactName: String? = nil,
+        supportContactInfo: String? = nil,
+        familyContactName: String? = nil,
+        familyContactInfo: String? = nil
     ) {
         // 清除之前的訊息
         clearMessages()
@@ -78,6 +80,7 @@ class AuthViewModel: ObservableObject {
             firstName: firstName,
             lastName: lastName,
             dateOfBirth: dateOfBirth,
+            emergencyContacts: emergencyContacts,
             gender: gender,
             educationLevel: educationLevel,
             supportContactName: supportContactName,
@@ -101,12 +104,14 @@ class AuthViewModel: ObservableObject {
             firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
             lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
             dateOfBirth: dateOfBirth,
+            nickname: nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
+            emergencyContacts: emergencyContacts,
             gender: gender,
             educationLevel: educationLevel,
-            supportContactName: supportContactName.trimmingCharacters(in: .whitespacesAndNewlines),
-            supportContactInfo: supportContactInfo.trimmingCharacters(in: .whitespacesAndNewlines),
-            familyContactName: familyContactName.trimmingCharacters(in: .whitespacesAndNewlines),
-            familyContactInfo: familyContactInfo.trimmingCharacters(in: .whitespacesAndNewlines)
+            supportContactName: supportContactName?.trimmingCharacters(in: .whitespacesAndNewlines),
+            supportContactInfo: supportContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines),
+            familyContactName: familyContactName?.trimmingCharacters(in: .whitespacesAndNewlines),
+            familyContactInfo: familyContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
         // 發送註冊請求 (使用模擬 API) 真實改成Register
@@ -396,8 +401,8 @@ extension AuthViewModel {
     // 格式化出生日期
     func formatDateOfBirth(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        formatter.dateFormat = "yyyy-MM"
+        return "\(formatter.string(from: date))-01"
     }
     
     // 檢查字段是否有錯誤

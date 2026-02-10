@@ -76,12 +76,13 @@ struct Validation {
         firstName: String,
         lastName: String,
         dateOfBirth: String,
+        emergencyContacts: [EmergencyContactPayload],
         gender: String,
         educationLevel: Int,
-        supportContactName: String,
-        supportContactInfo: String,
-        familyContactName: String,
-        familyContactInfo: String
+        supportContactName: String?,
+        supportContactInfo: String?,
+        familyContactName: String?,
+        familyContactInfo: String?
     ) -> [ValidationError] {
         var errors: [ValidationError] = []
         
@@ -104,14 +105,11 @@ struct Validation {
             errors.append(.passwordMismatch)
         }
         
-        // 驗證名字
-        if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyFirstName)
-        }
-        
-        // 驗證姓氏
-        if lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyLastName)
+        // 驗證姓名（任一有值即可）
+        let trimmedFirst = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLast = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedFirst.isEmpty && trimmedLast.isEmpty {
+            errors.append(.emptyField("姓名"))
         }
         
         // 驗證出生日期
@@ -131,20 +129,23 @@ struct Validation {
             errors.append(.emptyField("教育程度"))
         }
 
-        // 緊急聯絡人 (朋友/支援者)
-        if supportContactName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyField("緊急聯絡人（朋友/支援者）姓名"))
+        // 緊急聯絡人（至少 1 位）
+        let nonEmptyContacts = emergencyContacts.filter {
+            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !$0.relation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !$0.contactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-        if supportContactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyField("緊急聯絡人（朋友/支援者）聯絡方式"))
-        }
-
-        // 緊急聯絡人 (親人)
-        if familyContactName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyField("緊急聯絡人（親人）姓名"))
-        }
-        if familyContactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyField("緊急聯絡人（親人）聯絡方式"))
+        if nonEmptyContacts.isEmpty {
+            errors.append(.emptyField("緊急聯絡人"))
+        } else {
+            let hasIncomplete = nonEmptyContacts.contains {
+                $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                $0.relation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                $0.contactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            if hasIncomplete {
+                errors.append(.emptyField("緊急聯絡人資料"))
+            }
         }
         
         return errors
@@ -254,8 +255,7 @@ class FormValidator: ObservableObject {
                dateOfBirthState.isValid &&
                !emailState.text.isEmpty &&
                !passwordState.text.isEmpty &&
-               !firstNameState.text.isEmpty &&
-               !lastNameState.text.isEmpty &&
+               (!firstNameState.text.isEmpty || !lastNameState.text.isEmpty) &&
                !dateOfBirthState.text.isEmpty
     }
     
@@ -301,7 +301,7 @@ class FormValidator: ObservableObject {
     func validateFirstName() {
         firstNameState.validate { firstName in
             if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return .invalid("請輸入名字")
+                return .invalid("請輸入姓名")
             }
             return .valid
         }

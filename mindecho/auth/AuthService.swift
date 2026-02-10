@@ -13,7 +13,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     @Published var authToken: String?
     
     // MARK: - 私有屬性
-    private let baseURL = "https://mindechoserver.com:8443/api"
+    private let baseURL = "https://localhost/dev-api"
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = AuthConstants.Network.requestTimeout
@@ -392,17 +392,24 @@ extension AuthService {
                     email: request.email,
                     firstName: request.firstName,
                     lastName: request.lastName,
+                    nickname: request.nickname,
+                    avatar: nil,
                     dateOfBirth: request.dateOfBirth,
                     gender: request.gender,
                     educationLevel: request.educationLevel,
+                    emergencyContactName: request.supportContactName,
+                    emergencyContactPhone: request.supportContactInfo,
                     supportContactName: request.supportContactName,
                     supportContactInfo: request.supportContactInfo,
                     familyContactName: request.familyContactName,
                     familyContactInfo: request.familyContactInfo,
                     isActive: true,
+                    lastLoginAt: nil,
                     preferences: nil,
+                    emergencyContacts: nil,
                     createdAt: nil,
-                    updatedAt: nil
+                    updatedAt: nil,
+                    continuousLoginDays: nil
                 )
                 
                 return AuthResponse(
@@ -435,17 +442,24 @@ extension AuthService {
                         email: request.email,
                         firstName: "測試",
                         lastName: "用戶",
+                        nickname: "測試用戶",
+                        avatar: nil,
                         dateOfBirth: "1990-01-01",
                         gender: "unknown",
                         educationLevel: nil,
+                        emergencyContactName: nil,
+                        emergencyContactPhone: nil,
                         supportContactName: nil,
                         supportContactInfo: nil,
                         familyContactName: nil,
                         familyContactInfo: nil,
                         isActive: true,
+                        lastLoginAt: nil,
                         preferences: nil,
+                        emergencyContacts: nil,
                         createdAt: nil,
-                        updatedAt: nil
+                        updatedAt: nil,
+                        continuousLoginDays: nil
                     )
                     
                     return AuthResponse(
