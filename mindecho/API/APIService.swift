@@ -5,10 +5,10 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     static let shared = APIService()
     
     private let baseURL = "https://localhost/dev-api"
-    private let reasonBaseURL = "https://mindechoserver.com:8443/api/reason"
-    private let diaryBaseURL = "https://mindechoserver.com:8443/api/diary"
-    private let healthAdviceURL = "https://mindechoserver.com:8443/api/health/advice"
-    private let emotionAnalysisURL = "https://mindechoserver.com:8443/api/emotion/analysis"
+    private var reasonBaseURL: String { "\(baseURL)/reason" }
+    private var diaryBaseURL: String { "\(baseURL)/diaries" }
+    private var healthAdviceURL: String { "\(baseURL)/health/advice" }
+    private var emotionAnalysisURL: String { "\(baseURL)/emotion/analysis" }
     private static let reasonDateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -216,7 +216,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
         return payload.scales
     }
 
-    func createDiaryEntry(content: String, mood: String, entryDate: Date) async throws -> DiaryEntry {
+    func createDiaryEntry(content: String, mood: String, entryDate: Date? = nil) async throws -> DiaryEntry {
         guard let url = URL(string: diaryBaseURL) else {
             throw URLError(.badURL)
         }
@@ -224,7 +224,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
         let payload = DiaryEntryCreateRequest(
             content: content,
             mood: mood,
-            entryDate: Self.diaryDateFormatter.string(from: entryDate)
+            entryDate: entryDate.map { Self.diaryDateFormatter.string(from: $0) }
         )
         
         var request = URLRequest(url: url)
@@ -303,9 +303,12 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
         return payload.entry
     }
     
-    func updateDiaryEntry(id: String, content: String, mood: String, entryDate: Date) async throws -> DiaryEntry {
+    func updateDiaryEntry(id: String, content: String? = nil, mood: String? = nil, entryDate: Date? = nil) async throws -> DiaryEntry {
         guard let url = URL(string: "\(diaryBaseURL)/\(id)") else {
             throw URLError(.badURL)
+        }
+        if content == nil && mood == nil && entryDate == nil {
+            throw NSError(domain: "Diary", code: 0, userInfo: [NSLocalizedDescriptionKey: "至少提供一個更新欄位"])
         }
         
         var request = URLRequest(url: url)
@@ -318,7 +321,7 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
         let payload = DiaryEntryUpdateRequest(
             content: content,
             mood: mood,
-            entryDate: Self.diaryDateFormatter.string(from: entryDate)
+            entryDate: entryDate.map { Self.diaryDateFormatter.string(from: $0) }
         )
         request.httpBody = try JSONEncoder().encode(payload)
         
@@ -466,6 +469,37 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
         if let token = AuthService.shared.authToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
+        
+        let payload = ReasonCreateRequest(
+            title: title,
+            content: content,
+            date: Self.reasonDateFormatter.string(from: date)
+        )
+        request.httpBody = try JSONEncoder().encode(payload)
+        
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        
+        let payloadResponse = try JSONDecoder().decode(ReasonResponse.self, from: data)
+        return payloadResponse.reason
+    }
+
+    func createReason(
+        title: String,
+        content: String,
+        date: Date,
+        token: String
+    ) async throws -> ReasonItem {
+        guard let url = URL(string: reasonBaseURL) else {
+            throw URLError(.badURL)
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let payload = ReasonCreateRequest(
             title: title,
@@ -695,13 +729,13 @@ struct ScaleSessionEntry: Decodable, Identifiable {
 struct DiaryEntryCreateRequest: Encodable {
     let content: String
     let mood: String
-    let entryDate: String
+    let entryDate: String?
 }
 
 struct DiaryEntryUpdateRequest: Encodable {
-    let content: String
-    let mood: String
-    let entryDate: String
+    let content: String?
+    let mood: String?
+    let entryDate: String?
 }
 
 struct DiaryEntriesResponse: Decodable {
@@ -721,6 +755,7 @@ struct DiaryEntry: Decodable {
     let content: String?
     let mood: String?
     let entryDate: String?
+    let editCount: Int?
     let createdAt: String?
     let updatedAt: String?
 }

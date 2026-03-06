@@ -7,6 +7,7 @@
 import SwiftUI
 
 struct MoodDiaryView: View {
+    let refreshToken: UUID
     @State private var selectedDate = Date()
     @State private var selectedMood: String? = nil
     @State private var diaryText: String = ""   // 用來存放日記內容
@@ -24,6 +25,10 @@ struct MoodDiaryView: View {
         ("GOOD", "😃", "良好"),
         ("HAPPY", "🤩", "極佳")
     ]
+
+    init(refreshToken: UUID = UUID()) {
+        self.refreshToken = refreshToken
+    }
 
     private let pageBackground = AppColors.lightYellow
     private let cardBackground = Color(red: 0.985, green: 0.965, blue: 0.94)
@@ -210,6 +215,9 @@ struct MoodDiaryView: View {
         .onAppear {
             Task { await loadEntries(for: selectedDate) }
         }
+        .onChange(of: refreshToken) { _, _ in
+            Task { await loadEntries(for: selectedDate) }
+        }
         .onChange(of: selectedDate) { _, newValue in
             applyEntry(for: newValue)
             Task { await loadEntriesIfMonthChanged(for: newValue) }
@@ -304,11 +312,17 @@ struct MoodDiaryView: View {
                 endDate: range.1
             )
             var updated: [Date: DiaryEntryViewData] = [:]
+            var bestTimestampByDay: [Date: Date] = [:]
             for entry in entries {
                 guard let entryDate = parseEntryDate(entry.entryDate),
                       let mood = entry.mood,
                       let content = entry.content else { continue }
                 let day = normalizeDay(entryDate)
+                let timestamp = parseEntryDate(entry.updatedAt) ?? parseEntryDate(entry.createdAt) ?? entryDate
+                if let existing = bestTimestampByDay[day], existing >= timestamp {
+                    continue
+                }
+                bestTimestampByDay[day] = timestamp
                 updated[day] = DiaryEntryViewData(
                     id: entry.id,
                     content: content,

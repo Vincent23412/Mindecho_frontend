@@ -138,6 +138,7 @@ struct QuoteWheelView: View {
     @State private var rotation: Double = 0
     @State private var isSpinning = false
     @State private var selected: DailyReminderItem?
+    @State private var wheelItems: [DailyReminderItem] = []
 
     var body: some View {
         VStack(spacing: 24) {
@@ -152,13 +153,7 @@ struct QuoteWheelView: View {
 
             ZStack {
                 wheel
-                    .rotationEffect(.degrees(rotation))
-
-                Image(systemName: "triangle.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(AppColors.titleColor)
-                    .rotationEffect(.degrees(180))
-                    .offset(y: -138)
+                pointer
             }
             .frame(width: 280, height: 280)
 
@@ -199,11 +194,15 @@ struct QuoteWheelView: View {
         .padding(.top, 16)
         .padding(.horizontal, 20)
         .background(AppColors.lightYellow.ignoresSafeArea())
+        .onAppear {
+            if wheelItems.isEmpty {
+                wheelItems = Array(reminders.shuffled().prefix(12))
+            }
+        }
     }
 
     private var wheelTitles: [String] {
-        let titles = reminders.map { $0.title }
-        return Array(titles.prefix(12))
+        wheelItems.map { $0.title }
     }
 
     private var wheel: some View {
@@ -247,10 +246,22 @@ struct QuoteWheelView: View {
         }
     }
 
+    private var pointer: some View {
+        ZStack {
+            Image(systemName: "triangle.fill")
+                .font(.system(size: 16))
+                .foregroundColor(AppColors.titleColor)
+                .rotationEffect(.degrees(180))
+                .offset(y: -138)
+        }
+        .frame(width: 280, height: 280)
+        .rotationEffect(.degrees(rotation))
+    }
+
     private func spinWheel() {
         guard !isSpinning else { return }
         isSpinning = true
-        let selectedReminder = reminders.randomElement() ?? DailyReminderData.reminders[0]
+        let pool = wheelItems.isEmpty ? reminders : wheelItems
         let extraRotations = Double(Int.random(in: 3...6)) * 360
         let randomOffset = Double.random(in: 0..<360)
         let targetRotation = rotation + extraRotations + randomOffset
@@ -258,10 +269,22 @@ struct QuoteWheelView: View {
             rotation = targetRotation
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            let index = selectedIndex(for: rotation, segmentCount: pool.count)
+            let selectedReminder = pool[index]
             selected = selectedReminder
             onSelected(selectedReminder)
             isSpinning = false
         }
+    }
+
+    private func selectedIndex(for rotation: Double, segmentCount: Int) -> Int {
+        guard segmentCount > 0 else { return 0 }
+        let sliceAngle = 360.0 / Double(segmentCount)
+        let normalized = rotation.truncatingRemainder(dividingBy: 360.0)
+        let angle = normalized < 0 ? normalized + 360.0 : normalized
+        let rawIndex = Int((angle / sliceAngle).rounded(.down))
+        let index = max(0, min(segmentCount - 1, rawIndex))
+        return index % segmentCount
     }
 }
 

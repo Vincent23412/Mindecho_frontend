@@ -64,6 +64,7 @@ class AuthViewModel: ObservableObject {
         emergencyContacts: [EmergencyContactPayload],
         gender: String,
         educationLevel: Int,
+        mostImportantReason: String,
         supportContactName: String? = nil,
         supportContactInfo: String? = nil,
         familyContactName: String? = nil,
@@ -86,7 +87,8 @@ class AuthViewModel: ObservableObject {
             supportContactName: supportContactName,
             supportContactInfo: supportContactInfo,
             familyContactName: familyContactName,
-            familyContactInfo: familyContactInfo
+            familyContactInfo: familyContactInfo,
+            mostImportantReason: mostImportantReason
         )
         
         if !validationErrors.isEmpty {
@@ -101,17 +103,18 @@ class AuthViewModel: ObservableObject {
         let request = RegisterRequest(
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             password: password,
-            firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
-            lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
+            name: buildName(firstName: firstName, lastName: lastName),
             dateOfBirth: dateOfBirth,
             nickname: nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
             emergencyContacts: emergencyContacts,
             gender: gender,
             educationLevel: educationLevel,
+            dataAnalysisConsent: false,
             supportContactName: supportContactName?.trimmingCharacters(in: .whitespacesAndNewlines),
             supportContactInfo: supportContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines),
             familyContactName: familyContactName?.trimmingCharacters(in: .whitespacesAndNewlines),
-            familyContactInfo: familyContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines)
+            familyContactInfo: familyContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines),
+            mostImportantReason: mostImportantReason.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
         // 發送註冊請求 (使用模擬 API) 真實改成Register
@@ -133,12 +136,74 @@ class AuthViewModel: ObservableObject {
                         self?.showSuccess(response.message ?? "註冊成功！歡迎加入 MindEcho！")
                         self?.shouldShowDailyCheckIn = false
                         self?.sendRegistrationSuccessNotification(message: response.message ?? "註冊成功！")
+                        if let token = response.token,
+                           let user = response.user {
+                            self?.syncImportantQuoteAfterRegistration(
+                                token: token,
+                                userId: user.primaryId
+                            )
+                        } else {
+                            print("[ImportantQuote] Skip sync: missing token or user in response")
+                        }
                     } else {
                         self?.showError(response.message ?? "註冊失敗，請重試")
                     }
                 }
             )
             .store(in: &cancellables)
+    }
+
+    private func buildName(firstName: String, lastName: String) -> String {
+        let first = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let last = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let combined = last + first
+        if containsCJK(combined) {
+            return combined
+        }
+        return [first, last].filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
+    private func containsCJK(_ value: String) -> Bool {
+        for scalar in value.unicodeScalars {
+            switch scalar.value {
+            case 0x4E00...0x9FFF, 0x3400...0x4DBF, 0xF900...0xFAFF, 0x2F800...0x2FA1F:
+                return true
+            default:
+                continue
+            }
+        }
+        return false
+    }
+
+    private func syncImportantQuoteAfterRegistration(token: String, userId: String) {
+        let key = AuthConstants.UserDefaultsKeys.importantQuote
+        let raw = UserDefaults.standard.string(forKey: key) ?? ""
+        let quote = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !quote.isEmpty else {
+            print("[ImportantQuote] Skip sync: empty quote")
+            return
+        }
+        guard !token.isEmpty, !userId.isEmpty else {
+            print("[ImportantQuote] Skip sync: missing token/userId in response")
+            return
+        }
+
+        Task {
+            do {
+                print("[ImportantQuote] Sync start: userId=\(userId)")
+                _ = try await APIService.shared.createReason(
+                    title: "對我很重要的一段話",
+                    content: quote,
+                    date: Date(),
+                    token: token
+                )
+                print("[ImportantQuote] Sync success")
+                UserDefaults.standard.removeObject(forKey: key)
+            } catch {
+                // 保留本地資料，讓下次有機會再同步
+                print("[ImportantQuote] Sync failed: \(error.localizedDescription)")
+            }
+        }
     }
     
     // MARK: - 登錄功能

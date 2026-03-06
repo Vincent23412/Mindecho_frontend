@@ -304,6 +304,8 @@ class DailyCheckInManager: NSObject, ObservableObject {
             dayCount = 7
         case "最近七月":
             dayCount = 7
+        case "最近三年半":
+            dayCount = 7
         default:
             dayCount = 7
         }
@@ -322,6 +324,26 @@ class DailyCheckInManager: NSObject, ObservableObject {
                     return components.year == targetComponents.year && components.month == targetComponents.month
                 }
                 let values = monthScores.map { score -> Int in
+                    switch indicator {
+                    case .physical: return score.physical
+                    case .mental: return score.mental
+                    case .emotional: return score.emotional
+                    case .sleep: return score.sleep
+                    case .appetite: return score.appetite
+                    case .overall: return score.overall
+                    }
+                }
+                data.append(values.isEmpty ? 0 : values.reduce(0, +) / values.count)
+            }
+            return data
+        case "最近三年半":
+            for offset in (0..<dayCount).reversed() {
+                let bucketEnd = calendar.date(byAdding: .month, value: -(offset * 6), to: Date()) ?? Date()
+                let bucketStart = calendar.date(byAdding: .month, value: -6, to: bucketEnd) ?? bucketEnd
+                let bucketScores = weeklyScores.filter { score in
+                    score.date > bucketStart && score.date <= bucketEnd
+                }
+                let values = bucketScores.map { score -> Int in
                     switch indicator {
                     case .physical: return score.physical
                     case .mental: return score.mental
@@ -412,6 +434,17 @@ class DailyCheckInManager: NSObject, ObservableObject {
                 if let date = calendar.date(byAdding: .month, value: -offset, to: Date()) {
                     let month = calendar.component(.month, from: date)
                     labels.append("\(month)月")
+                } else {
+                    labels.append("")
+                }
+            }
+        case "最近三年半":
+            dayCount = 7
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yy/MM"
+            for offset in (0..<dayCount).reversed() {
+                if let date = calendar.date(byAdding: .month, value: -(offset * 6), to: Date()) {
+                    labels.append(formatter.string(from: date))
                 } else {
                     labels.append("")
                 }

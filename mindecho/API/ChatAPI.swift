@@ -3,7 +3,8 @@ import Foundation
 // MARK: - API 請求/回應模型
 struct SendMessageRequest: Codable {
     let message: String
-    let mode: TherapyMode
+    let mode: TherapyMode?
+    let userId: String?
 }
 
 struct ChatAPIResponse: Codable {
@@ -46,6 +47,7 @@ enum ChatAPIError: Error, LocalizedError {
     case serverError(Int)
     case unauthorized
     case rateLimited
+    case badRequest(String)
     
     var errorDescription: String? {
         switch self {
@@ -59,6 +61,8 @@ enum ChatAPIError: Error, LocalizedError {
             return "未授權，請重新登入"
         case .rateLimited:
             return "免費額度已用完"
+        case .badRequest(let message):
+            return message.isEmpty ? "請求參數錯誤" : message
         }
     }
 }
@@ -69,6 +73,7 @@ class ChatAPI: NSObject, URLSessionDelegate {
     
     private let baseURL = "https://localhost/dev-api"
     private let allowInsecureSelfSigned = true
+    private let enableDebugLog = true
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30.0
@@ -81,6 +86,11 @@ class ChatAPI: NSObject, URLSessionDelegate {
     
     private override init() {
         super.init()
+    }
+
+    private func log(_ message: String) {
+        guard enableDebugLog else { return }
+        print("[ChatAPI] \(message)")
     }
 
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
@@ -107,14 +117,26 @@ class ChatAPI: NSObject, URLSessionDelegate {
         
         do {
             urlRequest.httpBody = try JSONEncoder().encode(request)
+            if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+                log("sendMessage → \(url.absoluteString) body=\(bodyString)")
+            } else {
+                log("sendMessage → \(url.absoluteString) body=<empty>")
+            }
             
             let (data, response) = try await session.data(for: urlRequest)
             
             // 檢查 HTTP 狀態碼
             if let httpResponse = response as? HTTPURLResponse {
+                if let body = String(data: data, encoding: .utf8) {
+                    log("sendMessage ← body=\(body)")
+                }
+                log("sendMessage ← status=\(httpResponse.statusCode)")
                 switch httpResponse.statusCode {
                 case 200...299:
                     break // 成功
+                case 400:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.badRequest(message)
                 case 401:
                     throw ChatAPIError.unauthorized
                 case 429:
@@ -123,10 +145,11 @@ class ChatAPI: NSObject, URLSessionDelegate {
                     throw ChatAPIError.serverError(httpResponse.statusCode)
                 }
             }
-            
+
             return try JSONDecoder().decode(ChatAPIResponse.self, from: data)
             
         } catch {
+            log("sendMessage ✖︎ \(error.localizedDescription)")
             if error is ChatAPIError {
                 throw error
             } else {
@@ -153,12 +176,17 @@ class ChatAPI: NSObject, URLSessionDelegate {
         urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
+            log("getChatHistory → \(url.absoluteString)")
             let (data, response) = try await session.data(for: urlRequest)
             
             if let httpResponse = response as? HTTPURLResponse {
+                log("getChatHistory ← status=\(httpResponse.statusCode)")
                 switch httpResponse.statusCode {
                 case 200...299:
                     break
+                case 400:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.badRequest(message)
                 case 401:
                     throw ChatAPIError.unauthorized
                 default:
@@ -166,9 +194,13 @@ class ChatAPI: NSObject, URLSessionDelegate {
                 }
             }
             
+            if let body = String(data: data, encoding: .utf8) {
+                log("getChatHistory ← body=\(body)")
+            }
             return try JSONDecoder().decode(ChatMessagesResponse.self, from: data)
             
         } catch {
+            log("getChatHistory ✖︎ \(error.localizedDescription)")
             if error is ChatAPIError {
                 throw error
             } else {
@@ -194,12 +226,17 @@ class ChatAPI: NSObject, URLSessionDelegate {
         urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
+            log("getSessions → \(url.absoluteString)")
             let (data, response) = try await session.data(for: urlRequest)
             
             if let httpResponse = response as? HTTPURLResponse {
+                log("getSessions ← status=\(httpResponse.statusCode)")
                 switch httpResponse.statusCode {
                 case 200...299:
                     break
+                case 400:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.badRequest(message)
                 case 401:
                     throw ChatAPIError.unauthorized
                 default:
@@ -207,9 +244,13 @@ class ChatAPI: NSObject, URLSessionDelegate {
                 }
             }
             
+            if let body = String(data: data, encoding: .utf8) {
+                log("getSessions ← body=\(body)")
+            }
             return try JSONDecoder().decode(ChatSessionsResponse.self, from: data)
             
         } catch {
+            log("getSessions ✖︎ \(error.localizedDescription)")
             if error is ChatAPIError {
                 throw error
             } else {
@@ -236,13 +277,22 @@ class ChatAPI: NSObject, URLSessionDelegate {
         
         do {
             urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+            if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+                log("createNewSession → \(url.absoluteString) body=\(bodyString)")
+            } else {
+                log("createNewSession → \(url.absoluteString) body=<empty>")
+            }
             
             let (data, response) = try await session.data(for: urlRequest)
             
             if let httpResponse = response as? HTTPURLResponse {
+                log("createNewSession ← status=\(httpResponse.statusCode)")
                 switch httpResponse.statusCode {
                 case 200...299:
                     break
+                case 400:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.badRequest(message)
                 case 401:
                     throw ChatAPIError.unauthorized
                 default:
@@ -250,10 +300,14 @@ class ChatAPI: NSObject, URLSessionDelegate {
                 }
             }
             
+            if let body = String(data: data, encoding: .utf8) {
+                log("createNewSession ← body=\(body)")
+            }
             let payload = try JSONDecoder().decode(ChatSessionResponse.self, from: data)
             return payload.session
             
         } catch {
+            log("createNewSession ✖︎ \(error.localizedDescription)")
             if error is ChatAPIError {
                 throw error
             } else {
@@ -274,12 +328,16 @@ class ChatAPI: NSObject, URLSessionDelegate {
         urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
+            log("deleteSession → \(url.absoluteString)")
             let (_, response) = try await session.data(for: urlRequest)
             
             if let httpResponse = response as? HTTPURLResponse {
+                log("deleteSession ← status=\(httpResponse.statusCode)")
                 switch httpResponse.statusCode {
                 case 200...299:
                     break
+                case 400:
+                    throw ChatAPIError.badRequest("請求參數錯誤")
                 case 401:
                     throw ChatAPIError.unauthorized
                 default:
@@ -294,6 +352,20 @@ class ChatAPI: NSObject, URLSessionDelegate {
                 throw ChatAPIError.networkError(error.localizedDescription)
             }
         }
+    }
+
+    private func parseErrorMessage(from data: Data) -> String {
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let message = json["message"] as? String {
+            if let innerData = message.data(using: .utf8),
+               let inner = try? JSONSerialization.jsonObject(with: innerData) as? [String: Any],
+               let error = inner["error"] as? [String: Any],
+               let innerMessage = error["message"] as? String {
+                return innerMessage
+            }
+            return message
+        }
+        return ""
     }
 }
 

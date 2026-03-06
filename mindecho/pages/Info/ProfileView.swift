@@ -5,25 +5,18 @@ import AVKit
 import AVFoundation
 
 struct ProfileView: View {
+    let openSupportReasonsOnAppear: Bool
     @State private var showingSupportReasons = false
     @State private var showingPersonalInfo = false
+    @State private var didAutoOpenSupportReasons = false
     @ObservedObject private var authService = AuthService.shared
     
-    private let supportReasons: [SupportReason] = [
-        SupportReason(
-            title: "我的家人",
-            detail: "媽媽的笑容、爸爸的擁抱，他們需要我，我也需要他們。",
-            date: "2023/06/15",
-            isFavorite: true
-        ),
-        SupportReason(
-            title: "未完成的夢想",
-            detail: "我還沒去過的地方，沒嘗試過的美食，沒完成的計畫。",
-            date: "2023/05/20",
-            isFavorite: false
-        )
-    ]
+    private let supportReasons: [SupportReason] = []
     
+    init(openSupportReasonsOnAppear: Bool = false) {
+        self.openSupportReasonsOnAppear = openSupportReasonsOnAppear
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -56,6 +49,12 @@ struct ProfileView: View {
         }
         .background(AppColors.lightYellow.ignoresSafeArea())
         .navigationTitle("個人檔案")
+        .onAppear {
+            if openSupportReasonsOnAppear && !didAutoOpenSupportReasons {
+                didAutoOpenSupportReasons = true
+                showingSupportReasons = true
+            }
+        }
         .task {
             await refreshUserProfile()
         }
@@ -218,7 +217,7 @@ struct EditPersonalInfoView: View {
     }
     
     private func buildFullName(_ user: User) -> String {
-        let parts = [user.lastName, user.firstName].filter { !$0.isEmpty }
+        let parts = [user.lastName ?? "", user.firstName ?? ""].filter { !$0.isEmpty }
         if !parts.isEmpty {
             return parts.joined(separator: " ")
         }
@@ -369,6 +368,7 @@ private struct SupportReasonsModal: View {
     @State private var supportVideos: [SupportVideo] = []
     @State private var selectedVideoItem: PhotosPickerItem?
     @State private var activeVideo: SupportVideo?
+    @State private var importantQuoteReason: SupportReason?
     
     private static let apiDateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -386,7 +386,7 @@ private struct SupportReasonsModal: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     header
-                    
+
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.footnote)
@@ -485,7 +485,7 @@ private struct SupportReasonsModal: View {
         return VStack(alignment: .leading, spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("我的理由珍藏")
+                    Text("我的珍藏理由")
                         .font(.headline)
                         .foregroundColor(AppColors.titleColor)
                     Text("在陽光燦爛的日子，為雨天存一點光。邀請你在這裡存下那些值得留住的瞬間，讓它們在困難時刻給你溫暖，陪伴你找回前行的力量。")
@@ -494,9 +494,12 @@ private struct SupportReasonsModal: View {
                 }
                 Spacer()
             }
+
+            favoriteQuoteSection
             
             HStack {
                 sectionHeader("文字")
+                sectionHint("寫下支撐你的話與片刻感受")
                 Spacer()
                 Button(action: { showingAddText = true }) {
                     HStack(spacing: 6) {
@@ -528,6 +531,7 @@ private struct SupportReasonsModal: View {
             
             HStack {
                 sectionHeader("圖片")
+                sectionHint("收集讓你感到安心的畫面")
                 Spacer()
                 PhotosPicker(selection: $selectedImageItem, matching: .images) {
                     HStack(spacing: 6) {
@@ -558,6 +562,7 @@ private struct SupportReasonsModal: View {
             
             HStack {
                 sectionHeader("影片")
+                sectionHint("留下能提醒你勇氣的片段")
                 Spacer()
                 PhotosPicker(selection: $selectedVideoItem, matching: .videos) {
                     HStack(spacing: 6) {
@@ -594,6 +599,12 @@ private struct SupportReasonsModal: View {
             .font(.subheadline.weight(.semibold))
             .foregroundColor(AppColors.titleColor)
     }
+
+    private func sectionHint(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundColor(AppColors.titleColor.opacity(0.6))
+    }
     
     private func emptySectionHint(_ text: String) -> some View {
         Text(text)
@@ -601,6 +612,27 @@ private struct SupportReasonsModal: View {
             .foregroundColor(AppColors.titleColor.opacity(0.6))
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.vertical, 8)
+    }
+
+    private var favoriteQuoteSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let reason = importantQuoteReason {
+                TextReasonCard(
+                    reason: SupportReason(
+                        id: reason.id,
+                        title: "對我很重要的一段話",
+                        detail: reason.detail,
+                        date: reason.date,
+                        isFavorite: reason.isFavorite,
+                        apiDate: reason.apiDate
+                    ),
+                    onEdit: { editingReason = reason },
+                    onDelete: { Task { await deleteReason(reason) } }
+                )
+            } else {
+                emptySectionHint("尚未新增內容")
+            }
+        }
     }
     
     private func deleteVideo(_ video: SupportVideo) {
@@ -612,7 +644,15 @@ private struct SupportReasonsModal: View {
         guard AuthService.shared.authToken != nil else { return }
         do {
             let reasons = try await APIService.shared.getReasons()
-            localReasons = reasons.map(mapReason)
+            let importantTitle = "最重要的一段話"
+            if let important = reasons.last(where: { $0.title == importantTitle }) {
+                importantQuoteReason = mapReason(important)
+            } else {
+                importantQuoteReason = nil
+            }
+            localReasons = reasons
+                .filter { $0.title != importantTitle }
+                .map(mapReason)
             errorMessage = nil
         } catch {
             // 忽略載入失敗，避免在無資料時顯示錯誤
@@ -637,15 +677,21 @@ private struct SupportReasonsModal: View {
     
     private func updateReason(_ reason: SupportReason, title: String, detail: String) async {
         do {
+            let payloadTitle = reason.id == importantQuoteReason?.id
+                ? "最重要的一段話"
+                : title
             let updated = try await APIService.shared.updateReason(
                 id: reason.id,
-                title: title,
+                title: payloadTitle,
                 content: detail,
                 date: reason.apiDate,
                 isDeleted: false
             )
             if let index = localReasons.firstIndex(where: { $0.id == reason.id }) {
                 localReasons[index] = mapReason(updated)
+            }
+            if reason.id == importantQuoteReason?.id {
+                importantQuoteReason = mapReason(updated)
             }
             editingReason = nil
             errorMessage = nil
@@ -658,6 +704,9 @@ private struct SupportReasonsModal: View {
         do {
             _ = try await APIService.shared.deleteReason(id: reason.id)
             localReasons.removeAll { $0.id == reason.id }
+            if reason.id == importantQuoteReason?.id {
+                importantQuoteReason = nil
+            }
             errorMessage = nil
         } catch {
             errorMessage = "刪除文字失敗，請稍後再試"
@@ -1458,7 +1507,7 @@ extension ProfileView {
     // 時光藏寶盒
     private var emotionBoxSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("時光藏寶盒")
+            Text("時光寶盒")
                 .font(.headline)
                 .foregroundColor(.brown)
                 .padding(.horizontal, 5)
@@ -1480,7 +1529,6 @@ extension ProfileView {
             }
         }
         .padding(.vertical, 10)
-
     }
     
     
@@ -1535,7 +1583,7 @@ extension ProfileView {
         if let nickname = user.nickname, !nickname.isEmpty {
             return nickname
         }
-        let parts = [user.lastName, user.firstName].filter { !$0.isEmpty }
+        let parts = [user.lastName ?? "", user.firstName ?? ""].filter { !$0.isEmpty }
         if !parts.isEmpty {
             return parts.joined(separator: " ")
         }
@@ -1544,8 +1592,8 @@ extension ProfileView {
     
     private func profileInitials(_ user: User?) -> String {
         guard let user else { return "ME" }
-        let lastInitial = user.lastName.first?.uppercased() ?? ""
-        let firstInitial = user.firstName.first?.uppercased() ?? ""
+        let lastInitial = (user.lastName ?? "").first?.uppercased() ?? ""
+        let firstInitial = (user.firstName ?? "").first?.uppercased() ?? ""
         let combined = "\(lastInitial)\(firstInitial)"
         if !combined.isEmpty {
             return combined
@@ -1772,8 +1820,10 @@ struct PersonalInfoView: View {
     
     private func formattedFullName(_ user: User?) -> String {
         guard let user else { return "使用者" }
-        if !user.lastName.isEmpty || !user.firstName.isEmpty {
-            let parts = [user.lastName, user.firstName].filter { !$0.isEmpty }
+        let last = user.lastName ?? ""
+        let first = user.firstName ?? ""
+        if !last.isEmpty || !first.isEmpty {
+            let parts = [last, first].filter { !$0.isEmpty }
             let combined = parts.joined(separator: " ")
             return combined.isEmpty ? "使用者" : combined
         }

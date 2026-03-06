@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var authViewModel = AuthViewModel.shared
+    @StateObject private var tabTourState = TabTourState.shared
     
     var body: some View {
         Group {
@@ -20,6 +21,7 @@ struct ContentView: View {
                 WelcomePage()
             }
         }
+        .environmentObject(tabTourState)
         .task {
             authViewModel.attemptAutoLoginOnLaunch()
         }
@@ -36,6 +38,7 @@ struct ContentView: View {
 
 private struct MainTabView: View {
     @State private var selectedTab: MainTab = .home
+    @EnvironmentObject private var tabTourState: TabTourState
     
     var body: some View {
         VStack(spacing: 0) {
@@ -48,10 +51,32 @@ private struct MainTabView: View {
                 }
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            
+
             CustomTabBar(selectedTab: $selectedTab)
         }
+        .overlayPreferenceValue(TabTourAnchorKey.self) { anchors in
+            if tabTourState.isActive, let anchor = anchors[tabTourState.step] {
+                TabTourOverlay(
+                    anchor: anchor,
+                    step: tabTourState.step,
+                    onNext: advanceTour,
+                    onClose: endTour
+                )
+            }
+        }
         .accentColor(.orange)
+    }
+
+    private func advanceTour() {
+        if let next = tabTourState.step.next {
+            tabTourState.step = next
+        } else {
+            endTour()
+        }
+    }
+
+    private func endTour() {
+        tabTourState.isActive = false
     }
 }
 
@@ -93,6 +118,57 @@ private enum MainTab: String, CaseIterable, Identifiable {
     }
 }
 
+enum TabTourStep: String, CaseIterable, Identifiable {
+    case home, chat, diary, relax, profile
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home: return "首頁"
+        case .chat: return "聊天"
+        case .diary: return "追蹤"
+        case .relax: return "放鬆"
+        case .profile: return "個人檔案"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .home: return "總覽你的狀態與每日提醒。"
+        case .chat: return "和 AI 進行對話、整理感受。"
+        case .diary: return "記錄情緒與日記、追蹤變化。"
+        case .relax: return "練習放鬆與呼吸，引導身心回穩。"
+        case .profile: return "管理個人資料與重要聯絡資訊。"
+        }
+    }
+
+    var next: TabTourStep? {
+        let all = Self.allCases
+        guard let index = all.firstIndex(of: self),
+              index + 1 < all.count else { return nil }
+        return all[index + 1]
+    }
+}
+
+final class TabTourState: ObservableObject {
+    static let shared = TabTourState()
+    @Published var isActive = false
+    @Published var step: TabTourStep = .home
+}
+
+private extension MainTab {
+    var tourStep: TabTourStep {
+        switch self {
+        case .home: return .home
+        case .chat: return .chat
+        case .diary: return .diary
+        case .relax: return .relax
+        case .profile: return .profile
+        }
+    }
+}
+
 // MARK: - Custom Tab Bar
 private struct CustomTabBar: View {
     @Binding var selectedTab: MainTab
@@ -116,6 +192,10 @@ private struct CustomTabBar: View {
                         ) {
                             selectedTab = tab
                         }
+                        .anchorPreference(
+                            key: TabTourAnchorKey.self,
+                            value: .bounds
+                        ) { [tab.tourStep: $0] }
                     }
                 }
                 .padding(.horizontal, padding)
@@ -151,6 +231,71 @@ private struct TabButton: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct TabTourAnchorKey: PreferenceKey {
+    static var defaultValue: [TabTourStep: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [TabTourStep: Anchor<CGRect>], nextValue: () -> [TabTourStep: Anchor<CGRect>]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
+    }
+}
+
+private struct TabTourOverlay: View {
+    let anchor: Anchor<CGRect>
+    let step: TabTourStep
+    let onNext: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let rect = proxy[anchor].insetBy(dx: -6, dy: -6).offsetBy(dx: 0, dy: 48)
+            let bubbleWidth = min(260, proxy.size.width - 32)
+            let bubbleX = min(proxy.size.width - bubbleWidth / 2 - 8, max(bubbleWidth / 2 + 8, rect.midX))
+            let bubbleY = max(60, rect.minY - 110)
+
+            ZStack(alignment: .topLeading) {
+                Color.black.opacity(0.6)
+                    .mask(
+                        Rectangle()
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .frame(width: rect.width, height: rect.height)
+                                    .position(x: rect.midX, y: rect.midY)
+                                    .blendMode(.destinationOut)
+                            )
+                    )
+                    .compositingGroup()
+                    .ignoresSafeArea()
+                    .onTapGesture { onNext() }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(step.title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Text(step.message)
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    HStack {
+                        Button("略過") { onClose() }
+                            .foregroundColor(.white.opacity(0.8))
+                        Spacer()
+                        Button(step.next == nil ? "完成" : "下一步") { onNext() }
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.white)
+                            .foregroundColor(.black)
+                            .cornerRadius(10)
+                    }
+                }
+                .padding(12)
+                .background(Color.black.opacity(0.75))
+                .cornerRadius(12)
+                .frame(width: bubbleWidth, alignment: .leading)
+                .position(x: bubbleX, y: bubbleY)
+            }
+        }
     }
 }
 

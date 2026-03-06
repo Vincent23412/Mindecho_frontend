@@ -26,6 +26,10 @@ struct RegisterPage: View {
     @State private var showDatePicker = false
     @State private var agreeToTerms = false
     @State private var showSuccessAlert = false
+    @State private var importantQuote = UserDefaults.standard.string(
+        forKey: AuthConstants.UserDefaultsKeys.importantQuote
+    ) ?? ""
+    @State private var didEditImportantQuote = false
 
     // MARK: - 動畫和UI狀態
     @State private var animateContent = false
@@ -118,6 +122,9 @@ struct RegisterPage: View {
         selectedEducationLevel = 0
         emergencyContacts = [EmergencyContactInput()]
         agreeToTerms = false
+        importantQuote = ""
+        didEditImportantQuote = false
+        UserDefaults.standard.removeObject(forKey: AuthConstants.UserDefaultsKeys.importantQuote)
         focusedField = nil
     }
 
@@ -670,6 +677,47 @@ private extension RegisterPage {
                 
                 // 緊急聯絡人
                 emergencyContactSection
+
+                // 對我很重要的一段話（必填）
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("對我很重要的一段話")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.darkBrown)
+
+                    TextEditor(text: $importantQuote)
+                        .frame(height: 110)
+                        .padding(10)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    didEditImportantQuote && importantQuoteTrimmed.isEmpty
+                                        ? Color.red
+                                        : AppColors.lightBrown.opacity(0.5),
+                                    lineWidth: 1
+                                )
+                        )
+                        .onChange(of: importantQuote) { _, newValue in
+                            didEditImportantQuote = true
+                            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if trimmed.isEmpty {
+                                UserDefaults.standard.removeObject(
+                                    forKey: AuthConstants.UserDefaultsKeys.importantQuote
+                                )
+                            } else {
+                                UserDefaults.standard.set(
+                                    trimmed,
+                                    forKey: AuthConstants.UserDefaultsKeys.importantQuote
+                                )
+                            }
+                        }
+
+                    if didEditImportantQuote && importantQuoteTrimmed.isEmpty {
+                        Text("此欄位為必填")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.red)
+                    }
+                }
                 
             }
             
@@ -884,6 +932,7 @@ private extension RegisterPage {
                !selectedGender.isEmpty &&
                selectedEducationLevel != 0 &&
                isEmergencyContactsValid &&
+               !importantQuoteTrimmed.isEmpty &&
                !viewModel.hasError(for: .firstName) &&
                !viewModel.hasError(for: .dateOfBirth)
     }
@@ -901,6 +950,10 @@ private extension RegisterPage {
             $0.contactInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         return !hasIncomplete
+    }
+
+    var importantQuoteTrimmed: String {
+        importantQuote.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     func startAnimation() {
@@ -939,6 +992,10 @@ private extension RegisterPage {
         }
         if !isEmergencyContactsValid {
             viewModel.errorMessage = "請至少填寫 1 位完整的緊急聯絡人（姓名、關係、聯絡方式）"
+            return
+        }
+        guard !importantQuoteTrimmed.isEmpty else {
+            viewModel.errorMessage = "請填寫對你很重要的一段話"
             return
         }
 
@@ -993,6 +1050,7 @@ private extension RegisterPage {
             emergencyContacts: emergencyPayloads,
             gender: selectedGender,
             educationLevel: selectedEducationLevel,
+            mostImportantReason: importantQuoteTrimmed,
             supportContactName: emergencyPayloads.first?.name,
             supportContactInfo: emergencyPayloads.first?.contactInfo
         )

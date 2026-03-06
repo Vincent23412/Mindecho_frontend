@@ -23,6 +23,7 @@ struct AuthConstants {
         static let userData = "mindecho_user_data"
         static let isFirstLaunch = "mindecho_is_first_launch"
         static let loginDate = "mindecho_login_date"
+        static let importantQuote = "mindecho_important_quote"
     }
     
     // MARK: - 表單驗證規則

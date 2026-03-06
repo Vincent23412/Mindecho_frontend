@@ -82,7 +82,8 @@ struct Validation {
         supportContactName: String?,
         supportContactInfo: String?,
         familyContactName: String?,
-        familyContactInfo: String?
+        familyContactInfo: String?,
+        mostImportantReason: String
     ) -> [ValidationError] {
         var errors: [ValidationError] = []
         
@@ -146,6 +147,10 @@ struct Validation {
             if hasIncomplete {
                 errors.append(.emptyField("緊急聯絡人資料"))
             }
+        }
+
+        if mostImportantReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(.emptyField("對我很重要的一段話"))
         }
         
         return errors

@@ -27,13 +27,7 @@ class ChatHook: ObservableObject {
     
     // MARK: - 初始化
     init() {
-        // 不使用本地快取與預設聊天資料
-        filterLegacySessions()
-        Task { await loadSessions() }
-    }
-
-    private func filterLegacySessions() {
-        chatSessions.removeAll { $0.therapyMode.rawValue == "mentalization" }
+        // 不在 init 期間修改 @Published，避免 SwiftUI view update 警告
     }
     
     // MARK: - 會話管理方法
@@ -151,7 +145,8 @@ class ChatHook: ObservableObject {
                 // 使用真實 API
                 let request = SendMessageRequest(
                     message: trimmedContent,
-                    mode: session.therapyMode
+                    mode: nil,
+                    userId: AuthService.shared.currentUser?.primaryId
                 )
 
                 guard let backendId = session.backendId else {

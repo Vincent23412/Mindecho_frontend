@@ -320,8 +320,35 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     
     // MARK: - 登出功能
     func logout() {
-        // 如果需要通知服務器用戶登出，可以在這裡添加 API 請求
-        clearAuth()
+        guard let refreshToken = UserDefaults.standard.string(forKey: Keys.refreshToken),
+              let url = URL(string: "\(baseURL)/auth/logout") else {
+            clearAuth()
+            return
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let payload = ["refreshToken": refreshToken]
+        urlRequest.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+        
+        session.dataTaskPublisher(for: urlRequest)
+            .handleEvents(receiveOutput: { data, response in
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Auth logout: status \(httpResponse.statusCode)")
+                }
+                if let body = String(data: data, encoding: .utf8) {
+                    print("Auth logout: response body \(body)")
+                }
+            })
+            .map { _ in () }
+            .catch { _ in Just(()) }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.clearAuth()
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Token 刷新功能
@@ -390,8 +417,9 @@ extension AuthService {
                     id: UUID().uuidString,
                     userId: UUID().uuidString,
                     email: request.email,
-                    firstName: request.firstName,
-                    lastName: request.lastName,
+                    name: request.name,
+                    firstName: nil,
+                    lastName: nil,
                     nickname: request.nickname,
                     avatar: nil,
                     dateOfBirth: request.dateOfBirth,
@@ -440,6 +468,7 @@ extension AuthService {
                         id: "test_user_id",
                         userId: "test_user_id",
                         email: request.email,
+                        name: "測試用戶",
                         firstName: "測試",
                         lastName: "用戶",
                         nickname: "測試用戶",

@@ -201,7 +201,7 @@ struct HomeConstants {
         static let cardShadowRadius: CGFloat = 2
         
         // 時間週期選項
-        static let timePeriodOptions = ["本週", "最近七週", "最近七月"]
+        static let timePeriodOptions = ["本週", "最近七週", "最近七月", "最近三年半"]
     }
     
     // MARK: - UserDefaults 鍵值

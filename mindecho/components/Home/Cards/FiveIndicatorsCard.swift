@@ -204,6 +204,12 @@ struct FiveIndicatorsCard: View {
                                 .foregroundColor(AppColors.titleColor)
                                 .frame(maxWidth: .infinity, minHeight: 24)
                                 .lineLimit(1)
+                        } else if selectedTimePeriod == "最近三年半" && !day.isEmpty {
+                            Text(day)
+                                .font(.caption2)
+                                .foregroundColor(AppColors.titleColor)
+                                .frame(maxWidth: .infinity, minHeight: 24)
+                                .lineLimit(1)
                         } else {
                             // 本週：單行顯示
                             Text(day)

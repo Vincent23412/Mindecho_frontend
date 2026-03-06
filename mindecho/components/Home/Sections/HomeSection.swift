@@ -12,7 +12,7 @@ struct MentalHealthResourcesSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("心理健康資源")
+                Text("求助資源")
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.titleColor)
@@ -114,7 +114,7 @@ struct QuickAccessSection: View {
     
     private let items: [QuickAccessItem] = [
         QuickAccessItem(
-            title: "時光藏寶盒",
+            title: "時光寶盒",
             subtitle: "整理情緒與收集力量",
             icon: "suitcase.fill",
             buttonText: "前往查看",
@@ -152,7 +152,7 @@ struct QuickAccessSection: View {
         }
         .sheet(isPresented: $showingEmotionBox) {
             NavigationView {
-                ProfileView()
+                ProfileView(openSupportReasonsOnAppear: true)
             }
         }
     }

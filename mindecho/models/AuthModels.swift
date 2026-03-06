@@ -7,8 +7,9 @@ struct User: Codable, Identifiable {
     let id: String?
     let userId: String?
     let email: String
-    let firstName: String
-    let lastName: String
+    let name: String?
+    let firstName: String?
+    let lastName: String?
     let nickname: String?
     let avatar: String?
     let dateOfBirth: String?
@@ -32,6 +33,7 @@ struct User: Codable, Identifiable {
         case id
         case userId
         case email
+        case name
         case firstName
         case lastName
         case nickname
@@ -60,12 +62,17 @@ struct User: Codable, Identifiable {
     }
     
     var fullName: String {
-        return "\(firstName) \(lastName)"
+        if let name, !name.isEmpty {
+            return name
+        }
+        let first = firstName ?? ""
+        let last = lastName ?? ""
+        return "\(last) \(first)".trimmingCharacters(in: .whitespaces)
     }
     
     var initials: String {
-        let firstInitial = firstName.first?.uppercased() ?? ""
-        let lastInitial = lastName.first?.uppercased() ?? ""
+        let firstInitial = firstName?.first?.uppercased() ?? ""
+        let lastInitial = lastName?.first?.uppercased() ?? ""
         return "\(firstInitial)\(lastInitial)"
     }
 }
@@ -84,33 +91,35 @@ struct EmergencyContact: Codable, Identifiable {
 struct RegisterRequest: Codable {
     let email: String
     let password: String
-    let firstName: String
-    let lastName: String
+    let name: String
     let dateOfBirth: String
     let nickname: String?
     let emergencyContacts: [EmergencyContactPayload]
     let gender: String
     let educationLevel: Int
+    let dataAnalysisConsent: Bool
     let supportContactName: String?
     let supportContactInfo: String?
     let familyContactName: String?
     let familyContactInfo: String?
+    let mostImportantReason: String
     
     func toDictionary() -> [String: Any] {
         return [
             "email": email,
             "password": password,
-            "firstName": firstName,
-            "lastName": lastName,
+            "name": name,
             "dateOfBirth": dateOfBirth,
             "nickname": nickname as Any,
             "emergencyContacts": emergencyContacts.map { $0.toDictionary() },
             "gender": gender,
             "educationLevel": educationLevel,
+            "dataAnalysisConsent": dataAnalysisConsent,
             "supportContactName": supportContactName as Any,
             "supportContactInfo": supportContactInfo as Any,
             "familyContactName": familyContactName as Any,
-            "familyContactInfo": familyContactInfo as Any
+            "familyContactInfo": familyContactInfo as Any,
+            "mostImportantReason": mostImportantReason
         ]
     }
 }
@@ -150,9 +159,10 @@ struct AuthResponse: Codable {
     let token: String?
     let refreshToken: String?
     
-    // 後端有時回傳 userData 而非 user
+    // 後端有時回傳 userData 或 accessToken
     private enum AdditionalKeys: String, CodingKey {
         case userData
+        case accessToken
     }
     
     // 自訂初始化方法，處理後端回應格式
@@ -167,7 +177,13 @@ struct AuthResponse: Codable {
             let additional = try decoder.container(keyedBy: AdditionalKeys.self)
             self.user = try additional.decodeIfPresent(User.self, forKey: .userData)
         }
-        self.token = try container.decodeIfPresent(String.self, forKey: .token)
+        
+        if let token = try container.decodeIfPresent(String.self, forKey: .token) {
+            self.token = token
+        } else {
+            let additional = try decoder.container(keyedBy: AdditionalKeys.self)
+            self.token = try additional.decodeIfPresent(String.self, forKey: .accessToken)
+        }
         self.refreshToken = try container.decodeIfPresent(String.self, forKey: .refreshToken)
         
         // 如果後端沒有 success 字段，根據其他條件判斷
