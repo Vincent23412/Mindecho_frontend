@@ -44,9 +44,9 @@ struct MentalHealthResourceCard: View {
         .background(
             LinearGradient(
                 colors: [
-                    AppColors.resourceCardYellow,
-                    AppColors.resourceCardOrange,
-                    AppColors.orange.opacity(0.8)
+                    AppColors.resourceCardYellow.opacity(0.6),
+                    AppColors.resourceCardOrange.opacity(0.6),
+                    AppColors.orange.opacity(0.6)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing

@@ -23,28 +23,36 @@ struct ChatListPage: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // 標題區域
-                HeaderView()
+                // 主標題區域
+                ChatHeader()
                 
-                // 模式卡片
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(modeCards) { card in
-                            TherapyModeResourceCard(card: card) {
-                                startNewChat(for: card.mode)
+                // 聊天室卡片
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("聊天室")
+                        .font(.title3.bold())
+                        .foregroundColor(AppColors.titleColor)
+                        .padding(.horizontal, 20)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(modeCards) { card in
+                                TherapyModeResourceCard(card: card) {
+                                    startNewChat(for: card.mode)
+                                }
                             }
                         }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
                 }
-                .padding(.top, 16)
+                .padding(.top, 8)
                 
                 // 聊天列表內容
                 ChatListContent(
                     filteredChats: filteredChats,
                     isLoading: chatHook.isLoading,
                     onDeleteSession: deleteSession,
-                    chatHook: chatHook
+                    chatHook: chatHook,
+                    onStartChat: startNewChat
                 )
                 
                 Spacer()
@@ -231,18 +239,17 @@ private struct ModeIntroductionSheet: View {
     }
 }
 
-// MARK: - 標題區域元件
-struct HeaderView: View {
+// MARK: - 主標題區域元件
+struct ChatHeader: View {
     var body: some View {
-        HStack {
-            Text("聊天紀錄")
-                .font(.title)
-                .fontWeight(.bold)
+        VStack(spacing: 6) {
+            Text("聊天室")
+                .font(.title2.bold())
                 .foregroundColor(AppColors.titleColor)
-            
-            Spacer()
+            Text("選擇一種對話方式，開始今天的陪伴")
+                .font(.subheadline)
+                .foregroundColor(AppColors.titleColor.opacity(0.7))
         }
-        .padding(.horizontal, 20)
         .padding(.top, 16)
     }
 }
@@ -253,20 +260,52 @@ struct ChatListContent: View {
     let isLoading: Bool
     let onDeleteSession: (ChatSession) -> Void
     let chatHook: ChatHook
+    let onStartChat: (TherapyMode) -> Void
     
     var body: some View {
         Group {
             if isLoading {
                 LoadingView()
             } else if filteredChats.isEmpty {
-                EmptyChatState()
+                EmptyChatState(onStartChat: onStartChat)
             } else {
-                ChatSessionsList(
+                ChatSessionsSection(
                     sessions: filteredChats.filter { !$0.lastMessage.isEmpty },
                     chatHook: chatHook,
                     onDeleteSession: onDeleteSession
                 )
             }
+        }
+    }
+}
+
+// MARK: - 聊天紀錄區塊
+private struct ChatSessionsSection: View {
+    let sessions: [ChatSession]
+    let chatHook: ChatHook
+    let onDeleteSession: (ChatSession) -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("聊天紀錄")
+                .font(.title3.bold())
+                .foregroundColor(AppColors.titleColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+
+            ChatSessionsList(
+                sessions: sessions,
+                chatHook: chatHook,
+                onDeleteSession: onDeleteSession
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 2)
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
         }
     }
 }
@@ -443,27 +482,51 @@ struct ChatListItemView: View {
     }
 }
 
-// MARK: - 空狀態視圖（保持原樣）
+// MARK: - 空狀態視圖
 struct EmptyChatState: View {
+    let onStartChat: (TherapyMode) -> Void
+
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        VStack(spacing: 16) {
+            Text("聊天紀錄")
+                .font(.title3.bold())
+                .foregroundColor(AppColors.titleColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
             
             VStack(spacing: 16) {
                 Image(systemName: "bubble.left.and.bubble.right")
-                    .font(.system(size: 64))
-                    .foregroundColor(.gray.opacity(0.6))
+                    .font(.system(size: 56))
+                    .foregroundColor(AppColors.titleColor.opacity(0.5))
                 
                 Text("還沒有聊天紀錄")
                     .font(.headline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppColors.titleColor.opacity(0.7))
                 
                 Text("開始您的第一次心靈對話")
                     .font(.subheadline)
-                    .foregroundColor(.gray.opacity(0.8))
+                    .foregroundColor(AppColors.titleColor.opacity(0.6))
+                
+                Button("開始聊天") {
+                    onStartChat(.initial)
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(AppColors.orange)
+                .cornerRadius(12)
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 2)
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
         }
     }
 }
@@ -495,7 +558,7 @@ private struct TherapyModeResourceCard: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(card.title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(AppColors.darkBrown)
                     
                     Text(card.subtitle)
@@ -503,7 +566,7 @@ private struct TherapyModeResourceCard: View {
                         .foregroundColor(AppColors.darkBrown.opacity(0.7))
                         .lineLimit(2)
                     
-                    Text("建立聊天室")
+                    Text("開始對話")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)

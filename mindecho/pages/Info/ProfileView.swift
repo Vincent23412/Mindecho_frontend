@@ -10,6 +10,8 @@ struct ProfileView: View {
     @State private var showingPersonalInfo = false
     @State private var didAutoOpenSupportReasons = false
     @ObservedObject private var authService = AuthService.shared
+    @ObservedObject private var authViewModel = AuthViewModel.shared
+    @State private var showLogoutConfirm = false
     
     private let supportReasons: [SupportReason] = []
     
@@ -36,6 +38,8 @@ struct ProfileView: View {
                 
                 // MARK: - 緊急聯繫
                 emergencySection
+
+                logoutSection
                 
                 Spacer()
             }
@@ -57,6 +61,14 @@ struct ProfileView: View {
         }
         .task {
             await refreshUserProfile()
+        }
+        .alert("登出", isPresented: $showLogoutConfirm) {
+            Button("取消", role: .cancel) {}
+            Button("登出", role: .destructive) {
+                authViewModel.logout()
+            }
+        } message: {
+            Text("確定要登出嗎？")
         }
     }
 }
@@ -240,6 +252,24 @@ struct EditPersonalInfoView: View {
             return parts.joined(separator: " ")
         }
         return user.fullName
+    }
+}
+
+private extension ProfileView {
+    var logoutSection: some View {
+        Button {
+            showLogoutConfirm = true
+        } label: {
+            Text("登出")
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.red.opacity(0.85))
+                .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 8)
     }
 }
 

@@ -5,6 +5,7 @@ struct FiveIndicatorsCard: View {
     @ObservedObject private var checkInManager = DailyCheckInManager.shared
     @State private var showingDropdown = false
     @State private var selectedIndicator: HealthIndicatorType? = nil  // nil = 顯示所有指標
+    @State private var selectedOverlap: OverlapPoint? = nil
     
     private let indicatorOrder: [HealthIndicatorType]
     private let customDisplayNames: [HealthIndicatorType: String]
@@ -101,6 +102,14 @@ struct FiveIndicatorsCard: View {
                     let rightInset: CGFloat = 25
                     let plotWidth = max(0, width - leftInset - rightInset)
                     let dayWidth = dayCount > 1 ? plotWidth / CGFloat(dayCount - 1) : plotWidth
+                    let overlapPoints = makeOverlapPoints(
+                        indicators: activeIndicators,
+                        dayCount: dayCount,
+                        dayWidth: dayWidth,
+                        xOffset: leftInset,
+                        plotWidth: plotWidth,
+                        height: height
+                    )
 
                     ZStack(alignment: .leading) {
                         let hasData: Bool = {
@@ -169,6 +178,23 @@ struct FiveIndicatorsCard: View {
                                 )
                             }
                         }
+
+                        if selectedIndicator == nil {
+                            ForEach(overlapPoints) { point in
+                                Button {
+                                    selectedOverlap = point
+                                } label: {
+                                    Color.clear
+                                        .frame(width: 24, height: 24)
+                                }
+                                .position(x: point.x, y: point.y)
+                            }
+
+                            if let selected = selectedOverlap {
+                                tooltipView(for: selected)
+                                    .position(x: selected.x, y: max(12, selected.y - 28))
+                            }
+                        }
                         
                         // 如果沒有數據，顯示提示
                         if !hasData {
@@ -188,6 +214,10 @@ struct FiveIndicatorsCard: View {
                     }
                 }
                 .frame(height: HomeConstants.Charts.chartHeight)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selectedOverlap = nil
+                }
                 
                 // 日期標籤 - 雙行顯示
                 HStack(spacing: 0) {
@@ -244,6 +274,20 @@ struct FiveIndicatorsCard: View {
                 .font(.caption2)
                 .foregroundColor(AppColors.titleColor.opacity(0.8))
         }
+    }
+
+    private struct OverlapEntry: Identifiable {
+        let id = UUID()
+        let name: String
+        let value: Int
+        let color: Color
+    }
+
+    private struct OverlapPoint: Identifiable {
+        let id = UUID()
+        let x: CGFloat
+        let y: CGFloat
+        let entries: [OverlapEntry]
     }
     
     /// 創建指標線條
@@ -302,6 +346,59 @@ struct FiveIndicatorsCard: View {
                 }
             }
         }
+    }
+
+    private func makeOverlapPoints(
+        indicators: [HealthIndicatorType],
+        dayCount: Int,
+        dayWidth: CGFloat,
+        xOffset: CGFloat,
+        plotWidth: CGFloat,
+        height: CGFloat
+    ) -> [OverlapPoint] {
+        guard dayCount > 0 else { return [] }
+        var points: [OverlapPoint] = []
+
+        for index in 0..<dayCount {
+            let entries = indicators.compactMap { indicator -> OverlapEntry? in
+                let data = checkInManager.getDataForPeriod(selectedTimePeriod, indicator: indicator)
+                guard index < data.count else { return nil }
+                let value = data[index]
+                guard value > 0 else { return nil }
+                return OverlapEntry(name: displayName(for: indicator), value: value, color: indicator.color)
+            }
+            guard entries.count > 1 else { continue }
+
+            let groups = Dictionary(grouping: entries, by: { $0.value })
+            for (value, grouped) in groups where grouped.count > 1 {
+                let x = min(xOffset + CGFloat(index) * dayWidth, xOffset + plotWidth)
+                let y = height - (CGFloat(value - 1) / 4.0 * height)
+                points.append(OverlapPoint(x: x, y: y, entries: grouped))
+            }
+        }
+        return points
+    }
+
+    private func tooltipView(for point: OverlapPoint) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(point.entries) { entry in
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(entry.color)
+                        .frame(width: 6, height: 6)
+                    Text("\(entry.name): \(entry.value)")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.titleColor)
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
+        )
     }
 }
 

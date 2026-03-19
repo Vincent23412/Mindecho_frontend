@@ -16,21 +16,30 @@ struct RelaxModeSelector: View {
                 Button {
                     viewModel.selectedMode = mode
                 } label: {
-                    VStack(spacing: 6) {
-                        Text(mode.rawValue)
-                            .font(.headline)
-                            .foregroundColor(AppColors.titleColor)
-                            .lineLimit(1)
-                        
-                        Rectangle()
-                            .fill(viewModel.selectedMode == mode ? AppColors.chatModeColor : Color.clear)
-                            .frame(height: 2)
-                    }
+                    Text(mode.rawValue)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(viewModel.selectedMode == mode ? AppColors.titleColor : AppColors.titleColor.opacity(0.6))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(viewModel.selectedMode == mode ? Color.white : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(AppColors.lightBrown.opacity(0.5), lineWidth: 1)
+                                )
+                        )
                 }
+                .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding(.top, 8)
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppColors.lightYellow.opacity(0.6))
+        )
     }
 }
 

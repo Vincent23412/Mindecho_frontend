@@ -43,9 +43,9 @@ struct RelaxTimerView: View {
                                                 .font(.headline)
                                                 .foregroundColor(AppColors.titleColor)
                                                 .lineLimit(2)
-                                            Text(item.subtitle)
+                                            Text("\(item.duration) ｜ \(item.topic)")
                                                 .font(.subheadline)
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(AppColors.titleColor.opacity(0.6))
                                                 .lineLimit(2)
                                         }
                                         
@@ -57,8 +57,11 @@ struct RelaxTimerView: View {
                                     .padding()
                                     .background(
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(AppColors.cardBackground)
-                                            .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                                            .fill(Color.white.opacity(0.9))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 14)
+                                                    .stroke(AppColors.lightBrown.opacity(0.4), lineWidth: 1)
+                                            )
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -73,7 +76,7 @@ struct RelaxTimerView: View {
             Spacer()
         }
         .padding()
-        .background(AppColors.chatBackground.ignoresSafeArea())
+        .background(AppColors.lightYellow.ignoresSafeArea())
     }
 }
 

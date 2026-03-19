@@ -23,7 +23,8 @@ class RelaxTimerViewModel: ObservableObject {
     struct VideoItem: Identifiable {
         let id = UUID()
         let title: String
-        let subtitle: String
+        let duration: String
+        let topic: String
         let url: URL
     }
     
@@ -39,22 +40,26 @@ class RelaxTimerViewModel: ObservableObject {
             items: [
                 VideoItem(
                     title: "呼吸放鬆法 1",
-                    subtitle: "https://www.youtube.com/watch?v=olOYzwaiMcY",
+                    duration: "15 分鐘",
+                    topic: "穩定自律神經 幫助睡眠",
                     url: URL(string: "https://www.youtube.com/watch?v=olOYzwaiMcY")!
                 ),
                 VideoItem(
                     title: "呼吸放鬆法 2",
-                    subtitle: "https://www.youtube.com/watch?v=yz2NjOUMBIE",
+                    duration: "10 分鐘",
+                    topic: "幫助調息",
                     url: URL(string: "https://www.youtube.com/watch?v=yz2NjOUMBIE&list=PLgzxdlIcydXAz-XT2GLihQlH9q_nEQKTk")!
                 ),
                 VideoItem(
                     title: "呼吸放鬆法 3",
-                    subtitle: "https://www.youtube.com/watch?v=sYDwONgry2A",
+                    duration: "5 分鐘",
+                    topic: "吸4-停7-吐8",
                     url: URL(string: "https://www.youtube.com/watch?v=sYDwONgry2A")!
                 ),
                 VideoItem(
                     title: "呼吸放鬆法 4",
-                    subtitle: "https://www.youtube.com/watch?v=UrMa3uOq67g",
+                    duration: "10 分鐘",
+                    topic: "深呼吸放鬆練習引導",
                     url: URL(string: "https://www.youtube.com/watch?v=UrMa3uOq67g")!
                 )
             ]
@@ -64,17 +69,20 @@ class RelaxTimerViewModel: ObservableObject {
             items: [
                 VideoItem(
                     title: "正念呼吸 1",
-                    subtitle: "https://www.youtube.com/watch?v=9XzRNDLlSSQ",
+                    duration: "10 分鐘",
+                    topic: "穩定注意力",
                     url: URL(string: "https://www.youtube.com/watch?v=9XzRNDLlSSQ&list=PL5nF87IeD9iodsrCfyUlcpuv2kzqkvm3K&index=2")!
                 ),
                 VideoItem(
                     title: "正念呼吸 2",
-                    subtitle: "https://www.youtube.com/watch?v=XvUJl71hHhM",
+                    duration: "12 分鐘",
+                    topic: "緩解焦慮",
                     url: URL(string: "https://www.youtube.com/watch?v=XvUJl71hHhM&list=PL69Lw5aOg_-_5b4JigAKPJZI1nQafkZhv&index=3")!
                 ),
                 VideoItem(
                     title: "正念呼吸 3",
-                    subtitle: "https://www.youtube.com/watch?v=y0oJoGT1o6U",
+                    duration: "8 分鐘",
+                    topic: "回到呼吸",
                     url: URL(string: "https://www.youtube.com/watch?v=y0oJoGT1o6U&list=PLqC8PGr0r_opMB9UhOgCsJn8gkaIeXXKY")!
                 )
             ]
@@ -84,12 +92,14 @@ class RelaxTimerViewModel: ObservableObject {
             items: [
                 VideoItem(
                     title: "漸進式放鬆法 1",
-                    subtitle: "https://www.youtube.com/watch?v=TEok1rznak4",
+                    duration: "12 分鐘",
+                    topic: "釋放緊繃",
                     url: URL(string: "https://www.youtube.com/watch?v=TEok1rznak4")!
                 ),
                 VideoItem(
                     title: "漸進式放鬆法 2",
-                    subtitle: "https://www.youtube.com/watch?v=al9vb6myEdw",
+                    duration: "10 分鐘",
+                    topic: "舒緩身體",
                     url: URL(string: "https://www.youtube.com/watch?v=al9vb6myEdw")!
                 )
             ]
@@ -99,17 +109,20 @@ class RelaxTimerViewModel: ObservableObject {
             items: [
                 VideoItem(
                     title: "冥想 1",
-                    subtitle: "https://www.youtube.com/watch?v=LrxvPgGXLvg",
+                    duration: "15 分鐘",
+                    topic: "放鬆與覺察",
                     url: URL(string: "https://www.youtube.com/watch?v=LrxvPgGXLvg")!
                 ),
                 VideoItem(
                     title: "韓瑞克森肌肉放鬆訓練",
-                    subtitle: "https://www.youtube.com/watch?v=Y77208p_zo4",
+                    duration: "20 分鐘",
+                    topic: "深層放鬆",
                     url: URL(string: "https://www.youtube.com/watch?v=Y77208p_zo4")!
                 ),
                 VideoItem(
                     title: "冥想 2",
-                    subtitle: "https://www.youtube.com/watch?v=tFSpuL4nfgM",
+                    duration: "10 分鐘",
+                    topic: "放鬆入睡",
                     url: URL(string: "https://www.youtube.com/watch?v=tFSpuL4nfgM")!
                 )
             ]

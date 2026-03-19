@@ -25,14 +25,16 @@ struct HomeView: View {
     
     // MARK: - Observable Objects
     @ObservedObject private var checkInManager = DailyCheckInManager.shared
-    @ObservedObject private var authViewModel = AuthViewModel.shared
     @EnvironmentObject private var tabTourState: TabTourState
-    @State private var showLogoutConfirm = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
+                    homeHeader
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
+
                     // 五項指標追蹤
                     VStack {
                         FiveIndicatorsCard(selectedTimePeriod: $selectedTimePeriod)
@@ -88,10 +90,6 @@ struct HomeView: View {
 
                     homeDiaryQuickEntry
                         .padding(.top, 20)
-                        .padding(.bottom, 20)
-
-                    logoutSection
-                        .padding(.horizontal, 16)
                         .padding(.bottom, 28)
                 }
             }
@@ -100,27 +98,9 @@ struct HomeView: View {
                 checkInManager.loadDataFromAPI()
                 Task { await loadDiaryStatus() }
             }
-            .navigationTitle("首頁")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(AppColors.cardBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("功能介紹") {
-                        tabTourState.step = .home
-                        tabTourState.isActive = true
-                    }
-                    .font(.subheadline.weight(.semibold))
-                }
-            }
-            .alert("登出", isPresented: $showLogoutConfirm) {
-                Button("取消", role: .cancel) {}
-                Button("登出", role: .destructive) {
-                    authViewModel.logout()
-                }
-            } message: {
-                Text("確定要登出嗎？")
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 // 觸發動畫
                 withAnimation(.easeInOut(duration: HomeConstants.Animation.biorhythmAnimationDuration)) {
@@ -151,10 +131,13 @@ struct HomeView: View {
                         .foregroundColor(AppColors.titleColor.opacity(0.6))
                 }
             }
+            Text("可以寫關於你今天發生的事，或是心情……")
+                .font(.caption)
+                .foregroundColor(AppColors.titleColor.opacity(0.55))
 
             ZStack(alignment: .topLeading) {
                 if homeDiaryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("寫下今天的感受與想法…")
+                    Text("開始寫下你的心情…")
                         .font(.subheadline)
                         .foregroundColor(AppColors.titleColor.opacity(0.45))
                         .padding(.horizontal, 14)
@@ -164,14 +147,14 @@ struct HomeView: View {
                     .frame(height: 120)
                     .padding(10)
                     .foregroundColor(AppColors.titleColor)
-                    .background(Color.clear)
+                    .background(Color.white)
             }
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(AppColors.lightYellow)
+                    .fill(Color.white)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(AppColors.titleColor.opacity(0.12), lineWidth: 1)
+                            .stroke(AppColors.lightBrown.opacity(0.4), lineWidth: 1)
                     )
             )
 
@@ -195,13 +178,15 @@ struct HomeView: View {
                                 .frame(width: 70, height: 78)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(AppColors.lightYellow)
+                                        .fill(homeSelectedMood == mood.0
+                                              ? AppColors.resourceCardYellow.opacity(0.6)
+                                              : Color.white)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                                                 .stroke(
                                                     homeSelectedMood == mood.0
                                                     ? AppColors.orange
-                                                    : AppColors.titleColor.opacity(0.12),
+                                                    : AppColors.lightBrown.opacity(0.35),
                                                     lineWidth: 1.5
                                                 )
                                         )
@@ -211,6 +196,11 @@ struct HomeView: View {
                         }
                     }
                 }
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(AppColors.lightYellow.opacity(0.5))
+                )
             }
 
             Button {
@@ -239,21 +229,24 @@ struct HomeView: View {
         }
         .padding(.horizontal, 16)
     }
-
-    private var logoutSection: some View {
-        Button {
-            showLogoutConfirm = true
-        } label: {
-            Text("登出")
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.red.opacity(0.85))
-                .cornerRadius(12)
+    
+    private var homeHeader: some View {
+        HStack {
+            Spacer()
+            Text("首頁")
+                .font(.title2.weight(.bold))
+                .foregroundColor(AppColors.titleColor)
+            Spacer()
+            Button("功能介紹") {
+                tabTourState.step = .home
+                tabTourState.isActive = true
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundColor(AppColors.orange)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
     }
+
 
     // MARK: - 私有方法
     private func loadDiaryStatus() async {

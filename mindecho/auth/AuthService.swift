@@ -13,7 +13,7 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
     @Published var authToken: String?
     
     // MARK: - 私有屬性
-    private let baseURL = "https://localhost/dev-api"
+    private let baseURL = "https://mindechoserver.com:8443/api"
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = AuthConstants.Network.requestTimeout

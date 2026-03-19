@@ -234,8 +234,9 @@ private extension RegisterPage {
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(AppColors.darkBrown)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .fill(selectedGender == option ? AppColors.lightYellow.opacity(0.7) : Color.white)
@@ -248,6 +249,7 @@ private extension RegisterPage {
                 .buttonStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity)
     }
     
     var educationSelector: some View {
@@ -264,7 +266,7 @@ private extension RegisterPage {
                     selectedEducationLevel = level
                 } label: {
                     HStack {
-                        Image(systemName: selectedEducationLevel == level ? "checkmark.square.fill" : "square")
+                        Image(systemName: selectedEducationLevel == level ? "largecircle.fill.circle" : "circle")
                             .foregroundColor(selectedEducationLevel == level ? AppColors.orange : AppColors.mediumBrown.opacity(0.7))
                         Text(title)
                             .font(.system(size: 14))
@@ -488,7 +490,7 @@ private extension RegisterPage {
         .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
+                .fill(Color(red: 1.0, green: 0.97, blue: 0.94))
                 .shadow(color: AppColors.darkBrown.opacity(0.1), radius: 10, x: 0, y: 5)
         )
     }

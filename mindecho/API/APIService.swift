@@ -4,7 +4,7 @@ import Combine
 class APIService: NSObject, ObservableObject, URLSessionDelegate {
     static let shared = APIService()
     
-    private let baseURL = "https://localhost/dev-api"
+    private let baseURL = "https://mindechoserver.com:8443/api"
     private var reasonBaseURL: String { "\(baseURL)/reason" }
     private var diaryBaseURL: String { "\(baseURL)/diaries" }
     private var healthAdviceURL: String { "\(baseURL)/health/advice" }
