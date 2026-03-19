@@ -23,6 +23,8 @@ struct ChatInputView: View {
         case .chatMode: return "輸入訊息..."
         case .cbtMode:  return "分享您的想法或困擾..."
         case .mbtMode:  return "描述您的感受或人際困擾..."
+        case .mbctMode: return "覺察此刻的感受或念頭..."
+        case .initial:  return "從想聊的事情開始..."
         }
     }
 
@@ -31,6 +33,8 @@ struct ChatInputView: View {
         case .chatMode: return ["我今天心情不錯", "有點累", "想聊聊", "最近怎麼樣？"]
         case .cbtMode:  return ["我感到很焦慮", "總是擔心", "覺得壓力很大", "想不通"]
         case .mbtMode:  return ["人際關係困擾", "不理解他人", "情緒複雜", "感受不明"]
+        case .mbctMode: return ["最近壓力很大", "腦中一直想", "情緒起伏", "想練習正念"]
+        case .initial:  return ["我不知道從哪說起", "最近有點煩", "想整理心情", "只是想聊聊"]
         }
     }
 

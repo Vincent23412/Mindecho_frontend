@@ -274,7 +274,7 @@ struct ChatHeaderView: View {
             
             // 模式選擇器
             HStack(spacing: 8) {
-                ForEach(TherapyMode.allCases, id: \.self) { mode in
+                ForEach(TherapyMode.selectableCases, id: \.self) { mode in
                     Button(action: {
                         if selectedMode != mode {
                             onModeChange(mode)

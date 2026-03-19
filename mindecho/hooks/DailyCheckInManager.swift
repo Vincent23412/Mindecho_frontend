@@ -213,7 +213,7 @@ class DailyCheckInManager: NSObject, ObservableObject {
             "entryDate": entryDate
         ]
 
-        guard let url = URL(string: "https://mindechoserver.com:8443/api/main/dailyQuestions") else {
+        guard let url = URL(string: "https://localhost/dev-api/main/dailyQuestions") else {
             print("❌ sendDailyQuestions: bad URL")
             return
         }

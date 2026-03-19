@@ -47,6 +47,8 @@ struct AppColors {
         case .chatMode: return chatModeColor
         case .cbtMode: return cbtModeColor
         case .mbtMode: return mbtModeColor
+        case .mbctMode: return cbtModeColor
+        case .initial: return chatModeColor
         }
     }
 }

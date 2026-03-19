@@ -6,12 +6,20 @@ enum TherapyMode: String, CaseIterable, Codable {
     case chatMode = "chatMode"
     case cbtMode = "CBT"
     case mbtMode = "MBT"
+    case mbctMode = "MBCT"
+    case initial = "INITIAL"
+
+    static var selectableCases: [TherapyMode] {
+        return [.initial, .mbtMode, .cbtMode, .mbctMode]
+    }
     
     var displayName: String {
         switch self {
         case .chatMode: return "聊天模式"
         case .cbtMode: return "CBT模式"
         case .mbtMode: return "MBT模式"
+        case .mbctMode: return "MBCT模式"
+        case .initial: return "初始模式"
         }
     }
     
@@ -20,14 +28,18 @@ enum TherapyMode: String, CaseIterable, Codable {
         case .chatMode: return "聊天"
         case .cbtMode: return "CBT"
         case .mbtMode: return "MBT"
+        case .mbctMode: return "MBCT"
+        case .initial: return "初始"
         }
     }
     
     var description: String {
         switch self {
         case .chatMode: return "輕鬆自在的日常對話"
-        case .cbtMode: return "認知行為療法，幫助您識別並改變負面思維模式"
-        case .mbtMode: return "心智化療法，增強理解自己和他人想法與感受的能力"
+        case .cbtMode: return "溫柔引導探索想法－情緒－行為的連結，不糾正也不辯論"
+        case .mbtMode: return "培養對自己與他人內在狀態的好奇，放慢互動中的思考"
+        case .mbctMode: return "正念取向，觀察想法與情緒的起伏，需要時做簡短安定練習"
+        case .initial: return "初次對談，溫暖接住與建立安全感，讓對話自然開始"
         }
     }
     
@@ -36,6 +48,8 @@ enum TherapyMode: String, CaseIterable, Codable {
         case .chatMode: return AppColors.chatModeColor
         case .cbtMode: return AppColors.cbtModeColor
         case .mbtMode: return AppColors.mbtModeColor
+        case .mbctMode: return AppColors.cbtModeColor
+        case .initial: return AppColors.chatModeColor
         }
     }
     
@@ -47,6 +61,10 @@ enum TherapyMode: String, CaseIterable, Codable {
             return "您好！我是您的CBT治療助手 🧠\n\n認知行為療法(CBT)可以幫助您：\n• 識別負面的思維模式\n• 挑戰不合理的想法\n• 建立更積極健康的認知習慣\n\n您可以分享任何讓您困擾的想法或情緒，我們一起來分析和處理。"
         case .mbtMode:
             return "您好！我是您的MBT治療助手 🤝\n\n心智化療法(MBT)專注於：\n• 增強情感覺察能力\n• 改善人際關係理解\n• 提升心智化水平\n\n無論是人際困擾、情緒混亂，還是想更好地理解自己和他人，我都可以陪伴您一起探索。"
+        case .mbctMode:
+            return "您好！我是您的MBCT治療助手 🧘\n\n正念認知療法(MBCT)結合正念覺察與認知行為技巧，幫助您：\n• 更清楚地覺察念頭與情緒\n• 降低自動化的負面反應\n• 建立更穩定的身心狀態\n\n想從今天的感受開始聊聊嗎？"
+        case .initial:
+            return "您好！我是您的對話助手。\n\n我們可以從任何您想分享的事情開始。我會一步步陪您整理感受、釐清想法。\n\n現在最想聊的是什麼呢？"
         }
     }
 }
@@ -59,6 +77,8 @@ extension TherapyMode {
         case "chatMode": self = .chatMode
         case "CBT": self = .cbtMode
         case "MBT": self = .mbtMode
+        case "MBCT": self = .mbctMode
+        case "INITIAL": self = .initial
         default: self = .chatMode
         }
     }

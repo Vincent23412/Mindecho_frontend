@@ -64,7 +64,7 @@ class AuthViewModel: ObservableObject {
         emergencyContacts: [EmergencyContactPayload],
         gender: String,
         educationLevel: Int,
-        mostImportantReason: String,
+        mostImportantReasons: String,
         supportContactName: String? = nil,
         supportContactInfo: String? = nil,
         familyContactName: String? = nil,
@@ -88,7 +88,7 @@ class AuthViewModel: ObservableObject {
             supportContactInfo: supportContactInfo,
             familyContactName: familyContactName,
             familyContactInfo: familyContactInfo,
-            mostImportantReason: mostImportantReason
+            mostImportantReasons: mostImportantReasons
         )
         
         if !validationErrors.isEmpty {
@@ -104,7 +104,9 @@ class AuthViewModel: ObservableObject {
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             password: password,
             name: buildName(firstName: firstName, lastName: lastName),
-            dateOfBirth: dateOfBirth,
+            dateOfBirth: dateOfBirth.trimmingCharacters(in: .whitespacesAndNewlines),
+            birthYear: parseBirthYear(dateOfBirth),
+            birthMonth: parseBirthMonth(dateOfBirth),
             nickname: nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
             emergencyContacts: emergencyContacts,
             gender: gender,
@@ -114,7 +116,7 @@ class AuthViewModel: ObservableObject {
             supportContactInfo: supportContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines),
             familyContactName: familyContactName?.trimmingCharacters(in: .whitespacesAndNewlines),
             familyContactInfo: familyContactInfo?.trimmingCharacters(in: .whitespacesAndNewlines),
-            mostImportantReason: mostImportantReason.trimmingCharacters(in: .whitespacesAndNewlines)
+            mostImportantReasons: mostImportantReasons.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
         // 發送註冊請求 (使用模擬 API) 真實改成Register
@@ -151,6 +153,22 @@ class AuthViewModel: ObservableObject {
                 }
             )
             .store(in: &cancellables)
+    }
+
+    private func parseBirthYear(_ value: String) -> Int? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let parts = trimmed.split(separator: "-")
+        guard let yearPart = parts.first, let year = Int(yearPart) else { return nil }
+        return year
+    }
+
+    private func parseBirthMonth(_ value: String) -> Int? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let parts = trimmed.split(separator: "-")
+        guard parts.count >= 2, let month = Int(parts[1]) else { return nil }
+        return month
     }
 
     private func buildName(firstName: String, lastName: String) -> String {
@@ -269,30 +287,21 @@ class AuthViewModel: ObservableObject {
     func attemptAutoLoginOnLaunch() {
         guard !hasAttemptedAutoLogin else { return }
         hasAttemptedAutoLogin = true
-
-        // DEBUG: 強制每次都進登入頁（暫時用來測試登入流程）
-        // 要改回自動登入：移除下面的強制登出區塊，並恢復 AutoLogin 流程
-        print("AutoLogin: forced logout (debug)")
-        authService.logout()
-        authState = .unauthenticated
-        shouldShowDailyCheckIn = false
-        forceDailyCheckInOnAuth = false
-        clearMessages()
-
+        
         // AutoLogin（正式用）
-//        authService.refreshStoredAuthIfNeeded()
-//        guard authService.hasStoredAuth else {
-//            print("AutoLogin: no stored auth, logging out")
-//            authService.logout()
-//            return
-//        }
-//        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
-//            print("AutoLogin: stored auth expired, logging out")
-//            handleAutoLoginFailure()
-//            return
-//        }
-//        print("AutoLogin: stored auth still valid")
-//        clearMessages()
+        authService.refreshStoredAuthIfNeeded()
+        guard authService.hasStoredAuth else {
+            print("AutoLogin: no stored auth, logging out")
+            authService.logout()
+            return
+        }
+        guard authService.isStoredAuthValid(maxAgeDays: 30) else {
+            print("AutoLogin: stored auth expired, logging out")
+            handleAutoLoginFailure()
+            return
+        }
+        print("AutoLogin: stored auth still valid")
+        clearMessages()
     }
     
     // MARK: - 重置密碼功能

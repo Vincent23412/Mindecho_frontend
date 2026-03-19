@@ -9,7 +9,9 @@ struct ChatListPage: View {
     @State private var newChatSession: ChatSession?
     @State private var showingDeleteAlert = false
     @State private var sessionToDelete: ChatSession?
-    @State private var selectedMode: TherapyMode = .chatMode
+    @State private var selectedMode: TherapyMode = .initial
+    @State private var showingModeIntro = false
+    @State private var introMode: TherapyMode = .initial
     @State private var showingTitlePrompt = false
     @State private var pendingTitle = ""
     
@@ -118,6 +120,18 @@ struct ChatListPage: View {
             } message: {
                 Text("請輸入聊天室名稱（可留空）")
             }
+            .sheet(isPresented: $showingModeIntro) {
+                ModeIntroductionSheet(
+                    mode: introMode,
+                    onCancel: {
+                        showingModeIntro = false
+                    },
+                    onConfirm: {
+                        showingModeIntro = false
+                        showingTitlePrompt = true
+                    }
+                )
+            }
         }
     }
     
@@ -139,31 +153,81 @@ struct ChatListPage: View {
     private func startNewChat(for mode: TherapyMode) {
         guard !chatHook.isLoading else { return }
         selectedMode = mode
+        introMode = mode
         pendingTitle = ""
-        showingTitlePrompt = true
+        showingModeIntro = true
     }
     
     private var modeCards: [TherapyModeCard] {
         [
             TherapyModeCard(
-                mode: .chatMode,
-                title: "聊天",
-                subtitle: "輕鬆自在的日常對話",
-                icon: "bubble.left.and.bubble.right"
-            ),
-            TherapyModeCard(
-                mode: .cbtMode,
-                title: "CBT",
-                subtitle: "釐清想法與情緒，調整負向思維",
-                icon: "brain.head.profile"
+                mode: .initial,
+                title: "初談",
+                subtitle: "溫暖接住，建立安全感",
+                icon: "sparkles"
             ),
             TherapyModeCard(
                 mode: .mbtMode,
                 title: "MBT",
                 subtitle: "理解自己與他人感受，增進關係",
                 icon: "person.2.fill"
+            ),
+            TherapyModeCard(
+                mode: .cbtMode,
+                title: "CBT",
+                subtitle: "探索想法－情緒－行為的連結",
+                icon: "brain.head.profile"
+            ),
+            TherapyModeCard(
+                mode: .mbctMode,
+                title: "MBCT",
+                subtitle: "正念覺察，安定情緒起伏",
+                icon: "leaf"
             )
         ]
+    }
+}
+
+private struct ModeIntroductionSheet: View {
+    let mode: TherapyMode
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 16) {
+                ModeIntroductionView(mode: mode)
+                    .padding(.horizontal, 20)
+                
+                Spacer()
+                
+                HStack(spacing: 12) {
+                    Button("取消") {
+                        onCancel()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.gray.opacity(0.15))
+                    .foregroundColor(AppColors.darkBrown)
+                    .cornerRadius(12)
+                    
+                    Button("確定") {
+                        onConfirm()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(AppColors.darkBrown)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .navigationTitle("聊天室介紹")
+            .navigationBarTitleDisplayMode(.inline)
+            .background(AppColors.lightYellow.ignoresSafeArea())
+        }
+        .presentationBackground(AppColors.lightYellow)
     }
 }
 

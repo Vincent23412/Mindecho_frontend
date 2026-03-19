@@ -13,6 +13,8 @@ struct User: Codable, Identifiable {
     let nickname: String?
     let avatar: String?
     let dateOfBirth: String?
+    let birthYear: Int?
+    let birthMonth: Int?
     let gender: String?
     let educationLevel: Int?
     let emergencyContactName: String?
@@ -39,6 +41,8 @@ struct User: Codable, Identifiable {
         case nickname
         case avatar
         case dateOfBirth
+        case birthYear
+        case birthMonth
         case gender
         case educationLevel
         case emergencyContactName
@@ -93,6 +97,8 @@ struct RegisterRequest: Codable {
     let password: String
     let name: String
     let dateOfBirth: String
+    let birthYear: Int?
+    let birthMonth: Int?
     let nickname: String?
     let emergencyContacts: [EmergencyContactPayload]
     let gender: String
@@ -102,7 +108,7 @@ struct RegisterRequest: Codable {
     let supportContactInfo: String?
     let familyContactName: String?
     let familyContactInfo: String?
-    let mostImportantReason: String
+    let mostImportantReasons: String
     
     func toDictionary() -> [String: Any] {
         return [
@@ -110,6 +116,8 @@ struct RegisterRequest: Codable {
             "password": password,
             "name": name,
             "dateOfBirth": dateOfBirth,
+            "birthYear": birthYear as Any,
+            "birthMonth": birthMonth as Any,
             "nickname": nickname as Any,
             "emergencyContacts": emergencyContacts.map { $0.toDictionary() },
             "gender": gender,
@@ -119,7 +127,7 @@ struct RegisterRequest: Codable {
             "supportContactInfo": supportContactInfo as Any,
             "familyContactName": familyContactName as Any,
             "familyContactInfo": familyContactInfo as Any,
-            "mostImportantReason": mostImportantReason
+            "mostImportantReasons": mostImportantReasons
         ]
     }
 }

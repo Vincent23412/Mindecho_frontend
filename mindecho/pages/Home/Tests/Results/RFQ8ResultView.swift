@@ -8,28 +8,28 @@ struct RFQ8ResultView: View {
     
     var rfqCLevel: String {
         switch rfqCScore {
-        case 0...6: return "過度心智化程度低"
-        case 7...12: return "過度心智化程度中等"
-        case 13...18: return "過度心智化程度高"
+        case 0...2: return "過度心智化程度低"
+        case 3...6: return "過度心智化程度中等"
+        case 7...18: return "過度心智化程度高"
         default: return "過度心智化程度中等"
         }
     }
     
     var rfqULevel: String {
         switch rfqUScore {
-        case 0...6: return "心智化缺陷程度低"
-        case 7...12: return "心智化缺陷程度中等"
-        case 13...18: return "心智化缺陷程度高"
+        case 0...2: return "心智化缺陷程度低"
+        case 3...6: return "心智化缺陷程度中等"
+        case 7...18: return "心智化缺陷程度高"
         default: return "心智化缺陷程度中等"
         }
     }
     
     var recommendation: String {
-        if rfqCScore >= 13 && rfqUScore >= 13 {
+        if rfqCScore >= 7 && rfqUScore >= 7 {
             return "您在心智化方面可能存在較明顯的困難，建議尋求專業協助。"
-        } else if rfqCScore >= 13 {
+        } else if rfqCScore >= 7 {
             return "您可能有過度心智化的傾向，建議學習更客觀地理解自己和他人的心理狀態。"
-        } else if rfqUScore >= 13 {
+        } else if rfqUScore >= 7 {
             return "您可能在理解心理狀態方面存在困難，建議練習提升自我覺察能力。"
         } else {
             return "您的心智化能力整體良好，請繼續保持。"
@@ -42,7 +42,7 @@ struct RFQ8ResultView: View {
                 .font(.system(size: 60))
                 .foregroundColor(AppColors.titleColor)
             
-            Text("RFQ-8 測試結果")
+            Text("RFQ-8 測試結果 (Reflective Functioning Questionnaire-8)")
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.titleColor)

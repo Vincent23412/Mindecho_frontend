@@ -3,14 +3,12 @@ import Foundation
 // MARK: - API 請求/回應模型
 struct SendMessageRequest: Codable {
     let message: String
-    let mode: TherapyMode?
-    let userId: String?
 }
 
 struct ChatAPIResponse: Codable {
     let reply: String
-    let messageId: String
-    let timestamp: String
+    let messageId: String?
+    let timestamp: String?
 }
 
 struct ChatMessagesResponse: Codable {
@@ -22,13 +20,14 @@ struct APIMessage: Codable {
     let content: String
     let isFromUser: Bool
     let timestamp: String
-    let mode: TherapyMode
+    let chatbotType: ChatbotType
 }
 
 struct APISessionInfo: Codable {
     let id: String
     let title: String
-    let mode: TherapyMode
+    let chatbotType: ChatbotType
+    let provider: ChatProvider?
     let createdAt: String
 }
 
@@ -48,6 +47,7 @@ enum ChatAPIError: Error, LocalizedError {
     case unauthorized
     case rateLimited
     case badRequest(String)
+    case notFound(String)
     
     var errorDescription: String? {
         switch self {
@@ -63,6 +63,41 @@ enum ChatAPIError: Error, LocalizedError {
             return "免費額度已用完"
         case .badRequest(let message):
             return message.isEmpty ? "請求參數錯誤" : message
+        case .notFound(let message):
+            return message.isEmpty ? "Session not found." : message
+        }
+    }
+}
+
+enum ChatbotType: String, Codable {
+    case mbt = "MBT"
+    case cbt = "CBT"
+    case mbct = "MBCT"
+    case initial = "INITIAL"
+
+    var therapyMode: TherapyMode {
+        switch self {
+        case .mbt: return .mbtMode
+        case .cbt: return .cbtMode
+        case .mbct: return .mbctMode
+        case .initial: return .initial
+        }
+    }
+}
+
+enum ChatProvider: String, Codable {
+    case gemini
+    case anthropic
+}
+
+extension TherapyMode {
+    var chatbotType: ChatbotType {
+        switch self {
+        case .chatMode: return .initial
+        case .cbtMode: return .cbt
+        case .mbtMode: return .mbt
+        case .mbctMode: return .mbct
+        case .initial: return .initial
         }
     }
 }
@@ -141,6 +176,9 @@ class ChatAPI: NSObject, URLSessionDelegate {
                     throw ChatAPIError.unauthorized
                 case 429:
                     throw ChatAPIError.rateLimited
+                case 404:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
                 default:
                     throw ChatAPIError.serverError(httpResponse.statusCode)
                 }
@@ -189,6 +227,9 @@ class ChatAPI: NSObject, URLSessionDelegate {
                     throw ChatAPIError.badRequest(message)
                 case 401:
                     throw ChatAPIError.unauthorized
+                case 404:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
                 default:
                     throw ChatAPIError.serverError(httpResponse.statusCode)
                 }
@@ -260,14 +301,17 @@ class ChatAPI: NSObject, URLSessionDelegate {
     }
     
     // MARK: - 建立新會話
-    func createNewSession(mode: TherapyMode, title: String? = nil, token: String) async throws -> APISessionInfo {
+    func createNewSession(mode: TherapyMode, title: String? = nil, provider: ChatProvider? = nil, token: String) async throws -> APISessionInfo {
         guard let url = URL(string: "\(baseURL)/chat/sessions") else {
             throw ChatAPIError.networkError("無效的 URL")
         }
         
-        var requestBody: [String: String] = ["mode": mode.rawValue]
+        var requestBody: [String: String] = ["chatbotType": mode.chatbotType.rawValue]
         if let title, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             requestBody["title"] = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let provider {
+            requestBody["provider"] = provider.rawValue
         }
         
         var urlRequest = URLRequest(url: url)
@@ -329,7 +373,7 @@ class ChatAPI: NSObject, URLSessionDelegate {
         
         do {
             log("deleteSession → \(url.absoluteString)")
-            let (_, response) = try await session.data(for: urlRequest)
+            let (data, response) = try await session.data(for: urlRequest)
             
             if let httpResponse = response as? HTTPURLResponse {
                 log("deleteSession ← status=\(httpResponse.statusCode)")
@@ -337,9 +381,13 @@ class ChatAPI: NSObject, URLSessionDelegate {
                 case 200...299:
                     break
                 case 400:
-                    throw ChatAPIError.badRequest("請求參數錯誤")
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.badRequest(message.isEmpty ? "請求參數錯誤" : message)
                 case 401:
                     throw ChatAPIError.unauthorized
+                case 404:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
                 default:
                     throw ChatAPIError.serverError(httpResponse.statusCode)
                 }
@@ -425,6 +473,18 @@ extension ChatAPI {
             } else {
                 return "在正念為基礎的療法中，我們關注當下的感受和體驗。讓我們花一點時間覺察您現在的感受。"
             }
+        case .mbctMode:
+            if lowercaseMessage.contains("壓力") || lowercaseMessage.contains("焦慮") {
+                return "謝謝你的分享。我們可以先用幾次深呼吸，覺察當下身體的緊繃感。你願意描述一下此刻身體最明顯的感受嗎？"
+            } else if lowercaseMessage.contains("想法") || lowercaseMessage.contains("念頭") {
+                return "在MBCT裡，我們會練習把念頭當作「路過的雲」。你願意試著描述這些念頭，但不急著判斷它們嗎？"
+            } else if lowercaseMessage.contains("情緒") || lowercaseMessage.contains("心情") {
+                return "我們可以先為情緒命名，並用好奇的態度觀察它。此刻最主要的情緒是什麼？它大約有多強烈？"
+            } else {
+                return "我們可以先停一下，做個短暫的覺察。現在的呼吸、身體、情緒，各自是什麼狀態？"
+            }
+        case .initial:
+            return "謝謝你願意開始分享。我們可以從你最近最在意的一件事開始。你想先從哪裡聊起？"
         }
     }
 }

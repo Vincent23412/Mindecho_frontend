@@ -40,17 +40,18 @@ class ChatHook: ObservableObject {
         do {
             // 如果有真實後端，使用 API
             if let token = authToken {
-                let apiSessionInfo = try await chatAPI.createNewSession(mode: mode, title: title, token: token)
+                let apiSessionInfo = try await chatAPI.createNewSession(mode: mode, title: title, provider: nil, token: token)
+                let sessionMode = apiSessionInfo.chatbotType.therapyMode
                 
                 // 將 API 回應轉換為本地模型
                 let session = ChatSession(
                     id: UUID(),
                     backendId: apiSessionInfo.id,
                     title: apiSessionInfo.title,
-                    therapyMode: mode,
+                    therapyMode: sessionMode,
                     lastMessage: "",
                     lastUpdated: parseAPIDate(apiSessionInfo.createdAt) ?? Date(),
-                    tags: [mode.shortName]
+                    tags: [sessionMode.shortName]
                 )
                 
                 chatSessions.insert(session, at: 0)
@@ -144,9 +145,7 @@ class ChatHook: ObservableObject {
             if let token = authToken {
                 // 使用真實 API
                 let request = SendMessageRequest(
-                    message: trimmedContent,
-                    mode: nil,
-                    userId: AuthService.shared.currentUser?.primaryId
+                    message: trimmedContent
                 )
 
                 guard let backendId = session.backendId else {
@@ -279,7 +278,7 @@ class ChatHook: ObservableObject {
                     content: apiMessage.content,
                     isFromUser: apiMessage.isFromUser,
                     timestamp: ISO8601DateFormatter().date(from: apiMessage.timestamp) ?? Date(),
-                    mode: apiMessage.mode
+                    mode: apiMessage.chatbotType.therapyMode
                 )
             }
             
@@ -316,16 +315,16 @@ class ChatHook: ObservableObject {
                 return (backendId, session.id)
             })
             var mapped: [ChatSession] = response.sessions.map { session in
-                ChatSession(
-                    id: existingIds[session.id] ?? UUID(),
-                    backendId: session.id,
-                    title: session.title,
-                    therapyMode: session.mode,
-                    lastMessage: "",
-                    lastUpdated: parseAPIDate(session.createdAt) ?? Date(),
-                    tags: [session.mode.shortName]
-                )
-            }
+                    ChatSession(
+                        id: existingIds[session.id] ?? UUID(),
+                        backendId: session.id,
+                        title: session.title,
+                        therapyMode: session.chatbotType.therapyMode,
+                        lastMessage: "",
+                        lastUpdated: parseAPIDate(session.createdAt) ?? Date(),
+                        tags: [session.chatbotType.therapyMode.shortName]
+                    )
+                }
             
             await withTaskGroup(of: (String, String?).self) { group in
                 for session in mapped {

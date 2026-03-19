@@ -167,7 +167,7 @@ struct TherapyModeSelector: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            ForEach(TherapyMode.allCases, id: \.self) { mode in
+            ForEach(TherapyMode.selectableCases, id: \.self) { mode in
                 Button(action: {
                     if selectedMode != mode {
                         onModeChange(mode)
@@ -218,6 +218,18 @@ struct ModeIntroductionView: View {
                 "增強情感覺察能力",
                 "改善人際關係理解",
                 "提升心智化水平"
+            ]
+        case .mbctMode:
+            return [
+                "觀察想法與情緒的起伏",
+                "把想法當作事件來看",
+                "必要時做簡短的呼吸安定"
+            ]
+        case .initial:
+            return [
+                "溫暖接住與建立安全感",
+                "讓對話自然開始",
+                "不做評估或制式提問"
             ]
         }
     }

@@ -83,7 +83,7 @@ struct Validation {
         supportContactInfo: String?,
         familyContactName: String?,
         familyContactInfo: String?,
-        mostImportantReason: String
+        mostImportantReasons: String
     ) -> [ValidationError] {
         var errors: [ValidationError] = []
         
@@ -149,7 +149,7 @@ struct Validation {
             }
         }
 
-        if mostImportantReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if mostImportantReasons.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors.append(.emptyField("對我很重要的一段話"))
         }
         

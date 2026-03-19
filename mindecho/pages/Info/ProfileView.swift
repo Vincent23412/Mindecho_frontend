@@ -67,6 +67,8 @@ struct EditPersonalInfoView: View {
     @State private var email: String = ""
     @State private var fullName: String = ""
     @State private var birthDate: Date = Date(timeIntervalSince1970: 1036003200) // 2002-10-30
+    @State private var birthYear: Int?
+    @State private var birthMonth: Int?
     @State private var errorMessage: String?
     @State private var isSaving = false
     @State private var showBirthPicker = false
@@ -82,7 +84,7 @@ struct EditPersonalInfoView: View {
                     showBirthPicker = true
                 } label: {
                     HStack {
-                        Text("生日")
+                        Text("出生年月")
                         Spacer()
                         Text(birthMonthDisplay)
                             .foregroundColor(.secondary)
@@ -127,8 +129,14 @@ struct EditPersonalInfoView: View {
         guard let user = authService.currentUser else { return }
         email = user.email
         fullName = buildFullName(user)
-        if let date = parseBirthDate(user.dateOfBirth) {
+        if let year = user.birthYear, let month = user.birthMonth {
+            birthYear = year
+            birthMonth = month
+            birthDate = composeBirthDate(year: year, month: month)
+        } else if let date = parseBirthDate(user.dateOfBirth) {
             birthDate = date
+            birthYear = Calendar.current.component(.year, from: date)
+            birthMonth = Calendar.current.component(.month, from: date)
         }
     }
     
@@ -148,6 +156,14 @@ struct EditPersonalInfoView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM"
         return formatter.string(from: birthDate)
+    }
+
+    private func composeBirthDate(year: Int, month: Int) -> Date {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = 1
+        return Calendar.current.date(from: components) ?? Date()
     }
     
     private func saveProfile() async {
@@ -171,6 +187,8 @@ struct EditPersonalInfoView: View {
             )
             await MainActor.run {
                 authService.updateProfile(user)
+                birthYear = Calendar.current.component(.year, from: birthDate)
+                birthMonth = Calendar.current.component(.month, from: birthDate)
             }
         } catch {
             await MainActor.run {
@@ -1695,7 +1713,7 @@ struct PersonalInfoView: View {
         let initials = user?.initials.isEmpty == false ? user?.initials ?? "ME" : "ME"
         let fullName = formattedFullName(user)
         let email = user?.email.isEmpty == false ? user?.email ?? "-" : "-"
-        let birthday = formatBirthDate(user?.dateOfBirth)
+        let birthday = formatBirthMonth(user)
 
         ScrollView {
             VStack(spacing: 20) {
@@ -1733,7 +1751,7 @@ struct PersonalInfoView: View {
                 VStack(spacing: 12) {
                     infoRow(icon: "envelope.fill", title: "Email", value: email)
                     infoRow(icon: "person.text.rectangle", title: "姓名", value: fullName)
-                    infoRow(icon: "calendar", title: "生日", value: birthday)
+                    infoRow(icon: "calendar", title: "出生年月", value: birthday)
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1801,8 +1819,11 @@ struct PersonalInfoView: View {
         .padding(.vertical, 6)
     }
 
-    private func formatBirthDate(_ value: String?) -> String {
-        guard let value = value, !value.isEmpty else {
+    private func formatBirthMonth(_ user: User?) -> String {
+        if let year = user?.birthYear, let month = user?.birthMonth {
+            return String(format: "%04d-%02d", year, month)
+        }
+        guard let value = user?.dateOfBirth, !value.isEmpty else {
             return "-"
         }
         let isoFormatter = ISO8601DateFormatter()

@@ -56,20 +56,30 @@ enum DailyReminderData {
 
 struct DailyReminderCard: View {
     @State private var reminder: DailyReminderItem = DailyReminderData.randomReminder()
-    @State private var showWheel = false
     @State private var hasSelected = false
-    private let cardHeight: CGFloat = HomeConstants.Charts.chartHeight + 32
+    @State private var wheelItems: [DailyReminderItem] = []
+    @State private var rotation: Double = 0
+    @State private var isSpinning = false
+    private let cardHeight: CGFloat = HomeConstants.Charts.chartHeight + 96
 
     var body: some View {
         Button {
-            showWheel = true
+            spinWheel()
         } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                // MARK: - 今日箴言標題
+            VStack(alignment: .center, spacing: 10) {
                 Text("今日箴言")
                     .font(.headline)
                     .foregroundColor(.brown)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                ZStack {
+                    InlineQuoteWheel(
+                        items: wheelItems,
+                        rotation: rotation
+                    )
+                    .frame(width: 110, height: 110)
+                }
+                .padding(.top, 6)
 
                 if hasSelected {
                     // MARK: - 引言文字
@@ -81,33 +91,12 @@ struct DailyReminderCard: View {
                     Text(reminder.content)
                         .font(.subheadline)
                         .foregroundColor(AppColors.titleColor)
-                        .lineLimit(5)
+                        .lineLimit(6)
                         .minimumScaleFactor(0.95)
                         .padding(.bottom, 4)
                         .frame(minHeight: 50, alignment: .topLeading)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    Text("點擊轉盤抽出今日箴言")
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.titleColor.opacity(0.7))
-                        .padding(.bottom, 4)
-                        .frame(minHeight: 50, alignment: .topLeading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-
-                // MARK: - 轉盤提示
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text("轉動獲得箴言")
-                }
-                .font(.caption)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.orange.opacity(0.15))
-                )
-                .foregroundColor(.orange)
             }
             .padding(.horizontal, 16)
             .padding(.top, 0)
@@ -121,12 +110,40 @@ struct DailyReminderCard: View {
             )
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showWheel) {
-            QuoteWheelView(reminders: DailyReminderData.reminders) { selected in
-                reminder = selected
-                hasSelected = true
+        .onAppear {
+            if wheelItems.isEmpty {
+                wheelItems = Array(DailyReminderData.reminders.shuffled().prefix(12))
             }
         }
+    }
+
+    private func spinWheel() {
+        guard !isSpinning else { return }
+        isSpinning = true
+        let pool = wheelItems.isEmpty ? DailyReminderData.reminders : wheelItems
+        let extraRotations = Double(Int.random(in: 3...6)) * 360
+        let randomOffset = Double.random(in: 0..<360)
+        let targetRotation = rotation + extraRotations + randomOffset
+        withAnimation(.easeOut(duration: 2.4)) {
+            rotation = targetRotation
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            let index = selectedIndex(for: rotation, segmentCount: pool.count)
+            let selectedReminder = pool[index]
+            reminder = selectedReminder
+            hasSelected = true
+            isSpinning = false
+        }
+    }
+
+    private func selectedIndex(for rotation: Double, segmentCount: Int) -> Int {
+        guard segmentCount > 0 else { return 0 }
+        let sliceAngle = 360.0 / Double(segmentCount)
+        let normalized = rotation.truncatingRemainder(dividingBy: 360.0)
+        let angle = normalized < 0 ? normalized + 360.0 : normalized
+        let rawIndex = Int((angle / sliceAngle).rounded(.down))
+        let index = max(0, min(segmentCount - 1, rawIndex))
+        return index % segmentCount
     }
 }
 
@@ -142,15 +159,6 @@ struct QuoteWheelView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            HStack {
-                Spacer()
-                Button("關閉") {
-                    dismiss()
-                }
-                .foregroundColor(AppColors.titleColor)
-                .padding(.trailing, 8)
-            }
-
             ZStack {
                 wheel
                 pointer
@@ -194,6 +202,8 @@ struct QuoteWheelView: View {
         .padding(.top, 16)
         .padding(.horizontal, 20)
         .background(AppColors.lightYellow.ignoresSafeArea())
+        .navigationTitle(" ")
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if wheelItems.isEmpty {
                 wheelItems = Array(reminders.shuffled().prefix(12))
@@ -285,6 +295,51 @@ struct QuoteWheelView: View {
         let rawIndex = Int((angle / sliceAngle).rounded(.down))
         let index = max(0, min(segmentCount - 1, rawIndex))
         return index % segmentCount
+    }
+}
+
+private struct InlineQuoteWheel: View {
+    let items: [DailyReminderItem]
+    let rotation: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
+            let radius = size / 2
+            let segmentCount = max(items.count, 1)
+            let sliceAngle = 360.0 / Double(segmentCount)
+
+            ZStack {
+                ForEach(0..<segmentCount, id: \.self) { index in
+                    PieSlice(
+                        startAngle: .degrees(Double(index) * sliceAngle - 90),
+                        endAngle: .degrees(Double(index + 1) * sliceAngle - 90)
+                    )
+                    .fill(AppColors.resourceCardYellow)
+                }
+
+                Circle()
+                    .stroke(Color.white.opacity(0.8), lineWidth: 4)
+                    .frame(width: radius * 2, height: radius * 2)
+
+                ForEach(0..<segmentCount, id: \.self) { index in
+                    Rectangle()
+                        .fill(Color.white.opacity(0.5))
+                        .frame(width: 2, height: 10)
+                        .offset(y: -radius + 10)
+                        .rotationEffect(.degrees(Double(index) * sliceAngle))
+                }
+
+                Image(systemName: "triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.titleColor)
+                    .rotationEffect(.degrees(180))
+                    .offset(y: -radius + 6)
+            }
+            .rotationEffect(.degrees(rotation))
+            .animation(.easeOut(duration: 2.4), value: rotation)
+            .frame(width: size, height: size)
+        }
     }
 }
 

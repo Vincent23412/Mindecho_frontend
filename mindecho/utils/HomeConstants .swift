@@ -94,22 +94,23 @@ struct HomeConstants {
     // MARK: - 心理測驗
     struct Tests {
         static let psychologicalTests = [
-            makeTest(action: .cesd, title: "憂鬱量表：CESD量表（4,8,12,16為反向題，總分超過12分為疑似憂鬱傾向）", icon: "heart.circle.fill"),
-            makeTest(action: .bsrs5, title: "BSRS-5簡式健康量表", icon: "list.clipboard.fill"),
-            makeTest(action: .sats, title: "SATS消沉指數", icon: "cloud.rain.fill"),
-            makeTest(action: .aq10, title: "孤獨症量表：AQ10", icon: "person.2.fill"),
-            makeTest(action: .psycap, title: "心理資本量表", icon: "sparkles"),
-            makeTest(action: .cdrisc, title: "中文版Connor-Davidson復原力量表", icon: "shield.lefthalf.fill"),
-            makeTest(action: .pansi, title: "正向與負向自殺意念量表：PANSI-C", icon: "exclamationmark.triangle.fill"),
-            makeTest(action: .bss, title: "自殺意念評估：BSS", icon: "waveform.path.ecg")
+            makeTest(action: .cesd, title: "憂鬱量表：CES-D", subtitle: "CES-D Depression Scale", icon: "heart.circle.fill"),
+            makeTest(action: .bsrs5, title: "BSRS-5 簡式健康量表", subtitle: "Brief Symptom Rating Scale-5", icon: "list.clipboard.fill"),
+            makeTest(action: .sats, title: "SATS 消沉心態量表", subtitle: "SATS Scale", icon: "cloud.rain.fill"),
+            makeTest(action: .aq10, title: "AQ-10 自閉特質量表", subtitle: "Autism Spectrum Quotient-10", icon: "person.2.fill"),
+            makeTest(action: .psycap, title: "PCS 心理資本量表", subtitle: "Psychological Capital Scale", icon: "sparkles"),
+            makeTest(action: .cdrisc, title: "CD-RISC 復原力量表", subtitle: "Connor-Davidson Resilience Scale", icon: "shield.lefthalf.fill"),
+            makeTest(action: .pansi, title: "PANSI 自殺意念量表", subtitle: "Positive and Negative Suicide Ideation", icon: "exclamationmark.triangle.fill"),
+            makeTest(action: .bss, title: "BSS 自殺意念評估", subtitle: "Beck Scale for Suicide Ideation", icon: "waveform.path.ecg"),
+            makeTest(action: .rfq8, title: "RFQ-8 心智化量表", subtitle: "Reflective Functioning Questionnaire-8", icon: "brain.head.profile")
         ]
         
-        private static func makeTest(action: TestAction, title: String, icon: String) -> PsychologicalTest {
-            let count = scaleMetaByAction[action]?.questionCount ?? 0
+        private static func makeTest(action: TestAction, title: String, subtitle: String, icon: String) -> PsychologicalTest {
+            let count = action == .rfq8 ? 8 : (scaleMetaByAction[action]?.questionCount ?? 0)
             let minutes = max(1, Int(ceil(Double(count) / 2.0)))
             return PsychologicalTest(
                 title: title,
-                subtitle: "",
+                subtitle: subtitle,
                 icon: icon,
                 duration: "\(minutes)分鐘",
                 questions: "\(count)題",
@@ -121,7 +122,7 @@ struct HomeConstants {
             ScaleMeta(
                 action: .cesd,
                 code: "CESD20",
-                title: "CES-D 憂鬱量表",
+                title: "CES-D 憂鬱量表 (CES-D Depression Scale)",
                 questionCount: 20,
                 instructions: "請依「過去一週內」的情形作答（4、8、12、16為反向題）",
                 reverseIndices: Set([4, 8, 12, 16])
@@ -129,31 +130,31 @@ struct HomeConstants {
             ScaleMeta(
                 action: .bsrs5,
                 code: "BSRS5",
-                title: "BSRS-5簡式健康量表",
+                title: "BSRS-5 簡式健康量表 (Brief Symptom Rating Scale-5)",
                 questionCount: 5,
                 instructions: "最近一週內的感受",
                 reverseIndices: Set<Int>()
             ),
             ScaleMeta(
                 action: .sats,
-                code: "SATS10",
-                title: "SATS 消沉指數",
-                questionCount: 10,
+                code: "SATS8",
+                title: "SATS 消沉心態量表 (SATS Scale)",
+                questionCount: 8,
                 instructions: "請依近期感受作答",
                 reverseIndices: Set<Int>()
             ),
             ScaleMeta(
                 action: .aq10,
                 code: "AQ10",
-                title: "AQ-10 孤獨症量表",
+                title: "AQ-10 自閉特質量表 (Autism Spectrum Quotient-10)",
                 questionCount: 10,
-                instructions: "請依實際狀況作答（3、7、9為反向題）",
-                reverseIndices: Set([3, 7, 9])
+                instructions: "請依實際狀況作答",
+                reverseIndices: Set<Int>()
             ),
             ScaleMeta(
                 action: .psycap,
-                code: "PCQ12",
-                title: "心理資本量表",
+                code: "PCS12",
+                title: "PCS 心理資本量表 (Psychological Capital Scale)",
                 questionCount: 12,
                 instructions: "請依實際狀況作答",
                 reverseIndices: Set<Int>()
@@ -161,7 +162,7 @@ struct HomeConstants {
             ScaleMeta(
                 action: .cdrisc,
                 code: "CDRISC25",
-                title: "Connor-Davidson 復原力量表",
+                title: "CD-RISC 復原力量表 (Connor-Davidson Resilience Scale)",
                 questionCount: 25,
                 instructions: "請依實際狀況作答",
                 reverseIndices: Set<Int>()
@@ -169,7 +170,7 @@ struct HomeConstants {
             ScaleMeta(
                 action: .pansi,
                 code: "PANSI14",
-                title: "PANSI-C 自殺意念量表",
+                title: "PANSI 自殺意念量表 (Positive and Negative Suicide Ideation)",
                 questionCount: 14,
                 instructions: "請依實際狀況作答",
                 reverseIndices: Set<Int>()
@@ -177,7 +178,7 @@ struct HomeConstants {
             ScaleMeta(
                 action: .bss,
                 code: "BSS21",
-                title: "BSS 自殺意念量表",
+                title: "BSS 自殺意念評估 (Beck Scale for Suicide Ideation)",
                 questionCount: 21,
                 instructions: "請依實際狀況作答",
                 reverseIndices: Set<Int>()

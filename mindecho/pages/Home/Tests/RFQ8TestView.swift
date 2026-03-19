@@ -7,17 +7,17 @@ struct RFQ8TestView: View {
     @State private var showingResult = false
     
     let questions = [
-        "我總是知道自己為什麼會有某種感覺", // 題目1 - RFQ-C
-        "我的情緒常常令我困惑", // 題目2 - RFQ-C & RFQ-U
-        "當我心煩意亂時，我不知道自己是悲傷、害怕還是憤怒", // 題目3 - RFQ-C
-        "我常常困惑於自己的感受", // 題目4 - RFQ-C & RFQ-U
-        "我常常不確定自己的感受", // 題目5 - RFQ-C & RFQ-U
-        "當別人告訴我他們對我的感受時，我感到困惑", // 題目6 - RFQ-C & RFQ-U
-        "我的感受對我來說是個謎", // 題目7 - RFQ-U
-        "我常常不知道為什麼我會生氣" // 題目8 - RFQ-U
+        "我不總是知道我做一件事情背後的原因", // 題目1 - RFQ-C
+        "我在生氣時會說出讓自己後悔的話", // 題目2 - RFQ-C & RFQ-U
+        "缺乏安全感時會做出令人厭煩的行為", // 題目3 - RFQ-C
+        "有時不知道自己行為原因", // 題目4 - RFQ-C & RFQ-U
+        "他人的想法對我來說是神秘的", // 題目5 - RFQ-C & RFQ-U
+        "生氣時會說出欠缺思考的話", // 題目6 - RFQ-C & RFQ-U
+        "我總是知道自己內心的感受", // 題目7 - RFQ-U (反向計分)
+        "強烈情緒會阻礙我的思考" // 題目8 - RFQ-U
     ]
     
-    let options = ["非常不同意", "不同意", "有點不同意", "中性", "有點同意", "同意", "非常同意"]
+    let options = ["非常不同意", "很不同意", "有點不同意", "普通", "有點同意", "很同意", "完全同意"]
     
     var body: some View {
         NavigationView {
@@ -66,7 +66,7 @@ struct RFQ8TestView: View {
                                                     .foregroundColor(AppColors.titleColor.opacity(0.6))
                                             }
                                             if isRFQUQuestion(currentQuestion) {
-                                                Text("U:\(getRFQUScore(for: index))")
+                                                Text("U:\(getRFQUScore(for: index, questionIndex: currentQuestion))")
                                                     .font(.caption)
                                                     .foregroundColor(AppColors.titleColor.opacity(0.6))
                                             }
@@ -85,7 +85,7 @@ struct RFQ8TestView: View {
                 }
                 .padding()
                 .background(AppColors.lightYellow)
-                .navigationTitle("RFQ-8 反思功能量表")
+                .navigationTitle("RFQ-8 心智化量表 (Reflective Functioning Questionnaire-8)")
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarItems(trailing: Button("取消") { isPresented = false })
             }
@@ -105,14 +105,19 @@ struct RFQ8TestView: View {
     
     // RFQ-C評分：3, 2, 1, 0, 0, 0, 0
     private func getRFQCScore(for optionIndex: Int) -> Int {
-        let rfqCScores = [3, 2, 1, 0, 0, 0, 0]
+        let rfqCScores = [0, 0, 0, 0, 1, 2, 3]
         return rfqCScores[optionIndex]
     }
     
     // RFQ-U評分：0, 0, 0, 0, 1, 2, 3
-    private func getRFQUScore(for optionIndex: Int) -> Int {
+    private func getRFQUScore(for optionIndex: Int, questionIndex: Int) -> Int {
+        let rfqUReverseScores = [3, 2, 1, 0, 0, 0, 0]
         let rfqUScores = [0, 0, 0, 0, 1, 2, 3]
-        return rfqUScores[optionIndex]
+
+        if questionIndex == 6 {
+            return rfqUScores[optionIndex]
+        }
+        return rfqUReverseScores[optionIndex]
     }
     
     private func selectAnswer(_ answer: Int) {
@@ -121,8 +126,27 @@ struct RFQ8TestView: View {
         if currentQuestion < questions.count - 1 {
             currentQuestion += 1
         } else {
-            showingResult = true
+            Task { await submitAnswers() }
         }
+    }
+
+    private func submitAnswers() async {
+        guard let userId = AuthService.shared.currentUser?.primaryId, !userId.isEmpty else {
+            showingResult = true
+            return
+        }
+
+        let answerPayloads = answers.enumerated().map { index, value in
+            ScaleAnswerPayload(questionId: "rfq_\(index + 1)", value: value)
+        }
+
+        do {
+            try await APIService.shared.submitScaleAnswers(code: "RFQ8", userId: userId, answers: answerPayloads)
+        } catch {
+            // 送出失敗時仍顯示結果，避免阻塞體驗
+            print("RFQ8 submit failed: \(error.localizedDescription)")
+        }
+        showingResult = true
     }
     
     private func calculateRFQCScore() -> Int {
@@ -139,7 +163,7 @@ struct RFQ8TestView: View {
         var score = 0
         for i in 0..<answers.count {
             if isRFQUQuestion(i) {
-                score += getRFQUScore(for: answers[i])
+                score += getRFQUScore(for: answers[i], questionIndex: i)
             }
         }
         return score

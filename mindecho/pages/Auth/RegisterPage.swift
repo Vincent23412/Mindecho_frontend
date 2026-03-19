@@ -1050,7 +1050,7 @@ private extension RegisterPage {
             emergencyContacts: emergencyPayloads,
             gender: selectedGender,
             educationLevel: selectedEducationLevel,
-            mostImportantReason: importantQuoteTrimmed,
+            mostImportantReasons: importantQuoteTrimmed,
             supportContactName: emergencyPayloads.first?.name,
             supportContactInfo: emergencyPayloads.first?.contactInfo
         )

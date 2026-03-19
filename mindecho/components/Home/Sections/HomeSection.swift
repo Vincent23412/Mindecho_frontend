@@ -65,6 +65,7 @@ struct MentalHealthResourcesSection: View {
 // MARK: - 心理測驗區塊
 struct PsychologicalTestsSection: View {
     @State private var activeScale: ScaleMeta?
+    @State private var showingRFQ8 = false
     
     private let tests = HomeConstants.Tests.psychologicalTests
     
@@ -99,9 +100,16 @@ struct PsychologicalTestsSection: View {
                 set: { if !$0 { activeScale = nil } }
             ))
         }
+        .sheet(isPresented: $showingRFQ8) {
+            RFQ8TestView(isPresented: $showingRFQ8)
+        }
     }
     
     private func handleTestAction(_ action: TestAction) {
+        if action == .rfq8 {
+            showingRFQ8 = true
+            return
+        }
         activeScale = HomeConstants.Tests.scaleMetaByAction[action]
     }
 }
