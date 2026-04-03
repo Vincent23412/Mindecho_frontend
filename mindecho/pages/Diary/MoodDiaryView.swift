@@ -17,6 +17,7 @@ struct MoodDiaryView: View {
     @State private var successMessage: String?
     @State private var entriesByDay: [Date: DiaryEntryViewData] = [:]
     @State private var loadedMonthStart: Date?
+    @State private var showingHistory = false
     
     let moods = [
         ("VERY_BAD", "😫", "很差"),
@@ -142,9 +143,17 @@ struct MoodDiaryView: View {
                 
                 // 📔 日記
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("日記")
-                        .font(.headline)
-                        .foregroundColor(AppColors.titleColor)
+                    HStack {
+                        Text("日記")
+                            .font(.headline)
+                            .foregroundColor(AppColors.titleColor)
+                        Spacer()
+                        Button("查看歷史日記") {
+                            showingHistory = true
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.orange)
+                    }
                     
                     if isLoading {
                         Text("載入中...")
@@ -222,6 +231,20 @@ struct MoodDiaryView: View {
             applyEntry(for: newValue)
             Task { await loadEntriesIfMonthChanged(for: newValue) }
         }
+        .sheet(isPresented: $showingHistory) {
+            DiaryHistorySheet(
+                entries: historyEntries,
+                onSelect: { entry in
+                    selectedDate = entry.entryDate
+                    showingHistory = false
+                }
+            )
+        }
+        .onChange(of: showingHistory) { _, newValue in
+            if newValue {
+                Task { await loadHistoryEntries() }
+            }
+        }
     }
     
     private struct DiaryEntryViewData: Identifiable {
@@ -236,6 +259,28 @@ struct MoodDiaryView: View {
         let entryDate: Date
         let moodEmoji: String
         let dayText: String
+    }
+
+    struct HistoryEntryItem: Identifiable {
+        let id: String
+        let entryDate: Date
+        let moodEmoji: String
+        let contentPreview: String
+    }
+
+    private var historyEntries: [HistoryEntryItem] {
+        entriesByDay.values
+            .sorted { $0.entryDate > $1.entryDate }
+            .map { entry in
+                let trimmed = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                let preview = trimmed.count > 60 ? String(trimmed.prefix(60)) + "…" : trimmed
+                return HistoryEntryItem(
+                    id: entry.id,
+                    entryDate: entry.entryDate,
+                    moodEmoji: moodEmoji(for: entry.mood),
+                    contentPreview: preview
+                )
+            }
     }
 
     private var monthlyEntries: [MonthlyEntryItem] {
@@ -338,6 +383,40 @@ struct MoodDiaryView: View {
         }
         isLoading = false
     }
+
+    private func loadHistoryEntries() async {
+        let calendar = Calendar.current
+        let end = Date()
+        let start = calendar.date(byAdding: .year, value: -5, to: end) ?? end
+        do {
+            let entries = try await APIService.shared.getDiaryEntries(
+                startDate: start,
+                endDate: end
+            )
+            var updated: [Date: DiaryEntryViewData] = [:]
+            var bestTimestampByDay: [Date: Date] = [:]
+            for entry in entries {
+                guard let entryDate = parseEntryDate(entry.entryDate),
+                      let mood = entry.mood,
+                      let content = entry.content else { continue }
+                let day = normalizeDay(entryDate)
+                let timestamp = parseEntryDate(entry.updatedAt) ?? parseEntryDate(entry.createdAt) ?? entryDate
+                if let existing = bestTimestampByDay[day], existing >= timestamp {
+                    continue
+                }
+                bestTimestampByDay[day] = timestamp
+                updated[day] = DiaryEntryViewData(
+                    id: entry.id,
+                    content: content,
+                    mood: mood,
+                    entryDate: entryDate
+                )
+            }
+            entriesByDay = updated
+        } catch {
+            errorMessage = "載入日記失敗，請稍後再試"
+        }
+    }
     
     private func saveDiaryEntry() async {
         errorMessage = nil
@@ -385,12 +464,57 @@ struct MoodDiaryView: View {
                 )
             }
             successMessage = "已儲存日記"
+            diaryText = ""
         } catch {
             errorMessage = "儲存失敗，請稍後再試"
         }
         isSaving = false
     }
 }
+
+#if canImport(UIKit)
+private struct DiaryHistorySheet: View {
+    let entries: [MoodDiaryView.HistoryEntryItem]
+    let onSelect: (MoodDiaryView.HistoryEntryItem) -> Void
+
+    var body: some View {
+        NavigationView {
+            List {
+                if entries.isEmpty {
+                    Text("尚無日記紀錄")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(entries) { entry in
+                        Button {
+                            onSelect(entry)
+                        } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                Text(entry.moodEmoji)
+                                    .font(.title2)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(entry.entryDate.formatted(date: .abbreviated, time: .omitted))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(AppColors.titleColor)
+                                    Text(entry.contentPreview)
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.titleColor.opacity(0.7))
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .navigationTitle("歷史日記")
+            .navigationBarTitleDisplayMode(.inline)
+            .background(AppColors.lightYellow.ignoresSafeArea())
+        }
+        .presentationBackground(AppColors.lightYellow)
+    }
+}
+#endif
 
 #Preview {
     MoodDiaryView()

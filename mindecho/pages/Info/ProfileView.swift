@@ -413,6 +413,7 @@ private struct SupportReasonsModal: View {
     @State private var errorMessage: String?
     @State private var supportImages: [SupportImage] = []
     @State private var selectedImageItem: PhotosPickerItem?
+    @State private var activeImage: SupportImage?
     @State private var supportVideos: [SupportVideo] = []
     @State private var selectedVideoItem: PhotosPickerItem?
     @State private var activeVideo: SupportVideo?
@@ -503,11 +504,29 @@ private struct SupportReasonsModal: View {
             }
         }
         .fullScreenCover(item: $activeVideo) { video in
-            VideoPlayer(player: AVPlayer(url: video.url))
-                .ignoresSafeArea()
-                .onDisappear {
+            ZStack(alignment: .topTrailing) {
+                VideoPlayer(player: AVPlayer(url: video.url))
+                    .ignoresSafeArea()
+                Button {
                     activeVideo = nil
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(AppColors.titleColor)
+                        .padding(10)
+                        .background(Color.white.opacity(0.9))
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
                 }
+                .padding(.top, 40)
+                .padding(.trailing, 16)
+            }
+            .onDisappear {
+                activeVideo = nil
+            }
+        }
+        .sheet(item: $activeImage) { image in
+            ImagePreviewSheet(image: image)
         }
     }
     
@@ -601,6 +620,7 @@ private struct SupportReasonsModal: View {
                     ForEach(supportImages) { image in
                         ImageSupportCard(
                             image: image,
+                            onTap: { activeImage = image },
                             onDelete: { deleteImage(image) }
                         )
                     }
@@ -838,6 +858,7 @@ private struct TextReasonCard: View {
 
 private struct ImageSupportCard: View {
     let image: SupportImage
+    let onTap: () -> Void
     let onDelete: () -> Void
     
     @State private var uiImage: UIImage?
@@ -845,12 +866,15 @@ private struct ImageSupportCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let uiImage {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 140)
-                    .clipped()
-                    .cornerRadius(10)
+                Button(action: onTap) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 140)
+                        .clipped()
+                        .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
             }
             
             HStack {
@@ -871,6 +895,12 @@ private struct ImageSupportCard: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppColors.orange.opacity(0.12))
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if uiImage != nil {
+                onTap()
+            }
+        }
         .onAppear {
             if uiImage == nil,
                let data = try? Data(contentsOf: image.url),
@@ -1130,6 +1160,48 @@ private struct VideoThumbnailView: View {
                 DispatchQueue.main.async {
                     image = uiImage
                 }
+            }
+        }
+    }
+}
+
+private struct ImagePreviewSheet: View {
+    let image: SupportImage
+    @Environment(\.dismiss) private var dismiss
+    @State private var uiImage: UIImage?
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            if let uiImage {
+                GeometryReader { proxy in
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                }
+            } else {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            }
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(Color.black.opacity(0.6))
+                    .clipShape(Circle())
+            }
+            .padding(.top, 40)
+            .padding(.trailing, 16)
+        }
+        .onAppear {
+            if uiImage == nil,
+               let data = try? Data(contentsOf: image.url),
+               let loaded = UIImage(data: data) {
+                uiImage = loaded
             }
         }
     }

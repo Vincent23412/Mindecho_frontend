@@ -78,6 +78,9 @@ struct DailyReminderCard: View {
                         rotation: rotation
                     )
                     .frame(width: 110, height: 110)
+
+                    PressMeButton()
+                        .frame(width: 56, height: 56)
                 }
                 .padding(.top, 6)
 
@@ -339,6 +342,35 @@ private struct InlineQuoteWheel: View {
             .rotationEffect(.degrees(rotation))
             .animation(.easeOut(duration: 2.4), value: rotation)
             .frame(width: size, height: size)
+        }
+    }
+}
+
+private struct PressMeButton: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.82, blue: 0.45),
+                            Color(red: 0.96, green: 0.60, blue: 0.20)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                )
+                .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 4)
+                .shadow(color: Color.white.opacity(0.7), radius: 2, x: 0, y: -1)
+
+            Text("按我")
+                .font(.caption.weight(.bold))
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 1)
         }
     }
 }

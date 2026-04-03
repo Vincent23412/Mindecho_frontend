@@ -129,9 +129,9 @@ struct DailyCheckInView: View {
                 }
                 .padding(.horizontal, 16)
                 
-                // 導航按鈕
-                HStack(spacing: 16) {
-                    if currentQuestion > 0 {
+                // 導航按鈕（保留上一題）
+                if currentQuestion > 0 {
+                    HStack(spacing: 16) {
                         Button(action: previousQuestion) {
                             Text("上一題")
                                 .font(.subheadline)
@@ -147,22 +147,9 @@ struct DailyCheckInView: View {
                         }
                         .transition(.slide)
                     }
-                    
-                    Button(action: onPrimaryButtonTap) {
-                        Text(currentQuestion == questions.count - 1 ? "完成檢測" : "下一題")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(AppColors.orange)
-                            .cornerRadius(8)
-                    }
-                    .disabled(answers[currentQuestion] == -1)
-                    .opacity(answers[currentQuestion] == -1 ? 0.5 : 1.0)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 20)
                 }
-                .padding(.horizontal, 32)
-                .padding(.top, 20)
             }
             .padding(.vertical, 32)
             .background(AppColors.cardBackground)
@@ -180,6 +167,9 @@ struct DailyCheckInView: View {
     private func selectAnswer(_ index: Int) {
         withAnimation(.easeInOut(duration: HomeConstants.Animation.moodSelectionDuration)) {
             answers[currentQuestion] = index
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            nextQuestion()
         }
     }
     
@@ -199,14 +189,6 @@ struct DailyCheckInView: View {
                 handleCompletion()
             }
         }
-    }
-
-    private func onPrimaryButtonTap() {
-        // 顯式 log 方便追蹤是否有按下完成檢測
-        if currentQuestion == questions.count - 1 {
-            print("🟠 DailyCheckIn: tapped 完成檢測")
-        }
-        nextQuestion()
     }
 
     private func handleCompletion() {

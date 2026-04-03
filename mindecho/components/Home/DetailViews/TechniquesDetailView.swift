@@ -11,7 +11,7 @@ struct TechniquesDetailView: View {
                         .font(.system(size: 80))
                         .foregroundColor(AppColors.titleColor)
                     
-                    Text("情緒管理技巧")
+                    Text("情緒管理小技巧")
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(AppColors.titleColor)
@@ -68,7 +68,7 @@ struct TechniquesDetailView: View {
                 .padding()
             }
             .background(AppColors.lightYellow)
-            .navigationTitle("情緒管理技巧")
+            .navigationTitle("情緒管理小技巧")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: Button("關閉") { isPresented = false })
         }

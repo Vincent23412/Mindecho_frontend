@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 聊天氣泡
 struct ChatBubbleView: View {
@@ -17,6 +18,11 @@ struct ChatBubbleView: View {
                         .padding(.vertical, 12)
                         .background(AppColors.userBubbleColor)
                         .cornerRadius(20, corners: [.topLeft, .topRight, .bottomLeft])
+                        .contextMenu {
+                            Button("複製") {
+                                UIPasteboard.general.string = message.content
+                            }
+                        }
                     
                     Text(formatTime(message.timestamp))
                         .font(.caption2)

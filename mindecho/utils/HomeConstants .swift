@@ -74,8 +74,8 @@ struct HomeConstants {
 //                action: .guide
 //            ),
             MentalHealthResource(
-                title: "情緒管理技巧",
-                subtitle: "學習有效調節情緒方法",
+                title: "情緒管理小技巧",
+                subtitle: "如果感到難受或焦慮，你可以試著這樣做......",
                 icon: "heart.circle.fill",
                 buttonText: "查看更多",
                 action: .techniques
