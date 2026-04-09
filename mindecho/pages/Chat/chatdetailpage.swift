@@ -12,6 +12,9 @@ struct ChatDetailPage: View {
     @State private var showingModeChangeConfirmation = false
     @State private var targetMode: TherapyMode?
     @State private var showingClearChatAlert = false
+    @State private var showingInitialEndedAlert = false
+    @State private var showingRecommendationAlert = false
+    @State private var nextMode: TherapyMode?
     @Environment(\.presentationMode) var presentationMode
     
     init(session: ChatSession, chatHook: ChatHook) {
@@ -56,7 +59,8 @@ struct ChatDetailPage: View {
             ChatInputView(
                 messageText: $messageText,
                 onSend: sendMessage,
-                mode: selectedMode
+                mode: selectedMode,
+                isDisabled: false
             )
         }
         .background(AppColors.chatBackground)
@@ -111,9 +115,29 @@ struct ChatDetailPage: View {
                 Text(error)
             }
         }
+        .alert("初談已結束", isPresented: $showingInitialEndedAlert) {
+            Button("取消", role: .cancel) { }
+            Button("查看建議") {
+                showingRecommendationAlert = true
+            }
+        } message: {
+            Text("此初談對話已結束，是否要查看建議的聊天模式？")
+        }
+        .alert("建議的聊天模式", isPresented: $showingRecommendationAlert) {
+            Button("回到聊天頁面") {
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text(recommendationMessage())
+        }
         .task {
             // 頁面載入時載入聊天記錄
             await chatHook.loadChatHistory(for: session.id)
+        }
+        .onChange(of: chatHook.initialModeBySession[session.id]?.selectedMode) { _, mode in
+            if let mode {
+                nextMode = mode
+            }
         }
     }
     
@@ -126,16 +150,30 @@ struct ChatDetailPage: View {
     }
     
     private func sendMessage() {
-        let trimmedMessage = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedMessage.isEmpty else { return }
-        
-        // 清空輸入框
+        if chatHook.initialModeBySession[session.id]?.sessionEnded == true {
+            let info = chatHook.initialModeBySession[session.id]
+            nextMode = info?.selectedMode ?? TherapyMode.fromInitialMode(info?.rawSelectedMode)
+            showingInitialEndedAlert = true
+            messageText = ""
+            return
+        }
+        let content = messageText
         messageText = ""
         
-        // 發送訊息
         Task {
-            await chatHook.sendMessage(to: session.id, content: trimmedMessage)
+            await chatHook.sendMessage(to: session.id, content: content)
         }
+    }
+
+    private func recommendationMessage() -> String {
+        let modeText: String
+        switch nextMode {
+        case .cbtMode: modeText = "CBT"
+        case .mbtMode: modeText = "MBT"
+        case .mbctMode: modeText = "MBCT"
+        case .chatMode, .initial, .none: modeText = "聊天"
+        }
+        return "系統建議你使用「\(modeText)」模式進一步對談。請回到聊天頁面，開始新的\(modeText)對話。"
     }
 }
 

@@ -9,6 +9,14 @@ struct ChatAPIResponse: Codable {
     let reply: String
     let messageId: String?
     let timestamp: String?
+    let initialMode: InitialModePayload?
+}
+
+struct InitialModePayload: Codable {
+    let roundsUsed: Int
+    let maxRounds: Int
+    let sessionEnded: Bool
+    let selectedMode: String?
 }
 
 struct ChatMessagesResponse: Codable {
@@ -426,7 +434,8 @@ extension ChatAPI {
         return ChatAPIResponse(
             reply: response,
             messageId: UUID().uuidString,
-            timestamp: ISO8601DateFormatter().string(from: Date())
+            timestamp: ISO8601DateFormatter().string(from: Date()),
+            initialMode: nil
         )
     }
     

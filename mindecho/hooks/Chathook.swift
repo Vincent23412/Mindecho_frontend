@@ -11,6 +11,7 @@ class ChatHook: ObservableObject {
     @Published var error: String?
     @Published var showError = false
     @Published var isTyping = false
+    @Published var initialModeBySession: [UUID: InitialModeInfo] = [:]
     
     // MARK: - 私有屬性
     private let chatAPI = ChatAPI.shared
@@ -127,13 +128,10 @@ class ChatHook: ObservableObject {
     
     /// 發送訊息
     func sendMessage(to sessionId: UUID, content: String) async {
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedContent.isEmpty else { return }
-        
         guard let session = chatSessions.first(where: { $0.id == sessionId }) else { return }
         
         // 1. 立即添加用戶訊息到 UI
-        await addMessage(to: sessionId, content: trimmedContent, isFromUser: true)
+        await addMessage(to: sessionId, content: content, isFromUser: true)
         
         // 2. 顯示打字指示器
         isTyping = true
@@ -145,7 +143,7 @@ class ChatHook: ObservableObject {
             if let token = authToken {
                 // 使用真實 API
                 let request = SendMessageRequest(
-                    message: trimmedContent
+                    message: content
                 )
 
                 guard let backendId = session.backendId else {
@@ -157,11 +155,21 @@ class ChatHook: ObservableObject {
                     token: token
                 )
                 aiResponse = response.reply
+                if let initialMode = response.initialMode {
+                    let mapped = InitialModeInfo(
+                        roundsUsed: initialMode.roundsUsed,
+                        maxRounds: initialMode.maxRounds,
+                        sessionEnded: initialMode.sessionEnded,
+                        selectedMode: TherapyMode.fromInitialMode(initialMode.selectedMode),
+                        rawSelectedMode: initialMode.selectedMode
+                    )
+                    initialModeBySession[sessionId] = mapped
+                }
                 
             } else {
                 // 使用模擬 API
                 let mockResponse = chatAPI.generateMockResponse(
-                    for: trimmedContent,
+                    for: content,
                     mode: session.therapyMode
                 )
                 
@@ -236,6 +244,7 @@ class ChatHook: ObservableObject {
     /// 清除會話的所有訊息
     func clearMessages(for sessionId: UUID) async {
         messages[sessionId] = []
+        initialModeBySession[sessionId] = nil
         
         // 更新會話信息
         if let index = chatSessions.firstIndex(where: { $0.id == sessionId }) {
@@ -361,16 +370,8 @@ class ChatHook: ObservableObject {
                     }
                 }
                 
-                for backendId in emptyBackendIds {
-                    do {
-                        try await chatAPI.deleteSession(sessionId: backendId, token: token)
-                    } catch {
-                        print("ChatHook: delete empty session failed \(backendId): \(error)")
-                    }
-                }
             }
-            
-            chatSessions = mapped.filter { !$0.lastMessage.isEmpty }
+            chatSessions = mapped
         } catch {
             self.error = error.localizedDescription
             showError = true
@@ -416,5 +417,26 @@ class ChatHook: ObservableObject {
     func clearAllData() {
         chatSessions.removeAll()
         messages.removeAll()
+    }
+}
+
+struct InitialModeInfo {
+    let roundsUsed: Int
+    let maxRounds: Int
+    let sessionEnded: Bool
+    let selectedMode: TherapyMode?
+    let rawSelectedMode: String?
+}
+
+extension TherapyMode {
+    static func fromInitialMode(_ value: String?) -> TherapyMode? {
+        guard let value else { return nil }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        switch normalized {
+        case "CBT": return .cbtMode
+        case "MBT": return .mbtMode
+        case "MBCT": return .mbctMode
+        default: return nil
+        }
     }
 }

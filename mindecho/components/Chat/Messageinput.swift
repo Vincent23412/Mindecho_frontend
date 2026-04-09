@@ -5,6 +5,7 @@ struct ChatInputView: View {
     @Binding var messageText: String
     let onSend: () -> Void
     let mode: TherapyMode
+    let isDisabled: Bool
 
     @State private var isComposing = false
     @State private var showingQuickReplies = false
@@ -72,6 +73,7 @@ struct ChatInputView: View {
                         .font(.title2)
                         .foregroundColor(showingQuickReplies ? .red : .gray)
                 }
+                .disabled(isDisabled)
 
                 HStack(spacing: 8) {
                     TextField(placeholder, text: $messageText, axis: .vertical)
@@ -80,6 +82,7 @@ struct ChatInputView: View {
                         .onChange(of: messageText) {
                             isComposing = !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         }
+                        .disabled(isDisabled)
 
                     if messageText.count > 100 {
                         Text("\(messageText.count)")
@@ -102,8 +105,6 @@ struct ChatInputView: View {
                 // 送出
                 Button(action: {
                     let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return }
-
                     if containsCrisisTerms(trimmed) {
                         // ✅ 偵測到高風險字詞：觸發警示，讓使用者一鍵前往緊急資訊頁
                         showCrisisAlert = true
@@ -117,7 +118,7 @@ struct ChatInputView: View {
                         .font(.title2)
                         .foregroundColor(isComposing ? mode.color : .gray)
                 }
-                .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(isDisabled)
                 .scaleEffect(isComposing ? 1.1 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isComposing)
             }
@@ -125,6 +126,7 @@ struct ChatInputView: View {
             .padding(.vertical, 12)
         }
         .background(AppColors.chatBackground)
+        .opacity(isDisabled ? 0.6 : 1.0)
         // ✅ 危機引導警示
         .alert("需要立即協助嗎？", isPresented: $showCrisisAlert) {
             Button("前往緊急聯絡資訊") {
@@ -189,13 +191,15 @@ struct QuickReplyView: View {
         ChatInputView(
             messageText: .constant(""),
             onSend: {},
-            mode: .chatMode
+            mode: .chatMode,
+            isDisabled: false
         )
         
         ChatInputView(
             messageText: .constant("測試訊息"),
             onSend: {},
-            mode: .cbtMode
+            mode: .cbtMode,
+            isDisabled: false
         )
         
         QuickReplyView(
