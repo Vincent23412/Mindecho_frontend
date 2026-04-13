@@ -136,6 +136,20 @@ class ChatAPI: NSObject, URLSessionDelegate {
         print("[ChatAPI] \(message)")
     }
 
+    private func performWithRefresh<T>(
+        token: String,
+        operation: @escaping (String) async throws -> T
+    ) async throws -> T {
+        do {
+            return try await operation(token)
+        } catch ChatAPIError.unauthorized {
+            await MainActor.run {
+                AuthService.shared.logout()
+            }
+            throw ChatAPIError.unauthorized
+        }
+    }
+
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
                     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         guard allowInsecureSelfSigned,
@@ -149,263 +163,273 @@ class ChatAPI: NSObject, URLSessionDelegate {
     
     // MARK: - 發送訊息
     func sendMessage(sessionId: String, request: SendMessageRequest, token: String) async throws -> ChatAPIResponse {
-        guard let url = URL(string: "\(baseURL)/chat/sessions/\(sessionId)/messages") else {
-            throw ChatAPIError.networkError("無效的 URL")
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(token)" ,forHTTPHeaderField: "Authorization")
-        
-        do {
-            urlRequest.httpBody = try JSONEncoder().encode(request)
-            if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-                log("sendMessage → \(url.absoluteString) body=\(bodyString)")
-            } else {
-                log("sendMessage → \(url.absoluteString) body=<empty>")
+        return try await performWithRefresh(token: token) { [self] token in
+            guard let url = URL(string: "\(self.baseURL)/chat/sessions/\(sessionId)/messages") else {
+                throw ChatAPIError.networkError("無效的 URL")
             }
             
-            let (data, response) = try await session.data(for: urlRequest)
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "POST"
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            urlRequest.setValue("Bearer \(token)" ,forHTTPHeaderField: "Authorization")
             
-            // 檢查 HTTP 狀態碼
-            if let httpResponse = response as? HTTPURLResponse {
-                if let body = String(data: data, encoding: .utf8) {
-                    log("sendMessage ← body=\(body)")
+            do {
+                urlRequest.httpBody = try JSONEncoder().encode(request)
+                if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+                    self.log("sendMessage → \(url.absoluteString) body=\(bodyString)")
+                } else {
+                    self.log("sendMessage → \(url.absoluteString) body=<empty>")
                 }
-                log("sendMessage ← status=\(httpResponse.statusCode)")
-                switch httpResponse.statusCode {
-                case 200...299:
-                    break // 成功
-                case 400:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.badRequest(message)
-                case 401:
-                    throw ChatAPIError.unauthorized
-                case 429:
-                    throw ChatAPIError.rateLimited
-                case 404:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
-                default:
-                    throw ChatAPIError.serverError(httpResponse.statusCode)
+                
+                let (data, response) = try await self.session.data(for: urlRequest)
+                
+                // 檢查 HTTP 狀態碼
+                if let httpResponse = response as? HTTPURLResponse {
+                    if let body = String(data: data, encoding: .utf8) {
+                        self.log("sendMessage ← body=\(body)")
+                    }
+                    self.log("sendMessage ← status=\(httpResponse.statusCode)")
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        break // 成功
+                    case 400:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.badRequest(message)
+                    case 401:
+                        throw ChatAPIError.unauthorized
+                    case 429:
+                        throw ChatAPIError.rateLimited
+                    case 404:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
+                    default:
+                        throw ChatAPIError.serverError(httpResponse.statusCode)
+                    }
                 }
-            }
 
-            return try JSONDecoder().decode(ChatAPIResponse.self, from: data)
-            
-        } catch {
-            log("sendMessage ✖︎ \(error.localizedDescription)")
-            if error is ChatAPIError {
-                throw error
-            } else {
-                throw ChatAPIError.networkError(error.localizedDescription)
+                return try JSONDecoder().decode(ChatAPIResponse.self, from: data)
+                
+            } catch {
+                self.log("sendMessage ✖︎ \(error.localizedDescription)")
+                if error is ChatAPIError {
+                    throw error
+                } else {
+                    throw ChatAPIError.networkError(error.localizedDescription)
+                }
             }
         }
     }
     
     // MARK: - 獲取聊天記錄
     func getChatHistory(sessionId: String, token: String, limit: Int = 50, before: String? = nil) async throws -> ChatMessagesResponse {
-        var components = URLComponents(string: "\(baseURL)/chat/sessions/\(sessionId)/messages")
-        var queryItems: [URLQueryItem] = [URLQueryItem(name: "limit", value: String(limit))]
-        if let before {
-            queryItems.append(URLQueryItem(name: "before", value: before))
-        }
-        components?.queryItems = queryItems
-        guard let url = components?.url else {
-            throw ChatAPIError.networkError("無效的 URL")
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        do {
-            log("getChatHistory → \(url.absoluteString)")
-            let (data, response) = try await session.data(for: urlRequest)
+        return try await performWithRefresh(token: token) { [self] token in
+            var components = URLComponents(string: "\(self.baseURL)/chat/sessions/\(sessionId)/messages")
+            var queryItems: [URLQueryItem] = [URLQueryItem(name: "limit", value: String(limit))]
+            if let before {
+                queryItems.append(URLQueryItem(name: "before", value: before))
+            }
+            components?.queryItems = queryItems
+            guard let url = components?.url else {
+                throw ChatAPIError.networkError("無效的 URL")
+            }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                log("getChatHistory ← status=\(httpResponse.statusCode)")
-                switch httpResponse.statusCode {
-                case 200...299:
-                    break
-                case 400:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.badRequest(message)
-                case 401:
-                    throw ChatAPIError.unauthorized
-                case 404:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
-                default:
-                    throw ChatAPIError.serverError(httpResponse.statusCode)
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "GET"
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+            do {
+                self.log("getChatHistory → \(url.absoluteString)")
+                let (data, response) = try await self.session.data(for: urlRequest)
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    self.log("getChatHistory ← status=\(httpResponse.statusCode)")
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        break
+                    case 400:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.badRequest(message)
+                    case 401:
+                        throw ChatAPIError.unauthorized
+                    case 404:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
+                    default:
+                        throw ChatAPIError.serverError(httpResponse.statusCode)
+                    }
                 }
-            }
-            
-            if let body = String(data: data, encoding: .utf8) {
-                log("getChatHistory ← body=\(body)")
-            }
-            return try JSONDecoder().decode(ChatMessagesResponse.self, from: data)
-            
-        } catch {
-            log("getChatHistory ✖︎ \(error.localizedDescription)")
-            if error is ChatAPIError {
-                throw error
-            } else {
-                throw ChatAPIError.networkError(error.localizedDescription)
+                
+                if let body = String(data: data, encoding: .utf8) {
+                    self.log("getChatHistory ← body=\(body)")
+                }
+                return try JSONDecoder().decode(ChatMessagesResponse.self, from: data)
+                
+            } catch {
+                self.log("getChatHistory ✖︎ \(error.localizedDescription)")
+                if error is ChatAPIError {
+                    throw error
+                } else {
+                    throw ChatAPIError.networkError(error.localizedDescription)
+                }
             }
         }
     }
 
     // MARK: - 取得會話列表
     func getSessions(token: String, limit: Int = 20, offset: Int = 0) async throws -> ChatSessionsResponse {
-        var components = URLComponents(string: "\(baseURL)/chat/sessions")
-        components?.queryItems = [
-            URLQueryItem(name: "limit", value: String(limit)),
-            URLQueryItem(name: "offset", value: String(offset))
-        ]
-        guard let url = components?.url else {
-            throw ChatAPIError.networkError("無效的 URL")
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        do {
-            log("getSessions → \(url.absoluteString)")
-            let (data, response) = try await session.data(for: urlRequest)
+        return try await performWithRefresh(token: token) { [self] token in
+            var components = URLComponents(string: "\(self.baseURL)/chat/sessions")
+            components?.queryItems = [
+                URLQueryItem(name: "limit", value: String(limit)),
+                URLQueryItem(name: "offset", value: String(offset))
+            ]
+            guard let url = components?.url else {
+                throw ChatAPIError.networkError("無效的 URL")
+            }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                log("getSessions ← status=\(httpResponse.statusCode)")
-                switch httpResponse.statusCode {
-                case 200...299:
-                    break
-                case 400:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.badRequest(message)
-                case 401:
-                    throw ChatAPIError.unauthorized
-                default:
-                    throw ChatAPIError.serverError(httpResponse.statusCode)
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "GET"
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+            do {
+                self.log("getSessions → \(url.absoluteString)")
+                let (data, response) = try await self.session.data(for: urlRequest)
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    self.log("getSessions ← status=\(httpResponse.statusCode)")
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        break
+                    case 400:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.badRequest(message)
+                    case 401:
+                        throw ChatAPIError.unauthorized
+                    default:
+                        throw ChatAPIError.serverError(httpResponse.statusCode)
+                    }
                 }
-            }
-            
-            if let body = String(data: data, encoding: .utf8) {
-                log("getSessions ← body=\(body)")
-            }
-            return try JSONDecoder().decode(ChatSessionsResponse.self, from: data)
-            
-        } catch {
-            log("getSessions ✖︎ \(error.localizedDescription)")
-            if error is ChatAPIError {
-                throw error
-            } else {
-                throw ChatAPIError.networkError(error.localizedDescription)
+                
+                if let body = String(data: data, encoding: .utf8) {
+                    self.log("getSessions ← body=\(body)")
+                }
+                return try JSONDecoder().decode(ChatSessionsResponse.self, from: data)
+                
+            } catch {
+                self.log("getSessions ✖︎ \(error.localizedDescription)")
+                if error is ChatAPIError {
+                    throw error
+                } else {
+                    throw ChatAPIError.networkError(error.localizedDescription)
+                }
             }
         }
     }
     
     // MARK: - 建立新會話
     func createNewSession(mode: TherapyMode, title: String? = nil, provider: ChatProvider? = nil, token: String) async throws -> APISessionInfo {
-        guard let url = URL(string: "\(baseURL)/chat/sessions") else {
-            throw ChatAPIError.networkError("無效的 URL")
-        }
-        
-        var requestBody: [String: String] = ["chatbotType": mode.chatbotType.rawValue]
-        if let title, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            requestBody["title"] = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        if let provider {
-            requestBody["provider"] = provider.rawValue
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        do {
-            urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-            if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-                log("createNewSession → \(url.absoluteString) body=\(bodyString)")
-            } else {
-                log("createNewSession → \(url.absoluteString) body=<empty>")
+        return try await performWithRefresh(token: token) { [self] token in
+            guard let url = URL(string: "\(self.baseURL)/chat/sessions") else {
+                throw ChatAPIError.networkError("無效的 URL")
             }
             
-            let (data, response) = try await session.data(for: urlRequest)
+            var requestBody: [String: String] = ["chatbotType": mode.chatbotType.rawValue]
+            if let title, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                requestBody["title"] = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            if let provider {
+                requestBody["provider"] = provider.rawValue
+            }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                log("createNewSession ← status=\(httpResponse.statusCode)")
-                switch httpResponse.statusCode {
-                case 200...299:
-                    break
-                case 400:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.badRequest(message)
-                case 401:
-                    throw ChatAPIError.unauthorized
-                default:
-                    throw ChatAPIError.serverError(httpResponse.statusCode)
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "POST"
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+            do {
+                urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+                if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+                    self.log("createNewSession → \(url.absoluteString) body=\(bodyString)")
+                } else {
+                    self.log("createNewSession → \(url.absoluteString) body=<empty>")
                 }
-            }
-            
-            if let body = String(data: data, encoding: .utf8) {
-                log("createNewSession ← body=\(body)")
-            }
-            let payload = try JSONDecoder().decode(ChatSessionResponse.self, from: data)
-            return payload.session
-            
-        } catch {
-            log("createNewSession ✖︎ \(error.localizedDescription)")
-            if error is ChatAPIError {
-                throw error
-            } else {
-                throw ChatAPIError.networkError(error.localizedDescription)
+                
+                let (data, response) = try await self.session.data(for: urlRequest)
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    self.log("createNewSession ← status=\(httpResponse.statusCode)")
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        break
+                    case 400:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.badRequest(message)
+                    case 401:
+                        throw ChatAPIError.unauthorized
+                    default:
+                        throw ChatAPIError.serverError(httpResponse.statusCode)
+                    }
+                }
+                
+                if let body = String(data: data, encoding: .utf8) {
+                    self.log("createNewSession ← body=\(body)")
+                }
+                let payload = try JSONDecoder().decode(ChatSessionResponse.self, from: data)
+                return payload.session
+                
+            } catch {
+                self.log("createNewSession ✖︎ \(error.localizedDescription)")
+                if error is ChatAPIError {
+                    throw error
+                } else {
+                    throw ChatAPIError.networkError(error.localizedDescription)
+                }
             }
         }
     }
     
     // MARK: - 刪除會話
     func deleteSession(sessionId: String, token: String) async throws {
-        guard let url = URL(string: "\(baseURL)/chat/sessions/\(sessionId)") else {
-            throw ChatAPIError.networkError("無效的 URL")
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "DELETE"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        do {
-            log("deleteSession → \(url.absoluteString)")
-            let (data, response) = try await session.data(for: urlRequest)
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                log("deleteSession ← status=\(httpResponse.statusCode)")
-                switch httpResponse.statusCode {
-                case 200...299:
-                    break
-                case 400:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.badRequest(message.isEmpty ? "請求參數錯誤" : message)
-                case 401:
-                    throw ChatAPIError.unauthorized
-                case 404:
-                    let message = parseErrorMessage(from: data)
-                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
-                default:
-                    throw ChatAPIError.serverError(httpResponse.statusCode)
-                }
+        try await performWithRefresh(token: token) { [self] token in
+            guard let url = URL(string: "\(self.baseURL)/chat/sessions/\(sessionId)") else {
+                throw ChatAPIError.networkError("無效的 URL")
             }
             
-        } catch {
-            if error is ChatAPIError {
-                throw error
-            } else {
-                throw ChatAPIError.networkError(error.localizedDescription)
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "DELETE"
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+            do {
+                self.log("deleteSession → \(url.absoluteString)")
+                let (data, response) = try await self.session.data(for: urlRequest)
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    self.log("deleteSession ← status=\(httpResponse.statusCode)")
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        break
+                    case 400:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.badRequest(message.isEmpty ? "請求參數錯誤" : message)
+                    case 401:
+                        throw ChatAPIError.unauthorized
+                    case 404:
+                        let message = parseErrorMessage(from: data)
+                        throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
+                    default:
+                        throw ChatAPIError.serverError(httpResponse.statusCode)
+                    }
+                }
+                
+            } catch {
+                if error is ChatAPIError {
+                    throw error
+                } else {
+                    throw ChatAPIError.networkError(error.localizedDescription)
+                }
             }
         }
     }

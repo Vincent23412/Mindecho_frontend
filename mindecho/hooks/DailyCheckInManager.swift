@@ -194,11 +194,6 @@ class DailyCheckInManager: NSObject, ObservableObject {
             print("⚠️ sendDailyQuestions: invalid question/answer count")
             return
         }
-        guard let token = AuthService.shared.authToken else {
-            print("⚠️ sendDailyQuestions: no auth token")
-            return
-        }
-
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let entryDate = formatter.string(from: date)
@@ -218,36 +213,50 @@ class DailyCheckInManager: NSObject, ObservableObject {
             return
         }
 
+        Task {
+            await sendDailyQuestionsWithRefresh(url: url, payload: payload)
+        }
+    }
+
+    private func sendDailyQuestionsWithRefresh(url: URL, payload: [String: Any]) async {
+        do {
+            try await performDailyQuestionsRequest(url: url, payload: payload)
+        } catch let error as URLError where error.code == URLError.Code.userAuthenticationRequired {
+            print("❌ sendDailyQuestions: no auth token")
+        } catch {
+            print("❌ sendDailyQuestions error: \(error)")
+        }
+    }
+
+    private func performDailyQuestionsRequest(url: URL, payload: [String: Any], retryOnAuth: Bool = true) async throws {
+        guard let token = AuthService.shared.authToken else {
+            throw URLError(URLError.Code.userAuthenticationRequired)
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        } catch {
-            print("❌ sendDailyQuestions: encode error \(error)")
-            return
-        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
 
         print("🚀 sendDailyQuestions -> \(url.absoluteString)")
         print("🧾 payload: \(payload)")
 
-        session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ sendDailyQuestions error: \(error)")
-                return
-            }
-            if let http = response as? HTTPURLResponse {
-                print("✅ dailyQuestions status: \(http.statusCode)")
-                if !(200...299).contains(http.statusCode) {
-                    print("❗️ dailyQuestions non-2xx response")
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse {
+            print("✅ dailyQuestions status: \(http.statusCode)")
+            if http.statusCode == 401 {
+                await MainActor.run {
+                    AuthService.shared.logout()
                 }
+                throw URLError(URLError.Code.userAuthenticationRequired)
             }
-            if let data, let text = String(data: data, encoding: .utf8) {
-                print("📄 dailyQuestions response: \(text)")
+            if !(200...299).contains(http.statusCode) {
+                print("❗️ dailyQuestions non-2xx response")
             }
-        }.resume()
+        }
+        if let text = String(data: data, encoding: .utf8) {
+            print("📄 dailyQuestions response: \(text)")
+        }
     }
     
     // MARK: - 分數轉描述

@@ -1179,7 +1179,10 @@ private struct ImagePreviewSheet: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: proxy.size.width, height: proxy.size.height)
+                        .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                        .ignoresSafeArea()
                 }
+                .ignoresSafeArea()
             } else {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))

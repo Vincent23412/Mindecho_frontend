@@ -385,6 +385,28 @@ class AuthService: NSObject, ObservableObject, URLSessionDelegate {
             })
             .eraseToAnyPublisher()
     }
+
+    func refreshTokenAsync() async throws -> AuthResponse {
+        try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            cancellable = refreshToken()
+                .sink(receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        break
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                    cancellable?.cancel()
+                }, receiveValue: { response in
+                    continuation.resume(returning: response)
+                    cancellable?.cancel()
+                })
+            if let cancellable {
+                self.cancellables.insert(cancellable)
+            }
+        }
+    }
     
     // MARK: - 建立帶有認證 Header 的請求
     func authenticatedRequest(for url: URL) -> URLRequest {

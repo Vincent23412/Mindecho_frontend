@@ -34,6 +34,48 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     private override init() {
         super.init()
     }
+
+    private enum APIServiceError: Error {
+        case unauthorized
+    }
+
+    private func performWithRefresh<T>(
+        requestBuilder: @escaping (String) throws -> URLRequest,
+        decode: @escaping (Data) throws -> T
+    ) async throws -> T {
+        guard let token = AuthService.shared.authToken else {
+            throw URLError(URLError.Code.userAuthenticationRequired)
+        }
+        do {
+            return try await execute(requestBuilder: requestBuilder, token: token, decode: decode)
+        } catch APIServiceError.unauthorized {
+            await MainActor.run {
+                AuthService.shared.logout()
+            }
+            throw URLError(URLError.Code.userAuthenticationRequired)
+        }
+    }
+
+    private func execute<T>(
+        requestBuilder: (String) throws -> URLRequest,
+        token: String,
+        decode: (Data) throws -> T
+    ) async throws -> T {
+        let request = try requestBuilder(token)
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 401 {
+                await MainActor.run {
+                    AuthService.shared.logout()
+                }
+                throw APIServiceError.unauthorized
+            }
+            guard (200...299).contains(http.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+        }
+        return try decode(data)
+    }
     
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
                     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -47,88 +89,82 @@ class APIService: NSObject, ObservableObject, URLSessionDelegate {
     }
     
     func updateMetrics(data: [String: Any]) -> AnyPublisher<Bool, Error> {
-        guard let url = URL(string: "\(baseURL)/main/updateMetrics"),
-              let token = AuthService.shared.authToken else {
-            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: data)
-        } catch {
-            return Fail(error: error).eraseToAnyPublisher()
-        }
-
-        return session.dataTaskPublisher(for: request)
-            .handleEvents(receiveOutput: { data, response in
-                if let httpResponse = response as? HTTPURLResponse {
-                    print("📡 [updateMetrics] Status Code: \(httpResponse.statusCode)")
-                }
-
-                let responseText = String(data: data, encoding: .utf8) ?? "No body"
-                print("🧾 [updateMetrics] Response Body: \(responseText)")
-            })
-            .tryMap { data, response -> Bool in
-                if let httpResponse = response as? HTTPURLResponse {
-                    guard (200...299).contains(httpResponse.statusCode) else {
-                        throw URLError(.badServerResponse)
-                    }
-                }
-                return true
+        return Future<Bool, Error> { [weak self] promise in
+            guard let self else {
+                promise(.failure(URLError(.unknown)))
+                return
             }
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
+            Task {
+                do {
+                    let result = try await self.performWithRefresh(
+                        requestBuilder: { token in
+                            guard let url = URL(string: "\(self.baseURL)/main/updateMetrics") else {
+                                throw URLError(.badURL)
+                            }
+                            var request = URLRequest(url: url)
+                            request.httpMethod = "POST"
+                            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                            request.httpBody = try JSONSerialization.data(withJSONObject: data)
+                            return request
+                        },
+                        decode: { data in
+                            let responseText = String(data: data, encoding: .utf8) ?? "No body"
+                            print("🧾 [updateMetrics] Response Body: \(responseText)")
+                            return true
+                        }
+                    )
+                    await MainActor.run { promise(.success(result)) }
+                } catch {
+                    await MainActor.run { promise(.failure(error)) }
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 
     
     func getMetrics() -> AnyPublisher<[DailyQuestionEntry], Error> {
-        guard let user = AuthService.shared.currentUser,
-              let token = AuthService.shared.authToken else {
-            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
-        }
-        
-        var components = URLComponents(string: "\(baseURL)/main/dailyQuestions")
-        components?.queryItems = [URLQueryItem(name: "userId", value: user.primaryId)]
-        
-        guard let url = components?.url else {
-            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        print("🚀 Request URL: \(request.url?.absoluteString ?? "invalid url")")
-
-        
-        return session.dataTaskPublisher(for: request)
-            .handleEvents(receiveOutput: { data, response in
-                // 添加調試輸出
-                let responseText = String(data: data, encoding: .utf8) ?? "No body"
-                print("📥 [getMetrics] Response: \(responseText)")
-            })
-            .tryMap { data, response -> Data in
-                if let httpResponse = response as? HTTPURLResponse {
-                    if httpResponse.statusCode != 200 {
-                        print("HTTP Error Code: \(httpResponse.statusCode)")
-                        throw URLError(.badServerResponse)
-                    }
+        return Future<[DailyQuestionEntry], Error> { [weak self] promise in
+            guard let self else {
+                promise(.failure(URLError(.unknown)))
+                return
+            }
+            Task {
+                do {
+                    let entries = try await self.performWithRefresh(
+                        requestBuilder: { token in
+                            guard let user = AuthService.shared.currentUser else {
+                                throw URLError(URLError.Code.userAuthenticationRequired)
+                            }
+                            var components = URLComponents(string: "\(self.baseURL)/main/dailyQuestions")
+                            components?.queryItems = [URLQueryItem(name: "userId", value: user.primaryId)]
+                            guard let url = components?.url else {
+                                throw URLError(.badURL)
+                            }
+                            var request = URLRequest(url: url)
+                            request.httpMethod = "GET"
+                            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                            print("🚀 Request URL: \(request.url?.absoluteString ?? "invalid url")")
+                            return request
+                        },
+                        decode: { data in
+                            let responseText = String(data: data, encoding: .utf8) ?? "No body"
+                            print("📥 [getMetrics] Response: \(responseText)")
+                            let response = try JSONDecoder().decode(DailyQuestionsResponse.self, from: data)
+                            let dates = response.dailyQuestions.map { $0.entryDate }.joined(separator: ", ")
+                            print("🔄 Decoded daily questions from API for date(s): \(dates)")
+                            return response.dailyQuestions
+                        }
+                    )
+                    await MainActor.run { promise(.success(entries)) }
+                } catch {
+                    await MainActor.run { promise(.failure(error)) }
                 }
-                return data
             }
-            .decode(type: DailyQuestionsResponse.self, decoder: JSONDecoder())
-            .map { response in
-                let dates = response.dailyQuestions.map { $0.entryDate }.joined(separator: ", ")
-                print("🔄 Decoded daily questions from API for date(s): \(dates)")
-                return response.dailyQuestions
-            }
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
     
     func getScaleQuestions(code: String) async throws -> [String] {
