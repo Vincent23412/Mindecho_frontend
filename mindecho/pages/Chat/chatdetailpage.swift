@@ -60,7 +60,8 @@ struct ChatDetailPage: View {
                 messageText: $messageText,
                 onSend: sendMessage,
                 mode: selectedMode,
-                isDisabled: false
+                isDisabled: false,
+                allowsEmptySend: chatHook.initialModeBySession[session.id]?.sessionEnded == true
             )
         }
         .background(AppColors.chatBackground)

@@ -6,6 +6,7 @@ struct ChatInputView: View {
     let onSend: () -> Void
     let mode: TherapyMode
     let isDisabled: Bool
+    let allowsEmptySend: Bool
 
     @State private var isComposing = false
     @State private var showingQuickReplies = false
@@ -105,6 +106,7 @@ struct ChatInputView: View {
                 // 送出
                 Button(action: {
                     let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard allowsEmptySend || !trimmed.isEmpty else { return }
                     if containsCrisisTerms(trimmed) {
                         // ✅ 偵測到高風險字詞：觸發警示，讓使用者一鍵前往緊急資訊頁
                         showCrisisAlert = true
@@ -118,7 +120,7 @@ struct ChatInputView: View {
                         .font(.title2)
                         .foregroundColor(isComposing ? mode.color : .gray)
                 }
-                .disabled(isDisabled)
+                .disabled(isDisabled || (!allowsEmptySend && messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                 .scaleEffect(isComposing ? 1.1 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isComposing)
             }
@@ -192,14 +194,16 @@ struct QuickReplyView: View {
             messageText: .constant(""),
             onSend: {},
             mode: .chatMode,
-            isDisabled: false
+            isDisabled: false,
+            allowsEmptySend: false
         )
         
         ChatInputView(
             messageText: .constant("測試訊息"),
             onSend: {},
             mode: .cbtMode,
-            isDisabled: false
+            isDisabled: false,
+            allowsEmptySend: false
         )
         
         QuickReplyView(

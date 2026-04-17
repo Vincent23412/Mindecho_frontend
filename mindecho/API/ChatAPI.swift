@@ -136,6 +136,102 @@ class ChatAPI: NSObject, URLSessionDelegate {
         print("[ChatAPI] \(message)")
     }
 
+    private func sendMessageRequest(
+        sessionId: String,
+        request: SendMessageRequest,
+        token: String
+    ) async throws -> ChatAPIResponse {
+        guard let url = URL(string: "\(self.baseURL)/chat/sessions/\(sessionId)/messages") else {
+            throw ChatAPIError.networkError("無效的 URL")
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer \(token)" ,forHTTPHeaderField: "Authorization")
+        
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(request)
+            if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+                self.log("sendMessage → \(url.absoluteString) body=\(bodyString)")
+            } else {
+                self.log("sendMessage → \(url.absoluteString) body=<empty>")
+            }
+            
+            let (data, response) = try await self.session.data(for: urlRequest)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if let body = String(data: data, encoding: .utf8) {
+                    self.log("sendMessage ← body=\(body)")
+                }
+                self.log("sendMessage ← status=\(httpResponse.statusCode)")
+                switch httpResponse.statusCode {
+                case 200...299:
+                    break
+                case 400:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.badRequest(message)
+                case 401:
+                    throw ChatAPIError.unauthorized
+                case 429:
+                    throw ChatAPIError.rateLimited
+                case 404:
+                    let message = parseErrorMessage(from: data)
+                    throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
+                default:
+                    throw ChatAPIError.serverError(httpResponse.statusCode)
+                }
+            }
+
+            return try JSONDecoder().decode(ChatAPIResponse.self, from: data)
+        } catch {
+            self.log("sendMessage ✖︎ \(error.localizedDescription)")
+            if error is ChatAPIError {
+                throw error
+            } else {
+                throw ChatAPIError.networkError(error.localizedDescription)
+            }
+        }
+    }
+
+    private func sendMessageWithRetry(
+        sessionId: String,
+        request: SendMessageRequest,
+        token: String,
+        attemptsRemaining: Int = 1
+    ) async throws -> ChatAPIResponse {
+        do {
+            return try await sendMessageRequest(sessionId: sessionId, request: request, token: token)
+        } catch let error as ChatAPIError {
+            switch error {
+            case .badRequest, .unauthorized, .rateLimited, .notFound:
+                throw error
+            case .networkError, .invalidResponse, .serverError:
+                guard attemptsRemaining > 0 else { throw error }
+                self.log("sendMessage ↻ retrying after failure")
+                try await Task.sleep(nanoseconds: 800_000_000)
+                return try await sendMessageWithRetry(
+                    sessionId: sessionId,
+                    request: request,
+                    token: token,
+                    attemptsRemaining: attemptsRemaining - 1
+                )
+            }
+        } catch {
+            guard attemptsRemaining > 0 else {
+                throw ChatAPIError.networkError(error.localizedDescription)
+            }
+            self.log("sendMessage ↻ retrying after unexpected failure")
+            try await Task.sleep(nanoseconds: 800_000_000)
+            return try await sendMessageWithRetry(
+                sessionId: sessionId,
+                request: request,
+                token: token,
+                attemptsRemaining: attemptsRemaining - 1
+            )
+        }
+    }
+
     private func performWithRefresh<T>(
         token: String,
         operation: @escaping (String) async throws -> T
@@ -164,59 +260,11 @@ class ChatAPI: NSObject, URLSessionDelegate {
     // MARK: - 發送訊息
     func sendMessage(sessionId: String, request: SendMessageRequest, token: String) async throws -> ChatAPIResponse {
         return try await performWithRefresh(token: token) { [self] token in
-            guard let url = URL(string: "\(self.baseURL)/chat/sessions/\(sessionId)/messages") else {
-                throw ChatAPIError.networkError("無效的 URL")
-            }
-            
-            var urlRequest = URLRequest(url: url)
-            urlRequest.httpMethod = "POST"
-            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            urlRequest.setValue("Bearer \(token)" ,forHTTPHeaderField: "Authorization")
-            
-            do {
-                urlRequest.httpBody = try JSONEncoder().encode(request)
-                if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-                    self.log("sendMessage → \(url.absoluteString) body=\(bodyString)")
-                } else {
-                    self.log("sendMessage → \(url.absoluteString) body=<empty>")
-                }
-                
-                let (data, response) = try await self.session.data(for: urlRequest)
-                
-                // 檢查 HTTP 狀態碼
-                if let httpResponse = response as? HTTPURLResponse {
-                    if let body = String(data: data, encoding: .utf8) {
-                        self.log("sendMessage ← body=\(body)")
-                    }
-                    self.log("sendMessage ← status=\(httpResponse.statusCode)")
-                    switch httpResponse.statusCode {
-                    case 200...299:
-                        break // 成功
-                    case 400:
-                        let message = parseErrorMessage(from: data)
-                        throw ChatAPIError.badRequest(message)
-                    case 401:
-                        throw ChatAPIError.unauthorized
-                    case 429:
-                        throw ChatAPIError.rateLimited
-                    case 404:
-                        let message = parseErrorMessage(from: data)
-                        throw ChatAPIError.notFound(message.isEmpty ? "Session not found." : message)
-                    default:
-                        throw ChatAPIError.serverError(httpResponse.statusCode)
-                    }
-                }
-
-                return try JSONDecoder().decode(ChatAPIResponse.self, from: data)
-                
-            } catch {
-                self.log("sendMessage ✖︎ \(error.localizedDescription)")
-                if error is ChatAPIError {
-                    throw error
-                } else {
-                    throw ChatAPIError.networkError(error.localizedDescription)
-                }
-            }
+            try await self.sendMessageWithRetry(
+                sessionId: sessionId,
+                request: request,
+                token: token
+            )
         }
     }
     
